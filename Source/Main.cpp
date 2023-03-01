@@ -1,8 +1,9 @@
+#include <SDL.h>
+
 #include "Game.hpp"
 
-int main() {
-    SGame Game;
-    Game.Run();
+int SDL_main(int argc, char *argv[]) {
+    SGame().Run();
     return 0;
 }
 

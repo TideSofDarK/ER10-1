@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 #include "glm/mat4x4.hpp"
 #include "CommonTypes.hpp"
+#include "Resource.h"
 
 #define RENDERER_QUEUE2D_SIZE 16
 #define RENDERER_QUEUE3D_SIZE 16
@@ -14,9 +15,9 @@ struct SLevel;
 
 struct SProgram {
 private:
-    static unsigned int CreateVertexShader(const char *File);
+    static unsigned int CreateVertexShader(TResource Data, int Length);
 
-    static unsigned int CreateFragmentShader(const char *File);
+    static unsigned int CreateFragmentShader(TResource Data, int Length);
 
     static unsigned int CreateProgram(unsigned int VertexShader, unsigned int FragmentShader);
 
@@ -26,7 +27,7 @@ protected:
 public:
     unsigned int ID{};
 
-    void InitFromPaths(const char *VertexShaderPath, const char *FragmentShaderPath);
+    void Init(TResource VertexShaderData, int VertexShaderLength, TResource FragmentShaderData, int FragmentShaderLength);
 
     void Cleanup() const;
 
@@ -39,6 +40,8 @@ protected:
 
 public:
     int UniformBlockCommon2D{};
+    int UniformModeID{};
+    int UniformModeControlAID{};
     int UniformPositionScreenSpaceID{};
     int UniformSizeScreenSpaceID{};
     int UniformColorTextureID{};
@@ -102,7 +105,7 @@ struct SCamera {
 struct STexture {
     unsigned ID;
 
-    void InitFromPixels(int Width, int Height, const void *Pixels);
+    void InitFromPixels(int Width, int Height, bool bAlpha, const void *Pixels);
 
     void Cleanup();
 };
@@ -123,6 +126,17 @@ struct SUniformBlock {
     void SetFloat(int Position, float Value) const;
 };
 
+enum class EHUDMode {
+    BorderDashed,
+    Button
+};
+
+enum class ESimple2DMode {
+    Texture,
+    Haze,
+    BackBlur
+};
+
 enum class EProgram2DType {
     HUD,
     Simple2D,
@@ -133,6 +147,8 @@ struct SEntry2D {
     glm::vec3 Position{};
     glm::vec2 Size{};
     EProgram2DType Program2DType{};
+    int Mode;
+    glm::vec4 ModeControlA;
 };
 
 struct SEntry3D {
@@ -145,7 +161,7 @@ struct SRenderQueue {
     int CurrentIndex{};
     std::array<TEntry, Size> Entries;
 
-    void Enqueue(TEntry &&Entry) {
+    void Enqueue(const TEntry &Entry) {
         if (CurrentIndex >= Entries.size()) {
             CurrentIndex = 0;
         }
@@ -185,9 +201,15 @@ struct SRenderer {
 
 #pragma region Queue_2D_API
 
-    void DrawHUD(glm::vec3 Position, glm::vec2 Size);
+    void DrawHUD(glm::vec3 Position, glm::vec2 Size, EHUDMode Mode);
 
     void Draw2D(glm::vec3 Position, glm::vec2 Size, STexture *Texture);
+
+    void Draw2DEx(glm::vec3 Position, glm::vec2 Size, STexture *Texture, ESimple2DMode Mode);
+
+    void Draw2DEx(glm::vec3 Position, glm::vec2 Size, STexture *Texture, ESimple2DMode Mode, glm::vec4 ModeControlA);
+
+    void Draw2DBackBlur(glm::vec3 Position, glm::vec2 Size, STexture *Texture, float Count, float Speed, float Step);
 
 #pragma endregion
 

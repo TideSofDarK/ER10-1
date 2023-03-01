@@ -1,7 +1,7 @@
 #version 410 core
 
-layout (location = 0) in vec2 inVertexPositionModelSpace;
-layout (location = 1) in vec2 inTexCoord;
+layout (location = 0) in vec2 vertexPositionModelSpace;
+layout (location = 1) in vec2 texCoord;
 
 layout (std140) uniform ub_common
 {
@@ -11,9 +11,7 @@ layout (std140) uniform ub_common
 uniform vec2 u_positionScreenSpace;
 uniform vec2 u_sizeScreenSpace;
 
-varying vec2 f_texcoord;
-
-out vec2 texCoord;
+out vec2 f_texCoord;
 
 void main()
 {
@@ -24,7 +22,6 @@ void main()
     float ndcY = (((positionScreenSpace.y / u_screenSize.y) * 2.0) - 1.0);
     float width = ((u_sizeScreenSpace.x / u_screenSize.x)) * 2.0;
     float height = ((u_sizeScreenSpace.y / u_screenSize.y)) * 2.0;
-    gl_Position = vec4(ndcX + (inVertexPositionModelSpace.x * width), -(ndcY + (inVertexPositionModelSpace.y * height)), 0.0, 1.0);
-    texCoord = inTexCoord;
-    f_texcoord = inTexCoord;
+    gl_Position = vec4(ndcX + (vertexPositionModelSpace.x * width), -(ndcY + (vertexPositionModelSpace.y * height)), 0.0, 1.0);
+    f_texCoord = texCoord;
 }

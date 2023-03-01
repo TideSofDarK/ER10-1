@@ -1,8 +1,39 @@
 cmake_minimum_required(VERSION 3.24)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 project(EquinoxReach)
+
+set(EMBEDDED_ASSETS "")
+macro(embed_asset ASSET_PATH)
+    set(ASSET_PATH_TEMP ${ASSET_PATH})
+    cmake_path(GET ASSET_PATH_TEMP PARENT_PATH ASSET_DIR)
+    cmake_path(GET ASSET_PATH_TEMP STEM ASSET_NAME)
+    cmake_path(GET ASSET_PATH_TEMP EXTENSION ASSET_EX)
+    cmake_path(ABSOLUTE_PATH ASSET_PATH_TEMP NORMALIZE OUTPUT_VARIABLE ASSET_PATH_TEMP)
+    list(APPEND EMBEDDED_ASSETS "${PROJECT_BINARY_DIR}/${ASSET_NAME}${ASSET_EX}.o")
+    add_custom_command(
+            OUTPUT "${PROJECT_BINARY_DIR}/${ASSET_NAME}${ASSET_EX}.o"
+            COMMAND ld -r -b binary -o "${PROJECT_BINARY_DIR}/${ASSET_NAME}${ASSET_EX}.o" "${ASSET_NAME}${ASSET_EX}"
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${ASSET_DIR}
+            DEPENDS ${ASSET_PATH_TEMP}
+            VERBATIM
+    )
+    add_custom_target(
+            "${ASSET_NAME}${ASSET_EX}" ALL
+            DEPENDS "${PROJECT_BINARY_DIR}/${ASSET_NAME}${ASSET_EX}.o" ${ASSET_PATH_TEMP}
+    )
+endmacro()
+
+embed_asset(Assets/Frame.png)
+embed_asset(Assets/Angel.png)
+embed_asset(Assets/Ref.png)
+embed_asset(Assets/Shaders/HUD.vert)
+embed_asset(Assets/Shaders/HUD.frag)
+embed_asset(Assets/Shaders/Simple2D.vert)
+embed_asset(Assets/Shaders/Simple2D.frag)
+embed_asset(Assets/Shaders/Simple3D.vert)
+embed_asset(Assets/Shaders/Simple3D.frag)
 
 set(BUILD_SHARED_LIBS OFF)
 set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
@@ -30,8 +61,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm SDL SDL_IMAGE)
 
-add_executable(${PROJECT_NAME} "")
-target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${PROJECT_SOURCE_DIR}/Assets/")
+add_executable(${PROJECT_NAME})
 target_sources(
         ${PROJECT_NAME}
         PRIVATE
@@ -50,7 +80,7 @@ target_include_directories(
         Source/
 )
 if (WIN32)
-set(WINDOWS_LIBS Dwmapi.lib)
+    set(PLATFORM_LIBS Dwmapi.lib)
 endif (WIN32)
 target_link_libraries(
         ${PROJECT_NAME}
@@ -58,7 +88,21 @@ target_link_libraries(
         SDL2::SDL2-static
         SDL2_image::SDL2_image-static
         glm::glm
-        ${WINDOWS_LIBS}
+        ${PLATFORM_LIBS}
+        ${EMBEDDED_ASSETS}
 )
 
+if (MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
+endif ()
+
+if (WIN32)
+    # No console
+    set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
+endif ()
+
+if (MSVC)
+    set_property(TARGET ${PROJECT_NAME} PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif ()
 

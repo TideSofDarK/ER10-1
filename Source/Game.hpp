@@ -20,6 +20,7 @@ public:
     SLevelGeometry LevelGeometry;
 
     STexture FrameTexture{};
+    STexture AngelTexture{};
 
     SGame();
 

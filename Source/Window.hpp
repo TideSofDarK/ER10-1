@@ -13,6 +13,10 @@ struct SWindow : SWindowData {
 
     [[nodiscard]] bool IsExclusiveFullscreen() const;
 
+    [[nodiscard]] bool IsDesktopFullscreen() const;
+
+    [[nodiscard]] bool IsAnyFullscreen() const;
+
     void SwapBuffers() const;
 
     void OnWindowResized(int InWidth, int InHeight);

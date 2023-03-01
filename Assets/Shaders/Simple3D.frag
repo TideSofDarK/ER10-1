@@ -1,14 +1,12 @@
 #version 410 core
 
-in vec3 positionWorldSpace;
-in vec4 vertexColor;
-in vec3 eyeDirectionCameraSpace;
+in vec3 f_positionWorldSpace;
+in vec4 f_vertexColor;
+in vec3 f_eyeDirectionCameraSpace;
 
 out vec4 color;
 
-uniform mat4 MV;
-
 void main()
 {
-    color = vertexColor;
+    color = f_vertexColor;
 }

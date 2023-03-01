@@ -1,13 +1,30 @@
 #include "Game.hpp"
 
 #include <SDL_image.h>
+#include <iostream>
 #include "Level.hpp"
 #include "Constants.hpp"
+#include "Resource.h"
+#include "stb_image.h"
+
+EXTLD(Angel_png)
+EXTLD(Frame_png)
+EXTLD(Ref_png)
 
 SGame::SGame() {
     Window.Init();
 
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    SDL_RWops *rw = SDL_RWFromConstMem(LDVAR(Frame_png), LDLEN(Frame_png));
+    auto FrameImage = IMG_LoadPNG_RW(rw);
+    FrameTexture.InitFromPixels(FrameImage->w, FrameImage->h, FrameImage->format->Amask != 0, FrameImage->pixels);
+    SDL_FreeSurface(FrameImage);
+
+    rw = SDL_RWFromConstMem(LDVAR(Angel_png), LDLEN(Frame_png));
+    auto AngelImage = IMG_LoadPNG_RW(rw);
+    AngelTexture.InitFromPixels(AngelImage->w, AngelImage->h, AngelImage->format->Amask != 0, AngelImage->pixels);
+    SDL_FreeSurface(AngelImage);
 
     Player.X = 1;
     Player.Y = 1;
@@ -31,10 +48,6 @@ SGame::SGame() {
     };
 
     LevelGeometry.InitFromLevel(Level);
-
-    auto FrameImage = IMG_Load(ASSETS_PATH"Frame.png");
-    FrameTexture.InitFromPixels(FrameImage->w, FrameImage->h, FrameImage->pixels);
-    SDL_FreeSurface(FrameImage);
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
@@ -108,11 +121,13 @@ void SGame::Run() {
 
         Renderer.UploadProjectionAndViewFromCamera(Camera);
         Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
+//        Renderer.Draw2D({30.0f, 50.0f, 0.0f}, {44, 78}, &AngelTexture);
+//        Renderer.Draw2DEx({85, 50.0f, 0.0f}, {44, 78}, &AngelTexture, ESimple2DMode::Haze);
+//        Renderer.Draw2DBackBlur({140, 50.0f, 0.0f}, {44, 78}, &AngelTexture, 3.0f, 2.9f, 0.09f);
+        Renderer.Draw2DBackBlur({std::abs(std::sin(Window.Seconds)) * 250.0f, 50.0f, 0.0f}, {44, 78}, &AngelTexture, 3.0f, 2.9f, 0.09f);
         Renderer.Draw2D({0.0f, 0.0f, 0.0f}, {SCREEN_WIDTH, SCREEN_HEIGHT}, &FrameTexture);
-        Renderer.DrawHUD({32.0f, 32.0f, 0.0f}, {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2});
-//        Renderer.Draw2D(&FrameTexture, {32.0f, 32.0f, 0.0f},
-//                        {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2});
-//        Renderer.Draw2D(&FrameTexture, {64.0f, 64.0f, 0.0f}, {SCREEN_WIDTH / 3, SCREEN_HEIGHT / 3});
+        Renderer.DrawHUD({32.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, EHUDMode::BorderDashed);
+        Renderer.DrawHUD({128.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, EHUDMode::Button);
         Renderer.Flush(Window);
 
         Window.SwapBuffers();

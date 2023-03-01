@@ -1,33 +1,25 @@
 #include "Draw.hpp"
 
 #include <iostream>
-#include <fstream>
 #include "glad/gl.h"
-#include "SDL.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include "Level.hpp"
 #include "Constants.hpp"
 
-std::string ReadFileIntoString(const char *File) {
-    std::ifstream t(File);
-    std::string str;
+EXTLD(HUD_vert)
+EXTLD(HUD_frag)
 
-    t.seekg(0, std::ios::end);
-    str.reserve(t.tellg());
-    t.seekg(0, std::ios::beg);
+EXTLD(Simple2D_vert)
+EXTLD(Simple2D_frag)
 
-    str.assign((std::istreambuf_iterator<char>(t)),
-               std::istreambuf_iterator<char>());
+EXTLD(Simple3D_vert)
+EXTLD(Simple3D_frag)
 
-    return str;
-}
-
-unsigned int SProgram::CreateVertexShader(const char *File) {
-    auto ShaderString = ReadFileIntoString(File);
-    auto CShaderString = ShaderString.c_str();
+unsigned int SProgram::CreateVertexShader(TResource Data, int Length) {
     unsigned int VertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(VertexShader, 1, &CShaderString, nullptr);
+    const auto DataChar = reinterpret_cast<const char *>(Data);
+    glShaderSource(VertexShader, 1, &DataChar, &Length);
     glCompileShader(VertexShader);
     int Success;
     glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &Success);
@@ -39,11 +31,10 @@ unsigned int SProgram::CreateVertexShader(const char *File) {
     return VertexShader;
 }
 
-unsigned int SProgram::CreateFragmentShader(const char *File) {
-    auto ShaderString = ReadFileIntoString(File);
-    auto CShaderString = ShaderString.c_str();
+unsigned int SProgram::CreateFragmentShader(TResource Data, int Length) {
     unsigned int FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(FragmentShader, 1, &CShaderString, nullptr);
+    const auto DataChar = reinterpret_cast<const char *>(Data);
+    glShaderSource(FragmentShader, 1, &DataChar, &Length);
     glCompileShader(FragmentShader);
     int Success;
     glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &Success);
@@ -70,9 +61,10 @@ unsigned int SProgram::CreateProgram(unsigned int VertexShader, unsigned int Fra
     return Program;
 }
 
-void SProgram::InitFromPaths(const char *VertexShaderPath, const char *FragmentShaderPath) {
-    unsigned int VertexShader = CreateVertexShader(VertexShaderPath);
-    unsigned int FragmentShader = CreateFragmentShader(FragmentShaderPath);
+void SProgram::Init(TResource VertexShaderData, int VertexShaderLength, TResource FragmentShaderData,
+                    int FragmentShaderLength) {
+    unsigned int VertexShader = CreateVertexShader(VertexShaderData, VertexShaderLength);
+    unsigned int FragmentShader = CreateFragmentShader(FragmentShaderData, FragmentShaderLength);
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
@@ -92,12 +84,14 @@ void SProgram::Use() const {
 void SProgram3D::InitUniforms() {
     UniformBlockCommon3D = glGetUniformBlockIndex(ID, "ub_common");
     glUniformBlockBinding(ID, UniformBlockCommon3D, 0);
-    UniformModelID = glGetUniformLocation(ID, "Model");
+    UniformModelID = glGetUniformLocation(ID, "u_model");
 }
 
 void SProgram2D::InitUniforms() {
     UniformBlockCommon2D = glGetUniformBlockIndex(ID, "ub_common");
     glUniformBlockBinding(ID, UniformBlockCommon2D, 0);
+    UniformModeID = glGetUniformLocation(ID, "u_mode");
+    UniformModeControlAID = glGetUniformLocation(ID, "u_modeControlA");
     UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
     UniformColorTextureID = glGetUniformLocation(ID, "u_colorTexture");
@@ -256,11 +250,9 @@ void SUniformBlock::SetFloat(int Position, const float Value) const {
 
 void SRenderer::Init(int Width, int Height) {
     /** Common OpenGL settings */
-    gladLoadGL((GLADloadfunc) SDL_GL_GetProcAddress);
     glDepthFunc(GL_LESS);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-    glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     /** Setup a quad for 2D rendering */
@@ -311,14 +303,9 @@ void SRenderer::Init(int Width, int Height) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     /** Load common programs */
-    HUDProgram2D.InitFromPaths(ASSETS_PATH"Shaders/HUD.vert",
-                               ASSETS_PATH"Shaders/HUD.frag");
-
-    SimpleProgram2D.InitFromPaths(ASSETS_PATH"Shaders/Simple2D.vert",
-                                  ASSETS_PATH"Shaders/Simple2D.frag");
-
-    SimpleProgram3D.InitFromPaths(ASSETS_PATH"Shaders/Simple3D.vert",
-                                  ASSETS_PATH"Shaders/Simple3D.frag");
+    HUDProgram2D.Init(LDVAR(HUD_vert), LDLEN(HUD_vert), LDVAR(HUD_frag), LDLEN(HUD_frag));
+    SimpleProgram2D.Init(LDVAR(Simple2D_vert), LDLEN(Simple2D_vert), LDVAR(Simple2D_frag), LDLEN(Simple2D_frag));
+    SimpleProgram3D.Init(LDVAR(Simple3D_vert), LDLEN(Simple3D_vert), LDVAR(Simple3D_frag), LDLEN(Simple3D_frag));
 
     /** Initialize queues */
     Queue2D.Init(32);
@@ -344,6 +331,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
     MainFrameBuffer.BindForDrawing();
 
     /** Draw 3D */
+    glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glViewport(SCENE_OFFSET, SCENE_HEIGHT - SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
@@ -365,6 +353,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
     }
 
     /** Draw 2D */
+    glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -390,6 +379,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         }
         glUseProgram(Program->ID);
 
+        glUniform1i(Program->UniformModeID, Entry.Mode);
         glUniform2f(Program->UniformPositionScreenSpaceID, Entry.Position.x, Entry.Position.y);
         glUniform2f(Program->UniformSizeScreenSpaceID, Entry.Size.x, Entry.Size.y);
 
@@ -397,6 +387,22 @@ void SRenderer::Flush(const SWindowData &WindowData) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, Entry.Texture->ID);
             glUniform1i(Program->UniformColorTextureID, 0);
+        }
+
+        switch (Entry.Program2DType) {
+            case EProgram2DType::Simple2D:
+                switch (static_cast<ESimple2DMode>(Entry.Mode)) {
+                    case ESimple2DMode::BackBlur:
+                        glUniform4fv(Program->UniformModeControlAID, 1, &Entry.ModeControlA[0]);
+                        glDrawElementsInstanced(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr, static_cast<int>(Entry.ModeControlA[0]));
+                        glUniform1i(Program->UniformModeID, 0);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
         }
 
         glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
@@ -427,24 +433,64 @@ void SRenderer::UploadProjectionAndViewFromCamera(const SCamera &Camera) const {
     Queue3D.CommonUniformBlock.SetMatrix(sizeof(glm::mat4x4), ViewMatrix);
 }
 
-void SRenderer::DrawHUD(glm::vec3 Position, glm::vec2 Size) {
-    Queue2D.Enqueue({nullptr, glm::round(Position), glm::round(Size), EProgram2DType::HUD});
+void SRenderer::DrawHUD(glm::vec3 Position, glm::vec2 Size, EHUDMode Mode) {
+    Queue2D.Enqueue({nullptr, glm::round(Position), glm::round(Size), EProgram2DType::HUD, static_cast<int>(Mode)});
 }
 
 void SRenderer::Draw2D(glm::vec3 Position, glm::vec2 Size, STexture *Texture) {
     Queue2D.Enqueue({Texture, glm::round(Position), glm::round(Size), EProgram2DType::Simple2D});
 }
 
+void SRenderer::Draw2DEx(glm::vec3 Position, glm::vec2 Size, STexture *Texture, ESimple2DMode Mode) {
+    SEntry2D Entry;
+    Entry.Position = Position;
+    Entry.Size = Size;
+    Entry.Texture = Texture;
+    Entry.Mode = static_cast<int>(Mode);
+    Entry.Program2DType = EProgram2DType::Simple2D;
+
+    Queue2D.Enqueue(Entry);
+}
+
+void
+SRenderer::Draw2DEx(glm::vec3 Position, glm::vec2 Size, STexture *Texture, ESimple2DMode Mode, glm::vec4 ModeControlA) {
+    SEntry2D Entry;
+    Entry.Position = Position;
+    Entry.Size = Size;
+    Entry.Texture = Texture;
+    Entry.Mode = static_cast<int>(Mode);
+    Entry.ModeControlA = ModeControlA;
+    Entry.Program2DType = EProgram2DType::Simple2D;
+
+    Queue2D.Enqueue(Entry);
+}
+
+void
+SRenderer::Draw2DBackBlur(glm::vec3 Position, glm::vec2 Size, STexture *Texture, float Count, float Speed, float Step) {
+    SEntry2D Entry;
+    Entry.Position = Position;
+    Entry.Size = Size;
+    Entry.Texture = Texture;
+    Entry.Mode = static_cast<int>(ESimple2DMode::BackBlur);
+    Entry.ModeControlA.x = Count;
+    Entry.ModeControlA.y = Speed;
+    Entry.ModeControlA.z = Step;
+    Entry.Program2DType = EProgram2DType::Simple2D;
+
+    Queue2D.Enqueue(Entry);
+}
+
 void SRenderer::Draw3D(glm::vec3 Position, SGeometry *Geometry) {
     Queue3D.Enqueue({Geometry});
 }
 
-void STexture::InitFromPixels(int Width, int Height, const void *Pixels) {
+void STexture::InitFromPixels(int Width, int Height, bool bAlpha, const void *Pixels) {
     glGenTextures(1, &ID);
     glBindTexture(GL_TEXTURE_2D, ID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, bAlpha ? GL_RGBA : GL_RGB, Width, Height, 0, bAlpha ? GL_RGBA : GL_RGB,
+                 GL_UNSIGNED_BYTE, Pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
