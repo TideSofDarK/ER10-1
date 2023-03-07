@@ -123,12 +123,12 @@ void SGame::Run() {
         Renderer.UploadProjectionAndViewFromCamera(Camera);
         Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
         Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, SIMPLE2D_MODE_DISINTEGRATE_PLASMA,
-                          {Window.Seconds / 3.0, 0.9f, 0.2f, 0.1f},
+                          {Window.Seconds / 2.0, 0.9f, 0.2f, 0.1f},
                           NoiseSprite.Sprite->UVRect);
         Renderer.Draw2DHaze({85 - 4, 50.0f, 0.0f}, AngelSprite, 0.07f, 4.0f, 4.0f);
         Renderer.Draw2DBackBlur({140 - 4, 50.0f, 0.0f}, AngelSprite, 4.0f, 2.9f, 0.08f);
         Renderer.Draw2DGlow({195 - 4, 50.0f, 0.0f}, AngelSprite, glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
-        Renderer.Draw2DDisintegrate({250 - 4, 50.0f, 0.0f}, AngelSprite, NoiseSprite, Window.Seconds / 2.0f);
+        Renderer.Draw2DDisintegrate({250 - 4, 50.0f, 0.0f}, AngelSprite, NoiseSprite, Window.Seconds / 4.0f);
         Renderer.Draw2D({0.0f, 0.0f, 0.0f}, FrameSprite);
         Renderer.DrawHUD({32.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
         Renderer.DrawHUD({128.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);

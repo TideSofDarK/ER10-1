@@ -17,22 +17,6 @@ in vec4 f_modeControlOutA;
 
 out vec4 color;
 
-vec2 convertUV(in vec2 normalizedUV, in vec4 uvRect) {
-    return vec2(mix(uvRect.x, uvRect.z, normalizedUV.x), mix(uvRect.y, uvRect.w, normalizedUV.y));
-}
-
-vec2 tileUV(in vec2 normalizedUV, in vec2 tiling, in vec4 uvRect) {
-    return convertUV(vec2(fract(normalizedUV.x * tiling.x), fract(normalizedUV.y * tiling.y)), uvRect);
-}
-
-vec2 tileAndOffsetUV(in vec2 normalizedUV, in vec2 tiling, in vec2 offset, in vec4 uvRect) {
-    return convertUV(vec2(fract((normalizedUV.x * tiling.x) + offset.x), fract((normalizedUV.y * tiling.y) + offset.y)), uvRect);
-}
-
-vec2 clampUV(in vec2 uv) {
-    return clamp(uv, vec2(u_uvRect.x, u_uvRect.y), vec2(u_uvRect.z, vec2(u_uvRect.w)));
-}
-
 void main()
 {
     // Convert UV to atlas space
@@ -44,7 +28,7 @@ void main()
         float yIntensity = u_modeControlA.y;
         float speed = u_modeControlA.z;
         texCoordAtlasSpace.x += sin(f_texCoord.y * yIntensity * 3.14159 + (u_time * speed)) * sizeAtlasSpace.x * xIntensity;
-        texCoordAtlasSpace = clampUV(texCoordAtlasSpace);
+        texCoordAtlasSpace = clampUV(texCoordAtlasSpace, u_uvRect);
     }
 
     color = texture(u_primaryAtlas, texCoordAtlasSpace);
@@ -63,10 +47,10 @@ void main()
 
         float outlineMask = round(1.0 - color.a);
         outlineMask *= clamp(
-            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(pixelSizeX, 0.0))).a +
-            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(-pixelSizeX, 0.0))).a +
-            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, pixelSizeY))).a +
-            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, -pixelSizeY))).a,
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(pixelSizeX, 0.0), u_uvRect)).a +
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(-pixelSizeX, 0.0), u_uvRect)).a +
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, pixelSizeY), u_uvRect)).a +
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, -pixelSizeY), u_uvRect)).a,
             0.0, 1.0);
 
         float pulse = abs((fract(f_texCoord.y + u_time) * 2) - 1.0);
@@ -79,13 +63,21 @@ void main()
     if (u_mode == SIMPLE2D_MODE_DISINTEGRATE) {
         vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(1.0, 1.0), vec2(u_time / 10.0, u_time / 10.0), u_modeControlB);
         float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).g;
-        float scanlineHeightNormalized = 0.4;
         float progress = fract(u_modeControlA.x);
-        color.a -= round((noise * 2.0) - smoothstep(progress, progress + scanlineHeightNormalized, f_texCoord.y));
+        progress = sineIn(progress);
+        float progressA = clamp(0.0, 1.0, progress * 2.0);
+        float progressB = clamp(0.0, 1.0, (progress * 2.0) - 1.0);
+
+        float scanlineHeightNormalized = 1.0;
+        float scanlineHeight = mix(0.0, scanlineHeightNormalized, clamp(0.0, 1.0, progressA / scanlineHeightNormalized));
+        color.xyz += vec3(round((noise * 2.0) - smoothstep(progressA, progressA + scanlineHeight, f_texCoord.y)));
+
+        float scanlineHeightB = mix(0.0, scanlineHeightNormalized, clamp(0.0, 1.0, progressB / scanlineHeightNormalized));
+        color.a -= color.a * ceil(progressB) * round((noise * 2.0) - smoothstep(progressB, progressB + scanlineHeightB, f_texCoord.y));
     }
 
     if (u_mode == SIMPLE2D_MODE_DISINTEGRATE_PLASMA) {
-        vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(0.75, 0.75), vec2(u_random), u_modeControlB);
+        vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(0.65, 0.65), vec2(u_random), u_modeControlB);
         float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).b;
         float progress = fract(u_modeControlA.x);
         float mask = round(noise * 2.0 - progress);
@@ -93,7 +85,7 @@ void main()
         float maskA = round(noise * 2.0 - progress);
         float maskB = round(noise * 2.0 - (progress + 0.075));
 
-//        color.rgb -= vec3(maskB);
+        //        color.rgb -= vec3(maskB);
         color.a *= mask;
 
         color.rgb += (maskA - maskB) * u_modeControlA.yzw;

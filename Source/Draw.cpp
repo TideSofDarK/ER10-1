@@ -15,8 +15,8 @@
 
 #include "stb_image.h"
 
-static const char *GLSLVersion = "#version 410 core\n";
-static const char *ShaderConstants{
+static std::string const GLSLVersion = "#version 410 core\n";
+static std::string const ShaderConstants{
 #define SHADER_CONSTANTS_LITERAL
 
 #include "ShaderConstants.hpp"
@@ -24,6 +24,7 @@ static const char *ShaderConstants{
 #undef SHADER_CONSTANTS_LITERAL
 };
 
+DEFINE_RESOURCE(Shared_glsl)
 DEFINE_RESOURCE(HUD_vert)
 DEFINE_RESOURCE(HUD_frag)
 DEFINE_RESOURCE(Simple2D_vert)
@@ -35,9 +36,19 @@ DEFINE_RESOURCE(PostProcess_frag)
 
 unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
     unsigned VertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const auto ShaderString = reinterpret_cast<const char *>(Resource->Ptr);
-    const char *Blocks[3] = {GLSLVersion, ShaderConstants, ShaderString};
-    glShaderSource(VertexShader, 3, Blocks, nullptr);
+    char const *Blocks[4] = {
+            &GLSLVersion[0],
+            reinterpret_cast<const char *>(ResourceShared_glsl.Ptr),
+            &ShaderConstants[0],
+            reinterpret_cast<const char *>(Resource->Ptr)
+    };
+    int const Lengths[4] = {
+            static_cast<int>(GLSLVersion.length()),
+            static_cast<int>(ResourceShared_glsl.Length),
+            static_cast<int>(ShaderConstants.length()),
+            static_cast<int>(Resource->Length)
+    };
+    glShaderSource(VertexShader, 4, Blocks, &Lengths[0]);
     glCompileShader(VertexShader);
     int Success;
     glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &Success);
@@ -51,9 +62,19 @@ unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
 
 unsigned int SProgram::CreateFragmentShader(const SResource *Resource) {
     unsigned FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    const auto ShaderString = reinterpret_cast<const char *>(Resource->Ptr);
-    const char *Blocks[3] = {GLSLVersion, ShaderConstants, ShaderString};
-    glShaderSource(FragmentShader, 3, Blocks, nullptr);
+    char const *Blocks[4] = {
+            &GLSLVersion[0],
+            reinterpret_cast<const char *>(ResourceShared_glsl.Ptr),
+            &ShaderConstants[0],
+            reinterpret_cast<const char *>(Resource->Ptr)
+    };
+    int const Lengths[4] = {
+            static_cast<int>(GLSLVersion.length()),
+            static_cast<int>(ResourceShared_glsl.Length),
+            static_cast<int>(ShaderConstants.length()),
+            static_cast<int>(Resource->Length)
+    };
+    glShaderSource(FragmentShader, 4, Blocks, &Lengths[0]);
     glCompileShader(FragmentShader);
     int Success;
     glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &Success);
@@ -396,6 +417,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
     auto ModelMatrix = glm::mat4(1.0);
     glUniformMatrix4fv(ProgramSimple3D.UniformModelID, 1, GL_FALSE, &ModelMatrix[0][0]);
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     for (int Index = 0; Index < Queue3D.CurrentIndex; ++Index) {
         const auto &Entry = Queue3D.Entries[Index];
         if (Entry.Geometry == nullptr) {
@@ -404,6 +426,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         glBindVertexArray(Entry.Geometry->VAO);
         glDrawElements(GL_TRIANGLES, Entry.Geometry->ElementCount, GL_UNSIGNED_SHORT, nullptr);
     }
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     /** Draw 2D */
     glEnable(GL_BLEND);
@@ -418,9 +441,9 @@ void SRenderer::Flush(const SWindowData &WindowData) {
     glBindVertexArray(Quad2D.VAO);
 
     for (int Index = 0; Index < Queue2D.CurrentIndex; ++Index) {
-        const auto &Entry = Queue2D.Entries[Index];
+        auto const &Entry = Queue2D.Entries[Index];
 
-        const SProgram2D *Program = nullptr;
+        SProgram2D const *Program = nullptr;
         switch (Entry.Program2DType) {
             case EProgram2DType::HUD:
                 Program = &ProgramHUD;
@@ -517,7 +540,8 @@ SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int M
 }
 
 void
-SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA, glm::vec4 ModeControlB) {
+SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA,
+                    glm::vec4 ModeControlB) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Simple2D;
     Entry.Position = Position;
@@ -618,10 +642,11 @@ void STexture::InitEmpty(int Width, int Height, bool bAlpha) {
 
 void STexture::InitFromResource(const SResource *Resource) {
     int Width, Height, Channels;
-    auto Image = stbi_load_from_memory(Resource->Ptr, static_cast<int>(Resource->Length), &Width,
-                                       &Height, &Channels,
-                                       4);
+    auto const Image = stbi_load_from_memory(Resource->Ptr, static_cast<int>(Resource->Length), &Width,
+                                             &Height, &Channels,
+                                             4);
     InitFromPixels(Width, Height, Channels == 4, Image);
+    stbi_image_free(Image);
 }
 
 void STexture::Cleanup() {
@@ -694,6 +719,8 @@ void SAtlas::Build() {
                         Width, Height,
                         GL_RGBA,
                         GL_UNSIGNED_BYTE, Image);
+
+        stbi_image_free(Image);
 
         CursorX += Width;
 
