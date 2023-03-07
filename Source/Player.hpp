@@ -5,7 +5,7 @@
 
 struct SPlayer {
     /** Allowed values are 0..3 */
-    unsigned int Direction: 2;
+    unsigned Direction: 2;
     int X{};
     int Y{};
 

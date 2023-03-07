@@ -2,6 +2,7 @@ layout (std140) uniform ub_common
 {
     vec2 u_screenSize;
     float u_time;
+    float u_random;
 };
 uniform int u_mode;
 uniform vec4 u_modeControlA;
@@ -62,11 +63,11 @@ void main()
 
         float outlineMask = round(1.0 - color.a);
         outlineMask *= clamp(
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(pixelSizeX, 0.0))).a +
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(-pixelSizeX, 0.0))).a +
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, pixelSizeY))).a +
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, -pixelSizeY))).a,
-        0.0, 1.0);
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(pixelSizeX, 0.0))).a +
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(-pixelSizeX, 0.0))).a +
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, pixelSizeY))).a +
+            texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, -pixelSizeY))).a,
+            0.0, 1.0);
 
         float pulse = abs((fract(f_texCoord.y + u_time) * 2) - 1.0);
         pulse *= pulse;
@@ -81,5 +82,20 @@ void main()
         float scanlineHeightNormalized = 0.4;
         float progress = fract(u_modeControlA.x);
         color.a -= round((noise * 2.0) - smoothstep(progress, progress + scanlineHeightNormalized, f_texCoord.y));
+    }
+
+    if (u_mode == SIMPLE2D_MODE_DISINTEGRATE_PLASMA) {
+        vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(0.75, 0.75), vec2(u_random), u_modeControlB);
+        float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).b;
+        float progress = fract(u_modeControlA.x);
+        float mask = round(noise * 2.0 - progress);
+
+        float maskA = round(noise * 2.0 - progress);
+        float maskB = round(noise * 2.0 - (progress + 0.075));
+
+//        color.rgb -= vec3(maskB);
+        color.a *= mask;
+
+        color.rgb += (maskA - maskB) * u_modeControlA.yzw;
     }
 }

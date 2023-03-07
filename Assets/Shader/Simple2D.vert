@@ -5,6 +5,7 @@ layout (std140) uniform ub_common
 {
     vec2 u_screenSize;
     float u_time;
+    float u_random;
 };
 uniform int u_mode;
 uniform vec4 u_modeControlA;

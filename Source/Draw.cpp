@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Level.hpp"
 #include "Constants.hpp"
+#include "Utility.hpp"
 #include "ShaderConstants.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -333,6 +334,7 @@ void SRenderer::Init(int Width, int Height) {
     /** Initialize queues */
     Queue2D.Init(32);
     Queue2D.CommonUniformBlock.SetVector2(0, {static_cast<float>(Width), static_cast<float>(Height)});
+    Queue2D.CommonUniformBlock.SetFloat(12, Utility::GetRandomFloat());
 
     Queue3D.Init(sizeof(glm::mat4x4) * 2);
 
@@ -510,6 +512,19 @@ SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int M
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
     Entry.Mode = SEntryMode{.ID = Mode, .ControlA = ModeControlA};
+
+    Queue2D.Enqueue(Entry);
+}
+
+void
+SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA, glm::vec4 ModeControlB) {
+    SEntry2D Entry;
+    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Position = Position;
+    Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
+    Entry.UVRect = SpriteHandle.Sprite->UVRect;
+
+    Entry.Mode = SEntryMode{.ID = Mode, .ControlA = ModeControlA, .ControlB = ModeControlB};
 
     Queue2D.Enqueue(Entry);
 }

@@ -63,6 +63,7 @@ target_sources(
         ${PROJECT_NAME}
         PRIVATE
         Vendor/glad/src/gl.c
+        Source/Utility.cpp
         Source/Main.cpp
         Source/Window.cpp
         Source/Game.cpp
