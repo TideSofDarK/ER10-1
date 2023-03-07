@@ -1,5 +1,3 @@
-#version 410 core
-
 layout (location = 0) in vec3 vertexPositionModelSpace;
 
 layout (std140) uniform ub_common

@@ -9,6 +9,7 @@
 #ifndef __MINGW32__
 #define NOMINMAX
 #endif
+
 #include <windows.h>
 #include <dwmapi.h>
 #include <VersionHelpers.h>
@@ -45,7 +46,8 @@ void SWindow::SwapBuffers() const {
             if (DisplayIndex >= 0)
                 SDL_GetCurrentDisplayMode(DisplayIndex, &DisplayMode);
 
-            if (DisplayMode.refresh_rate > 0 && DwmRefreshRate > 0 && (fabs(DisplayMode.refresh_rate - DwmRefreshRate) < 2)) {
+            if (DisplayMode.refresh_rate > 0 && DwmRefreshRate > 0 &&
+                (fabs(DisplayMode.refresh_rate - DwmRefreshRate) < 2)) {
                 SDL_GL_SetSwapInterval(0);
                 if (SDL_GL_GetSwapInterval() == 0)
                     bUseDwmFlush = true;

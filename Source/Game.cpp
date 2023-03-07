@@ -1,30 +1,31 @@
 #include "Game.hpp"
 
-#include <SDL_image.h>
 #include <iostream>
 #include "Level.hpp"
 #include "Constants.hpp"
-#include "Resource.h"
-#include "stb_image.h"
+#include "Resource.hpp"
+#include "SDL.h"
+#include "ShaderConstants.hpp"
 
-EXTLD(Angel_png)
-EXTLD(Frame_png)
-EXTLD(Ref_png)
+DEFINE_RESOURCE(Frame_png)
+DEFINE_RESOURCE(Ref_png)
+DEFINE_RESOURCE(Angel_png)
+DEFINE_RESOURCE(Noise_png)
 
 SGame::SGame() {
     Window.Init();
 
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    SDL_RWops *rw = SDL_RWFromConstMem(LDVAR(Frame_png), LDLEN(Frame_png));
-    auto FrameImage = IMG_LoadPNG_RW(rw);
-    FrameTexture.InitFromPixels(FrameImage->w, FrameImage->h, FrameImage->format->Amask != 0, FrameImage->pixels);
-    SDL_FreeSurface(FrameImage);
+    auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
+    NoiseSprite = CommonAtlas2D.AddSprite(&ResourceNoise_png);
+    RefSprite = CommonAtlas2D.AddSprite(&ResourceRef_png);
+    CommonAtlas2D.Build();
 
-    rw = SDL_RWFromConstMem(LDVAR(Angel_png), LDLEN(Frame_png));
-    auto AngelImage = IMG_LoadPNG_RW(rw);
-    AngelTexture.InitFromPixels(AngelImage->w, AngelImage->h, AngelImage->format->Amask != 0, AngelImage->pixels);
-    SDL_FreeSurface(AngelImage);
+    auto &PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
+    AngelSprite = PrimaryAtlas2D.AddSprite(&ResourceAngel_png);
+    FrameSprite = PrimaryAtlas2D.AddSprite(&ResourceFrame_png);
+    PrimaryAtlas2D.Build();
 
     Player.X = 1;
     Player.Y = 1;
@@ -121,19 +122,19 @@ void SGame::Run() {
 
         Renderer.UploadProjectionAndViewFromCamera(Camera);
         Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
-//        Renderer.Draw2D({30.0f, 50.0f, 0.0f}, {44, 78}, &AngelTexture);
-//        Renderer.Draw2DEx({85, 50.0f, 0.0f}, {44, 78}, &AngelTexture, ESimple2DMode::Haze);
-//        Renderer.Draw2DBackBlur({140, 50.0f, 0.0f}, {44, 78}, &AngelTexture, 3.0f, 2.9f, 0.09f);
-        Renderer.Draw2DBackBlur({std::abs(std::sin(Window.Seconds)) * 250.0f, 50.0f, 0.0f}, {44, 78}, &AngelTexture, 3.0f, 2.9f, 0.09f);
-        Renderer.Draw2D({0.0f, 0.0f, 0.0f}, {SCREEN_WIDTH, SCREEN_HEIGHT}, &FrameTexture);
-        Renderer.DrawHUD({32.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, EHUDMode::BorderDashed);
-        Renderer.DrawHUD({128.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, EHUDMode::Button);
+        Renderer.Draw2D({30.0f - 4, 50.0f, 0.0f}, AngelSprite);
+        Renderer.Draw2DHaze({85 - 4, 50.0f, 0.0f}, AngelSprite, 0.07f, 4.0f, 4.0f);
+        Renderer.Draw2DBackBlur({140 - 4, 50.0f, 0.0f}, AngelSprite, 4.0f, 2.9f, 0.08f);
+        Renderer.Draw2DGlow({195 - 4, 50.0f, 0.0f}, AngelSprite, glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
+        Renderer.Draw2DDisintegrate({250 - 4, 50.0f, 0.0f}, AngelSprite, NoiseSprite, Window.Seconds / 2.0f);
+        Renderer.Draw2D({0.0f, 0.0f, 0.0f}, FrameSprite);
+        Renderer.DrawHUD({32.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
+        Renderer.DrawHUD({128.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
         Renderer.Flush(Window);
 
         Window.SwapBuffers();
     }
 
-    FrameTexture.Cleanup();
     LevelGeometry.Cleanup();
     Renderer.Cleanup();
     Window.Cleanup();

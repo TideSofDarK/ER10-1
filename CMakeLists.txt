@@ -28,12 +28,15 @@ endmacro()
 embed_asset(Assets/Frame.png)
 embed_asset(Assets/Angel.png)
 embed_asset(Assets/Ref.png)
-embed_asset(Assets/Shaders/HUD.vert)
-embed_asset(Assets/Shaders/HUD.frag)
-embed_asset(Assets/Shaders/Simple2D.vert)
-embed_asset(Assets/Shaders/Simple2D.frag)
-embed_asset(Assets/Shaders/Simple3D.vert)
-embed_asset(Assets/Shaders/Simple3D.frag)
+embed_asset(Assets/Noise.png)
+embed_asset(Assets/Shader/HUD.vert)
+embed_asset(Assets/Shader/HUD.frag)
+embed_asset(Assets/Shader/Simple2D.vert)
+embed_asset(Assets/Shader/Simple2D.frag)
+embed_asset(Assets/Shader/Simple3D.vert)
+embed_asset(Assets/Shader/Simple3D.frag)
+embed_asset(Assets/Shader/PostProcess.vert)
+embed_asset(Assets/Shader/PostProcess.frag)
 
 set(BUILD_SHARED_LIBS OFF)
 set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
@@ -53,13 +56,7 @@ FetchContent_Declare(
         GIT_TAG 5a7ea76ed3ed45a498ddc17ae039323eb213876f
         GIT_PROGRESS TRUE
 )
-FetchContent_Declare(
-        SDL_IMAGE
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image
-        GIT_TAG 44354bc1a5b472e1755761fb1405d768a69bbb74
-        GIT_PROGRESS TRUE
-)
-FetchContent_MakeAvailable(glm SDL SDL_IMAGE)
+FetchContent_MakeAvailable(glm SDL)
 
 add_executable(${PROJECT_NAME})
 target_sources(
@@ -76,6 +73,7 @@ target_sources(
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE
+        Vendor/stb
         Vendor/glad/include
         Source/
 )
@@ -86,7 +84,6 @@ target_link_libraries(
         ${PROJECT_NAME}
         SDL2::SDL2main
         SDL2::SDL2-static
-        SDL2_image::SDL2_image-static
         glm::glm
         ${PLATFORM_LIBS}
         ${EMBEDDED_ASSETS}
@@ -105,4 +102,3 @@ if (MSVC)
     set_property(TARGET ${PROJECT_NAME} PROPERTY
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
-

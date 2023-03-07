@@ -1,5 +1,3 @@
-#version 410 core
-
 layout (std140) uniform ub_common
 {
     vec2 u_screenSize;

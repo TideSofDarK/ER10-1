@@ -19,11 +19,12 @@ public:
     SPlayer Player;
     SLevelGeometry LevelGeometry;
 
-    STexture FrameTexture{};
-    STexture AngelTexture{};
+    SSpriteHandle NoiseSprite;
+    SSpriteHandle RefSprite;
+    SSpriteHandle FrameSprite;
+    SSpriteHandle AngelSprite;
 
     SGame();
 
     void Run();
-
 };

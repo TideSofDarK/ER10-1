@@ -16,4 +16,14 @@
   ((_binary_ ## NAME ## _end) - (_binary_ ## NAME ## _start))
 #endif
 
+#define DEFINE_RESOURCE(NAME) \
+    EXTLD(NAME) \
+    const SResource Resource ## NAME{LDVAR(NAME), LDLEN(NAME)};
+
 typedef const unsigned char *const TResource;
+
+struct SResource {
+    TResource Ptr;
+    ptrdiff_t Length;
+};
+

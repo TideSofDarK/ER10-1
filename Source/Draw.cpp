@@ -1,25 +1,42 @@
 #include "Draw.hpp"
 
 #include <iostream>
+#include <algorithm>
+#include <numeric>
+#include <string>
 #include "glad/gl.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include <string>
 #include "Level.hpp"
 #include "Constants.hpp"
+#include "ShaderConstants.hpp"
 
-EXTLD(HUD_vert)
-EXTLD(HUD_frag)
+#define STB_IMAGE_IMPLEMENTATION
 
-EXTLD(Simple2D_vert)
-EXTLD(Simple2D_frag)
+#include "stb_image.h"
 
-EXTLD(Simple3D_vert)
-EXTLD(Simple3D_frag)
+static const char *GLSLVersion = "#version 410 core\n";
+static const char *ShaderConstants{
+#define SHADER_CONSTANTS_LITERAL
 
-unsigned int SProgram::CreateVertexShader(TResource Data, int Length) {
-    unsigned int VertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const auto DataChar = reinterpret_cast<const char *>(Data);
-    glShaderSource(VertexShader, 1, &DataChar, &Length);
+#include "ShaderConstants.hpp"
+
+#undef SHADER_CONSTANTS_LITERAL
+};
+
+DEFINE_RESOURCE(HUD_vert)
+DEFINE_RESOURCE(HUD_frag)
+DEFINE_RESOURCE(Simple2D_vert)
+DEFINE_RESOURCE(Simple2D_frag)
+DEFINE_RESOURCE(Simple3D_vert)
+DEFINE_RESOURCE(Simple3D_frag)
+DEFINE_RESOURCE(PostProcess_vert)
+DEFINE_RESOURCE(PostProcess_frag)
+
+unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
+    unsigned VertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const auto ShaderString = reinterpret_cast<const char *>(Resource->Ptr);
+    const char *Blocks[3] = {GLSLVersion, ShaderConstants, ShaderString};
+    glShaderSource(VertexShader, 3, Blocks, nullptr);
     glCompileShader(VertexShader);
     int Success;
     glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &Success);
@@ -31,10 +48,11 @@ unsigned int SProgram::CreateVertexShader(TResource Data, int Length) {
     return VertexShader;
 }
 
-unsigned int SProgram::CreateFragmentShader(TResource Data, int Length) {
-    unsigned int FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    const auto DataChar = reinterpret_cast<const char *>(Data);
-    glShaderSource(FragmentShader, 1, &DataChar, &Length);
+unsigned int SProgram::CreateFragmentShader(const SResource *Resource) {
+    unsigned FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    const auto ShaderString = reinterpret_cast<const char *>(Resource->Ptr);
+    const char *Blocks[3] = {GLSLVersion, ShaderConstants, ShaderString};
+    glShaderSource(FragmentShader, 3, Blocks, nullptr);
     glCompileShader(FragmentShader);
     int Success;
     glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &Success);
@@ -47,7 +65,7 @@ unsigned int SProgram::CreateFragmentShader(TResource Data, int Length) {
 }
 
 unsigned int SProgram::CreateProgram(unsigned int VertexShader, unsigned int FragmentShader) {
-    unsigned int Program = glCreateProgram();
+    unsigned Program = glCreateProgram();
     glAttachShader(Program, VertexShader);
     glAttachShader(Program, FragmentShader);
     glLinkProgram(Program);
@@ -61,10 +79,9 @@ unsigned int SProgram::CreateProgram(unsigned int VertexShader, unsigned int Fra
     return Program;
 }
 
-void SProgram::Init(TResource VertexShaderData, int VertexShaderLength, TResource FragmentShaderData,
-                    int FragmentShaderLength) {
-    unsigned int VertexShader = CreateVertexShader(VertexShaderData, VertexShaderLength);
-    unsigned int FragmentShader = CreateFragmentShader(FragmentShaderData, FragmentShaderLength);
+void SProgram::Init(const SResource *VertexShaderData, const SResource *FragmentShaderData) {
+    unsigned VertexShader = CreateVertexShader(VertexShaderData);
+    unsigned FragmentShader = CreateFragmentShader(FragmentShaderData);
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
@@ -81,10 +98,16 @@ void SProgram::Use() const {
     glUseProgram(ID);
 }
 
+void SProgramPostProcess::InitUniforms() {
+    UniformColorTextureID = glGetUniformLocation(ID, "u_colorTexture");
+}
+
 void SProgram3D::InitUniforms() {
     UniformBlockCommon3D = glGetUniformBlockIndex(ID, "ub_common");
     glUniformBlockBinding(ID, UniformBlockCommon3D, 0);
     UniformModelID = glGetUniformLocation(ID, "u_model");
+    UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
+    UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
 }
 
 void SProgram2D::InitUniforms() {
@@ -92,9 +115,12 @@ void SProgram2D::InitUniforms() {
     glUniformBlockBinding(ID, UniformBlockCommon2D, 0);
     UniformModeID = glGetUniformLocation(ID, "u_mode");
     UniformModeControlAID = glGetUniformLocation(ID, "u_modeControlA");
+    UniformModeControlBID = glGetUniformLocation(ID, "u_modeControlB");
     UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
-    UniformColorTextureID = glGetUniformLocation(ID, "u_colorTexture");
+    UniformUVRectID = glGetUniformLocation(ID, "u_uvRect");
+    UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
+    UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
 }
 
 void SGeometry::Cleanup() {
@@ -172,14 +198,16 @@ void SCamera::Update() {
     View = glm::lookAtRH(Position, Target, glm::vec3{0.0f, 1.0f, 0.0f});
 }
 
-void SFrameBuffer::Init(int Width, int Height, glm::vec3 InClearColor) {
+void SFrameBuffer::Init(int TextureUnitID, int Width, int Height, glm::vec3 InClearColor) {
     ClearColor = InClearColor;
 
+    glActiveTexture(GL_TEXTURE0 + TextureUnitID);
     glGenTextures(1, &ColorID);
     glBindTexture(GL_TEXTURE_2D, ColorID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glActiveTexture(GL_TEXTURE0 + TEXTURE_UNIT_TRANSIENT);
 
     glGenTextures(1, &DepthID);
     glBindTexture(GL_TEXTURE_2D, DepthID);
@@ -302,11 +330,6 @@ void SRenderer::Init(int Width, int Height) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    /** Load common programs */
-    HUDProgram2D.Init(LDVAR(HUD_vert), LDLEN(HUD_vert), LDVAR(HUD_frag), LDLEN(HUD_frag));
-    SimpleProgram2D.Init(LDVAR(Simple2D_vert), LDLEN(Simple2D_vert), LDVAR(Simple2D_frag), LDLEN(Simple2D_frag));
-    SimpleProgram3D.Init(LDVAR(Simple3D_vert), LDLEN(Simple3D_vert), LDVAR(Simple3D_frag), LDLEN(Simple3D_frag));
-
     /** Initialize queues */
     Queue2D.Init(32);
     Queue2D.CommonUniformBlock.SetVector2(0, {static_cast<float>(Width), static_cast<float>(Height)});
@@ -314,16 +337,45 @@ void SRenderer::Init(int Width, int Height) {
     Queue3D.Init(sizeof(glm::mat4x4) * 2);
 
     /** Initialize framebuffers */
-    MainFrameBuffer.Init(Width, Height, WINDOW_CLEAR_COLOR);
+    MainFrameBuffer.Init(TEXTURE_UNIT_MAIN_FRAMEBUFFER, Width, Height, WINDOW_CLEAR_COLOR);
+
+    /** Initialize atlases */
+    Atlases[ATLAS_COMMON].Init(TEXTURE_UNIT_ATLAS_COMMON);
+    Atlases[ATLAS_PRIMARY2D].Init(TEXTURE_UNIT_ATLAS_PRIMARY2D);
+    Atlases[ATLAS_PRIMARY3D].Init(TEXTURE_UNIT_ATLAS_PRIMARY3D);
+
+    /** Initialize shaders */
+    ProgramHUD.Init(&ResourceHUD_vert, &ResourceHUD_frag);
+    ProgramHUD.Use();
+    glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+
+    ProgramSimple2D.Init(&ResourceSimple2D_vert, &ResourceSimple2D_frag);
+    ProgramSimple2D.Use();
+    glUniform1i(ProgramSimple2D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glUniform1i(ProgramSimple2D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
+
+    ProgramSimple3D.Init(&ResourceSimple3D_vert, &ResourceSimple3D_frag);
+    ProgramSimple3D.Use();
+    glUniform1i(ProgramSimple3D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glUniform1i(ProgramSimple3D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
+
+    ProgramPostProcess.Init(&ResourcePostProcess_vert, &ResourcePostProcess_frag);
+    ProgramPostProcess.Use();
+    glUniform1i(ProgramPostProcess.UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
 }
 
 void SRenderer::Cleanup() {
+    MainFrameBuffer.Cleanup();
+    for (auto &Atlas: Atlases) {
+        Atlas.Cleanup();
+    }
+    Quad2D.Cleanup();
+    ProgramHUD.Cleanup();
+    ProgramSimple2D.Cleanup();
+    ProgramSimple3D.Cleanup();
+    ProgramPostProcess.Cleanup();
     Queue2D.Cleanup();
     Queue3D.Cleanup();
-    Quad2D.Cleanup();
-    MainFrameBuffer.Cleanup();
-    SimpleProgram2D.Cleanup();
-    SimpleProgram3D.Cleanup();
 }
 
 void SRenderer::Flush(const SWindowData &WindowData) {
@@ -331,17 +383,16 @@ void SRenderer::Flush(const SWindowData &WindowData) {
     MainFrameBuffer.BindForDrawing();
 
     /** Draw 3D */
-    glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glViewport(SCENE_OFFSET, SCENE_HEIGHT - SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
 
     Queue3D.CommonUniformBlock.Bind();
 
-    glUseProgram(SimpleProgram3D.ID);
+    ProgramSimple3D.Use();
 
     auto ModelMatrix = glm::mat4(1.0);
-    glUniformMatrix4fv(SimpleProgram3D.UniformModelID, 1, GL_FALSE, &ModelMatrix[0][0]);
+    glUniformMatrix4fv(ProgramSimple3D.UniformModelID, 1, GL_FALSE, &ModelMatrix[0][0]);
 
     for (int Index = 0; Index < Queue3D.CurrentIndex; ++Index) {
         const auto &Entry = Queue3D.Entries[Index];
@@ -370,56 +421,52 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         const SProgram2D *Program = nullptr;
         switch (Entry.Program2DType) {
             case EProgram2DType::HUD:
-                Program = &HUDProgram2D;
+                Program = &ProgramHUD;
                 break;
             case EProgram2DType::Simple2D:
-                Program = &SimpleProgram2D;
+                Program = &ProgramSimple2D;
             default:
                 break;
         }
         glUseProgram(Program->ID);
 
-        glUniform1i(Program->UniformModeID, Entry.Mode);
         glUniform2f(Program->UniformPositionScreenSpaceID, Entry.Position.x, Entry.Position.y);
-        glUniform2f(Program->UniformSizeScreenSpaceID, Entry.Size.x, Entry.Size.y);
+        glUniform2f(Program->UniformSizeScreenSpaceID, Entry.SizePixels.x, Entry.SizePixels.y);
+        glUniform4fv(Program->UniformUVRectID, 1, &Entry.UVRect[0]);
 
-        if (Entry.Texture != nullptr) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, Entry.Texture->ID);
-            glUniform1i(Program->UniformColorTextureID, 0);
+        SEntryMode Mode;
+        if (Entry.Mode.has_value()) {
+            Mode = Entry.Mode.value();
+            glUniform4fv(Program->UniformModeControlAID, 1, &Mode.ControlA[0]);
+            glUniform4fv(Program->UniformModeControlBID, 1, &Mode.ControlB[0]);
         }
+        glUniform1i(Program->UniformModeID, Mode.ID);
 
-        switch (Entry.Program2DType) {
-            case EProgram2DType::Simple2D:
-                switch (static_cast<ESimple2DMode>(Entry.Mode)) {
-                    case ESimple2DMode::BackBlur:
-                        glUniform4fv(Program->UniformModeControlAID, 1, &Entry.ModeControlA[0]);
-                        glDrawElementsInstanced(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr, static_cast<int>(Entry.ModeControlA[0]));
-                        glUniform1i(Program->UniformModeID, 0);
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            default:
-                break;
+        if (Entry.Program2DType == EProgram2DType::Simple2D) {
+            if (Mode.ID == SIMPLE2D_MODE_BACK_BLUR) {
+                glDrawElementsInstanced(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr,
+                                        static_cast<int>(Mode.ControlA[0]));
+                glUniform1i(Program->UniformModeID, 0);
+            }
         }
 
         glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
     }
 
     /** Display everything */
+    glDisable(GL_BLEND);
+
     MainFrameBuffer.BindForReading();
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
     glViewport(0, 0, WindowData.Width, WindowData.Height);
     glClearColor(0.0f, 0.125f, 0.125f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-    glBlitFramebuffer(0, 0,
-                      SCREEN_WIDTH, SCREEN_HEIGHT,
-                      WindowData.BlitX, WindowData.BlitY,
-                      WindowData.BlitWidth + WindowData.BlitX, WindowData.BlitHeight + WindowData.BlitY,
-                      GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    glViewport(WindowData.BlitX, WindowData.BlitY, WindowData.BlitWidth, WindowData.BlitHeight);
+
+    ProgramPostProcess.Use();
+    glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
 
     Queue2D.Reset();
     Queue3D.Reset();
@@ -433,49 +480,95 @@ void SRenderer::UploadProjectionAndViewFromCamera(const SCamera &Camera) const {
     Queue3D.CommonUniformBlock.SetMatrix(sizeof(glm::mat4x4), ViewMatrix);
 }
 
-void SRenderer::DrawHUD(glm::vec3 Position, glm::vec2 Size, EHUDMode Mode) {
-    Queue2D.Enqueue({nullptr, glm::round(Position), glm::round(Size), EProgram2DType::HUD, static_cast<int>(Mode)});
-}
-
-void SRenderer::Draw2D(glm::vec3 Position, glm::vec2 Size, STexture *Texture) {
-    Queue2D.Enqueue({Texture, glm::round(Position), glm::round(Size), EProgram2DType::Simple2D});
-}
-
-void SRenderer::Draw2DEx(glm::vec3 Position, glm::vec2 Size, STexture *Texture, ESimple2DMode Mode) {
+void SRenderer::DrawHUD(glm::vec3 Position, glm::vec2 Size, int Mode) {
     SEntry2D Entry;
+    Entry.Program2DType = EProgram2DType::HUD;
     Entry.Position = Position;
-    Entry.Size = Size;
-    Entry.Texture = Texture;
-    Entry.Mode = static_cast<int>(Mode);
+    Entry.SizePixels = Size;
+
+    Entry.Mode = SEntryMode{.ID = Mode};
+
+    Queue2D.Enqueue(Entry);
+}
+
+void SRenderer::Draw2D(glm::vec3 Position, const SSpriteHandle &SpriteHandle) {
+    SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Position = Position;
+    Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
+    Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
     Queue2D.Enqueue(Entry);
 }
 
 void
-SRenderer::Draw2DEx(glm::vec3 Position, glm::vec2 Size, STexture *Texture, ESimple2DMode Mode, glm::vec4 ModeControlA) {
+SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA) {
     SEntry2D Entry;
-    Entry.Position = Position;
-    Entry.Size = Size;
-    Entry.Texture = Texture;
-    Entry.Mode = static_cast<int>(Mode);
-    Entry.ModeControlA = ModeControlA;
     Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Position = Position;
+    Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
+    Entry.UVRect = SpriteHandle.Sprite->UVRect;
+
+    Entry.Mode = SEntryMode{.ID = Mode, .ControlA = ModeControlA};
+
+    Queue2D.Enqueue(Entry);
+}
+
+void SRenderer::Draw2DHaze(glm::vec3 Position, const SSpriteHandle &SpriteHandle, float XIntensity, float YIntensity,
+                           float Speed) {
+
+    SEntry2D Entry;
+    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Position = Position;
+    Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
+    Entry.UVRect = SpriteHandle.Sprite->UVRect;
+
+    Entry.Mode = SEntryMode{.ID = SIMPLE2D_MODE_HAZE, .ControlA = {XIntensity, YIntensity, Speed, 0.0f}};
 
     Queue2D.Enqueue(Entry);
 }
 
 void
-SRenderer::Draw2DBackBlur(glm::vec3 Position, glm::vec2 Size, STexture *Texture, float Count, float Speed, float Step) {
+SRenderer::Draw2DBackBlur(glm::vec3 Position, const SSpriteHandle &SpriteHandle, float Count, float Speed, float Step) {
     SEntry2D Entry;
-    Entry.Position = Position;
-    Entry.Size = Size;
-    Entry.Texture = Texture;
-    Entry.Mode = static_cast<int>(ESimple2DMode::BackBlur);
-    Entry.ModeControlA.x = Count;
-    Entry.ModeControlA.y = Speed;
-    Entry.ModeControlA.z = Step;
     Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Position = Position;
+    Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
+    Entry.UVRect = SpriteHandle.Sprite->UVRect;
+
+    Entry.Mode = SEntryMode{.ID = SIMPLE2D_MODE_BACK_BLUR, .ControlA = {Count, Speed, Step, 0.0f}};
+
+    Queue2D.Enqueue(Entry);
+}
+
+void SRenderer::Draw2DGlow(glm::vec3 Position, const SSpriteHandle &SpriteHandle, glm::vec3 Color, float Intensity) {
+    SEntry2D Entry;
+    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Position = Position;
+    Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
+    Entry.UVRect = SpriteHandle.Sprite->UVRect;
+
+    Entry.Mode = SEntryMode{.ID = SIMPLE2D_MODE_GLOW, .ControlA = {Color, Intensity}};
+
+    Queue2D.Enqueue(Entry);
+}
+
+void
+SRenderer::Draw2DDisintegrate(glm::vec3 Position, const SSpriteHandle &SpriteHandle, const SSpriteHandle &NoiseHandle,
+                              float Progress) {
+    SEntry2D Entry;
+    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Position = Position;
+    Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
+    Entry.UVRect = SpriteHandle.Sprite->UVRect;
+
+    Entry.Mode = SEntryMode{
+            .ID = SIMPLE2D_MODE_DISINTEGRATE,
+            .ControlA = {Progress, 0.0f, 0.0f, 0.0f},
+            .ControlB = {
+                    NoiseHandle.Sprite->UVRect
+            }
+    };
 
     Queue2D.Enqueue(Entry);
 }
@@ -493,6 +586,27 @@ void STexture::InitFromPixels(int Width, int Height, bool bAlpha, const void *Pi
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void STexture::InitEmpty(int Width, int Height, bool bAlpha) {
+    glGenTextures(1, &ID);
+    glBindTexture(GL_TEXTURE_2D, ID);
+    glTexImage2D(GL_TEXTURE_2D, 0, bAlpha ? GL_RGBA : GL_RGB, Width, Height, 0, bAlpha ? GL_RGBA : GL_RGB,
+                 GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void STexture::InitFromResource(const SResource *Resource) {
+    int Width, Height, Channels;
+    auto Image = stbi_load_from_memory(Resource->Ptr, static_cast<int>(Resource->Length), &Width,
+                                       &Height, &Channels,
+                                       4);
+    InitFromPixels(Width, Height, Channels == 4, Image);
 }
 
 void STexture::Cleanup() {
@@ -501,4 +615,75 @@ void STexture::Cleanup() {
     std::cout << "Deleting STexture..." << std::endl;
 }
 
+void STexture::BindToTextureUnit(int TextureUnit) const {
+    glActiveTexture(GL_TEXTURE0 + TextureUnit);
+    glBindTexture(GL_TEXTURE_2D, ID);
+}
 
+std::array<int, ATLAS_MAX_SPRITE_COUNT> SAtlas::SortingIndices{};
+
+void SAtlas::Init(int InTextureUnitID) {
+    TextureUnitID = InTextureUnitID;
+    InitEmpty(WidthAndHeight, WidthAndHeight, true);
+    std::iota(SortingIndices.begin(), SortingIndices.end(), 0);
+}
+
+SSpriteHandle SAtlas::AddSprite(const SResource *Resource) {
+    int Width, Height, Channels, Result;
+    Result = stbi_info_from_memory(Resource->Ptr, static_cast<int>(Resource->Length), &Width, &Height, &Channels);
+    if (!Result) {
+        abort();
+    }
+    Sprites[CurrentIndex].SizePixels = {Width, Height};
+    Sprites[CurrentIndex].Resource = Resource;
+    return {this, &Sprites[CurrentIndex++]};
+}
+
+void SAtlas::Build() {
+    BindToTextureUnit(TextureUnitID);
+
+    std::sort(SortingIndices.begin(), SortingIndices.end(), [&](const int &IndexA, const int &IndexB) {
+        return Sprites[IndexA].SizePixels.y > Sprites[IndexB].SizePixels.y;
+    });
+
+    int CursorX{};
+    int CursorY{};
+    int MaxHeight{};
+
+    for (int Index = 0; Index < CurrentIndex; ++Index) {
+        auto &Sprite = Sprites[SortingIndices[Index]];
+        int Width, Height, Channels;
+        const auto Image = stbi_load_from_memory(Sprite.Resource->Ptr, static_cast<int>(Sprite.Resource->Length),
+                                                 &Width,
+                                                 &Height, &Channels,
+                                                 4);
+
+        if (CursorX + Width > WidthAndHeight) {
+            CursorY += MaxHeight;
+            CursorX = 0;
+            MaxHeight = 0;
+        }
+
+        if (CursorY + Height > WidthAndHeight) {
+            break;
+        }
+
+        float MinU = static_cast<float>(CursorX) / static_cast<float>(WidthAndHeight);
+        float MinV = static_cast<float>(CursorY) / static_cast<float>(WidthAndHeight);
+        float MaxU = MinU + (static_cast<float>(Width) / static_cast<float>(WidthAndHeight));
+        float MaxV = MinV + (static_cast<float>(Height) / static_cast<float>(WidthAndHeight));
+        Sprite.UVRect = {MinU, MinV, MaxU, MaxV};
+
+        glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        CursorX, CursorY,
+                        Width, Height,
+                        GL_RGBA,
+                        GL_UNSIGNED_BYTE, Image);
+
+        CursorX += Width;
+
+        if (Height > MaxHeight) {
+            MaxHeight = Height;
+        }
+    }
+}
