@@ -1,7 +1,6 @@
 #include "Level.hpp"
 
-SLevel::SLevel(std::vector<unsigned int> &&InGrid, unsigned int InWidth, unsigned int InHeight) {
-    Grid = InGrid;
-    Width = InWidth;
-    Height = InHeight;
+STile const &SLevel::GetTileAt(int X, int Y) {
+    auto Index = CoordsToIndex(X, Y);
+    return Grid[Index];
 }

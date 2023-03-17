@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <random>
 
-static std::random_device Dev;
-static std::mt19937 RNG(Dev());
-static std::uniform_real_distribution<float> NormalizedDistribution(0.0f, 1.0f);
+std::random_device RandomDevice;
+std::mt19937 RNG(RandomDevice());
+std::uniform_real_distribution<float> NormalizedDistribution(0.0f, 1.0f);
 
 float Utility::GetRandomFloat() {
     return NormalizedDistribution(RNG);

@@ -1,13 +1,17 @@
 #pragma once
 
-#include <vector>
+#include <array>
+#include "Tile.hpp"
+
+int constexpr LevelGridSize = 16 * 16;
 
 struct SLevel {
-    std::vector<unsigned int> Grid;
-    unsigned int Width;
-    unsigned int Height;
+    int Width{};
+    int Height{};
+    std::array<STile, LevelGridSize> Grid{};
 
-    SLevel(std::vector<unsigned int> &&InGrid, unsigned int InWidth, unsigned int InHeight);
+    STile const & GetTileAt(int X, int Y);
+    [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; };
 };
 
 

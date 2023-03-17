@@ -171,7 +171,8 @@ void SLevelGeometry::InitFromLevel(const SLevel &Level) {
             const auto Index = (Y * Level.Width) + X;
             const auto Tile = Level.Grid[Index];
 
-            if (Tile) {
+            if (std::any_of(Tile.Edges.begin(), Tile.Edges.end(),
+                            [](auto TileEdge) { return TileEdge != ETileEdge::Empty; })) {
                 auto XOffset = static_cast<float>(X);
                 auto YOffset = static_cast<float>(Y);
 

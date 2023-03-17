@@ -25,8 +25,6 @@
 #define ATLAS_PRIMARY2D 1
 #define ATLAS_PRIMARY3D 2
 
-
-
 struct SLevel;
 
 struct SProgram {

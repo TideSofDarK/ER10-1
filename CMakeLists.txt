@@ -71,6 +71,7 @@ target_sources(
         Source/Draw.cpp
         Source/Level.cpp
         Source/Player.cpp
+        Source/Tile.cpp
 )
 target_include_directories(
         ${PROJECT_NAME}

@@ -9,7 +9,7 @@ void SPlayer::Update(float DeltaTime) {
     EyeForwardCurrent = Utility::InterpolateToConstant(EyeForwardCurrent, EyeForwardTarget, DeltaTime, 4.0f);
 }
 
-SPlayer::SPlayer() : Direction(0) {
+SPlayer::SPlayer() : Direction(EDirection::North) {
     EyePositionCurrent = EyePositionTarget = {static_cast<float>(X), EYE_HEIGHT, static_cast<float>(Y)};
     SetDirection(Direction, true);
 }
@@ -25,17 +25,12 @@ void SPlayer::HandleInput(const SInputState InputState) {
     }
 }
 
-void SPlayer::SetDirection(EDirection NewDirection, bool bImmediate) {
-    Direction = static_cast<unsigned int>(NewDirection);
-    SetDirectionInternal(NewDirection, bImmediate);
-}
-
-void SPlayer::SetDirection(unsigned int NewDirection, bool bImmediate) {
+void SPlayer::SetDirection(unsigned NewDirection, bool bImmediate) {
     Direction = NewDirection;
-    SetDirectionInternal(static_cast<EDirection>(Direction), bImmediate);
+    SetDirectionInternal(static_cast<EDirection::Type>(Direction), bImmediate);
 }
 
-void SPlayer::SetDirectionInternal(EDirection NewDirection, bool bImmediate) {
+void SPlayer::SetDirectionInternal(EDirection::Type NewDirection, bool bImmediate) {
     EyeForwardTarget = {0.0f, 0.0f, 0.0f};
     switch (NewDirection) {
         case EDirection::North:
