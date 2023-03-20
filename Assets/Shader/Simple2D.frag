@@ -65,14 +65,14 @@ void main()
         float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).g;
         float progress = fract(u_modeControlA.x);
         progress = sineIn(progress);
-        float progressA = clamp(0.0, 1.0, progress * 2.0);
-        float progressB = clamp(0.0, 1.0, (progress * 2.0) - 1.0);
+        float progressA = clamp(progress * 2.0, 0.0, 1.0);
+        float progressB = clamp((progress * 2.0) - 1.0, 0.0, 1.0);
 
         float scanlineHeightNormalized = 1.0;
-        float scanlineHeight = mix(0.0, scanlineHeightNormalized, clamp(0.0, 1.0, progressA / scanlineHeightNormalized));
+        float scanlineHeight = mix(0.0, scanlineHeightNormalized, clamp(progressA / scanlineHeightNormalized, 0.0, 1.0));
         color.xyz += vec3(round((noise * 2.0) - smoothstep(progressA, progressA + scanlineHeight, f_texCoord.y)));
 
-        float scanlineHeightB = mix(0.0, scanlineHeightNormalized, clamp(0.0, 1.0, progressB / scanlineHeightNormalized));
+        float scanlineHeightB = mix(0.0, scanlineHeightNormalized, clamp(progressB / scanlineHeightNormalized, 0.0, 1.0));
         color.a -= color.a * ceil(progressB) * round((noise * 2.0) - smoothstep(progressB, progressB + scanlineHeightB, f_texCoord.y));
     }
 
