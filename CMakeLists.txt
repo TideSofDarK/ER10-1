@@ -7,11 +7,17 @@ project(EquinoxReach)
 set(EMBEDDED_ASSETS "")
 macro(embed_asset ASSET_PATH)
     set(ASSET_PATH_TEMP ${ASSET_PATH})
+    cmake_path(RELATIVE_PATH ASSET_PATH_TEMP BASE_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE ASSET_PATH_TEMP)
+
     cmake_path(GET ASSET_PATH_TEMP PARENT_PATH ASSET_DIR)
     cmake_path(GET ASSET_PATH_TEMP STEM ASSET_NAME)
     cmake_path(GET ASSET_PATH_TEMP EXTENSION ASSET_EX)
+
     cmake_path(ABSOLUTE_PATH ASSET_PATH_TEMP NORMALIZE OUTPUT_VARIABLE ASSET_PATH_TEMP)
+
     list(APPEND EMBEDDED_ASSETS "${PROJECT_BINARY_DIR}/${ASSET_NAME}${ASSET_EX}.o")
+
     add_custom_command(
             OUTPUT "${PROJECT_BINARY_DIR}/${ASSET_NAME}${ASSET_EX}.o"
             COMMAND ld -r -b binary -o "${PROJECT_BINARY_DIR}/${ASSET_NAME}${ASSET_EX}.o" "${ASSET_NAME}${ASSET_EX}"
@@ -25,19 +31,10 @@ macro(embed_asset ASSET_PATH)
     )
 endmacro()
 
-embed_asset(Assets/Frame.png)
-embed_asset(Assets/Angel.png)
-embed_asset(Assets/Ref.png)
-embed_asset(Assets/Noise.png)
-embed_asset(Assets/Shader/Shared.glsl)
-embed_asset(Assets/Shader/HUD.vert)
-embed_asset(Assets/Shader/HUD.frag)
-embed_asset(Assets/Shader/Simple2D.vert)
-embed_asset(Assets/Shader/Simple2D.frag)
-embed_asset(Assets/Shader/Simple3D.vert)
-embed_asset(Assets/Shader/Simple3D.frag)
-embed_asset(Assets/Shader/PostProcess.vert)
-embed_asset(Assets/Shader/PostProcess.frag)
+file(GLOB_RECURSE ASSET_FILES "Assets/*.png" "Assets/*.glsl" "Assets/*.vert" "Assets/*.frag")
+foreach (ASSET_FILE ${ASSET_FILES})
+    embed_asset(${ASSET_FILE})
+endforeach ()
 
 set(BUILD_SHARED_LIBS OFF)
 set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)

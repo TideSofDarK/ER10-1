@@ -181,7 +181,7 @@ struct SUniformBlock {
 
 enum class EProgram2DType {
     HUD,
-    Simple2D,
+    Uber2D,
 };
 
 struct SEntryMode {
@@ -279,9 +279,9 @@ struct SRenderer {
     SAtlas Atlases[3];
     STileset Tileset;
 
-    SProgram2D ProgramSimple2D;
     SProgram2D ProgramHUD;
-    SProgram3D ProgramSimple3D;
+    SProgram2D ProgramUber2D;
+    SProgram3D ProgramUber3D;
     SProgramPostProcess ProgramPostProcess;
 
     SFrameBuffer MainFrameBuffer;

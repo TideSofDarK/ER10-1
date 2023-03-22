@@ -8,7 +8,7 @@ void SPlayer::Update(float DeltaTime) {
     EyeForwardCurrent = Utility::InterpolateToConstant(EyeForwardCurrent, EyeForwardTarget, DeltaTime, 4.0f);
 }
 
-SPlayer::SPlayer() {
+SPlayer::SPlayer() : Direction(0) {
     EyePositionCurrent = EyePositionTarget = {static_cast<float>(X), EYE_HEIGHT, static_cast<float>(Y)};
     SetDirection(Direction, true);
 }

@@ -23,7 +23,7 @@ void main()
     vec2 texCoordAtlasSpace = convertUV(f_texCoord, u_uvRect);
     vec2 sizeAtlasSpace = vec2(u_uvRect.z - u_uvRect.x, u_uvRect.w - u_uvRect.y);
 
-    if (u_mode == SIMPLE2D_MODE_HAZE) {
+    if (u_mode == UBER2D_MODE_HAZE) {
         float xIntensity = u_modeControlA.x;
         float yIntensity = u_modeControlA.y;
         float speed = u_modeControlA.z;
@@ -33,7 +33,7 @@ void main()
 
     color = texture(u_primaryAtlas, texCoordAtlasSpace);
 
-    if (u_mode == SIMPLE2D_MODE_BACK_BLUR) {
+    if (u_mode == UBER2D_MODE_BACK_BLUR) {
         float step = 1.0 / u_modeControlA.x;
         float from = step * f_modeControlOutA.x;
         float to = from + step;
@@ -41,7 +41,7 @@ void main()
         color.a *= 0.5;
     }
 
-    if (u_mode == SIMPLE2D_MODE_GLOW) {
+    if (u_mode == UBER2D_MODE_GLOW) {
         float pixelSizeX = sizeAtlasSpace.x / u_sizeScreenSpace.x;
         float pixelSizeY = sizeAtlasSpace.y / u_sizeScreenSpace.y;
 
@@ -60,7 +60,7 @@ void main()
         color = vec4(mix(color.rgb * round(color.a), vec3(0.2, 0.7, 0.9), outlineColorAlpha), color.a + outlineMask);
     }
 
-    if (u_mode == SIMPLE2D_MODE_DISINTEGRATE) {
+    if (u_mode == UBER2D_MODE_DISINTEGRATE) {
         vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(1.0, 1.0), vec2(u_time / 10.0, u_time / 10.0), u_modeControlB);
         float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).g;
         float progress = fract(u_modeControlA.x);
@@ -76,7 +76,7 @@ void main()
         color.a -= color.a * ceil(progressB) * round((noise * 2.0) - smoothstep(progressB, progressB + scanlineHeightB, f_texCoord.y));
     }
 
-    if (u_mode == SIMPLE2D_MODE_DISINTEGRATE_PLASMA) {
+    if (u_mode == UBER2D_MODE_DISINTEGRATE_PLASMA) {
         vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(0.65, 0.65), vec2(u_random), u_modeControlB);
         float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).b;
         float progress = fract(u_modeControlA.x);

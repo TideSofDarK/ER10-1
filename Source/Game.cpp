@@ -119,7 +119,7 @@ void SGame::Run() {
 //        Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
 //        Renderer.Draw3D({4.0f, 0.0f, -2.0f}, &Renderer.Tileset);
         Renderer.Draw3DLevel(Level);
-        Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, SIMPLE2D_MODE_DISINTEGRATE_PLASMA,
+        Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
                           {Window.Seconds / 2.0, 0.9f, 0.2f, 0.1f},
                           NoiseSprite.Sprite->UVRect);
 //        Renderer.Draw2DHaze({85 - 4, 50.0f, 0.0f}, AngelSprite, 0.07f, 4.0f, 4.0f);

@@ -8,7 +8,7 @@ layout (std140) uniform ub_common
 };
 uniform int u_mode;
 uniform vec4 u_modeControlA;
-uniform mat4 u_model[SIMPLE3D_MODEL_COUNT];
+uniform mat4 u_model[UBER3D_MODEL_COUNT];
 
 out vec3 f_positionWorldSpace;
 out vec4 f_vertexColor;

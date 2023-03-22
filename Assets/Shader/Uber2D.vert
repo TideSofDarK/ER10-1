@@ -56,7 +56,7 @@ void main()
     vec2 ndcCenter = vec2(ndcOrigin.x + (ndcSize.x / 2.0), ndcOrigin.y + (ndcSize.y / 2.0));
 
     // Back Blur
-    if (u_mode == SIMPLE2D_MODE_BACK_BLUR) {
+    if (u_mode == UBER2D_MODE_BACK_BLUR) {
         f_modeControlOutA.x = ((u_modeControlA.x - 1) - gl_InstanceID);
         float from = u_modeControlA.z * f_modeControlOutA.x;
         float to = from + u_modeControlA.z;

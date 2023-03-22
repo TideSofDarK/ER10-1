@@ -27,10 +27,10 @@ static std::string const ShaderConstants{
 DEFINE_RESOURCE(Shared_glsl)
 DEFINE_RESOURCE(HUD_vert)
 DEFINE_RESOURCE(HUD_frag)
-DEFINE_RESOURCE(Simple2D_vert)
-DEFINE_RESOURCE(Simple2D_frag)
-DEFINE_RESOURCE(Simple3D_vert)
-DEFINE_RESOURCE(Simple3D_frag)
+DEFINE_RESOURCE(Uber2D_vert)
+DEFINE_RESOURCE(Uber2D_frag)
+DEFINE_RESOURCE(Uber3D_vert)
+DEFINE_RESOURCE(Uber3D_frag)
 DEFINE_RESOURCE(PostProcess_vert)
 DEFINE_RESOURCE(PostProcess_frag)
 
@@ -387,15 +387,15 @@ void SRenderer::Init(int Width, int Height) {
     ProgramHUD.Use();
     glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 
-    ProgramSimple2D.Init(&ResourceSimple2D_vert, &ResourceSimple2D_frag);
-    ProgramSimple2D.Use();
-    glUniform1i(ProgramSimple2D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
-    glUniform1i(ProgramSimple2D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
+    ProgramUber2D.Init(&ResourceUber2D_vert, &ResourceUber2D_frag);
+    ProgramUber2D.Use();
+    glUniform1i(ProgramUber2D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glUniform1i(ProgramUber2D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
 
-    ProgramSimple3D.Init(&ResourceSimple3D_vert, &ResourceSimple3D_frag);
-    ProgramSimple3D.Use();
-    glUniform1i(ProgramSimple3D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
-    glUniform1i(ProgramSimple3D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
+    ProgramUber3D.Init(&ResourceUber3D_vert, &ResourceUber3D_frag);
+    ProgramUber3D.Use();
+    glUniform1i(ProgramUber3D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glUniform1i(ProgramUber3D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
 
     ProgramPostProcess.Init(&ResourcePostProcess_vert, &ResourcePostProcess_frag);
     ProgramPostProcess.Use();
@@ -412,8 +412,8 @@ void SRenderer::Cleanup() {
     Quad2D.Cleanup();
     Tileset.Cleanup();
     ProgramHUD.Cleanup();
-    ProgramSimple2D.Cleanup();
-    ProgramSimple3D.Cleanup();
+    ProgramUber2D.Cleanup();
+    ProgramUber3D.Cleanup();
     ProgramPostProcess.Cleanup();
     Queue2D.Cleanup();
     Queue3D.Cleanup();
@@ -430,7 +430,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
 
     Queue3D.CommonUniformBlock.Bind();
 
-    ProgramSimple3D.Use();
+    ProgramUber3D.Use();
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     for (int Index = 0; Index < Queue3D.CurrentIndex; ++Index) {
@@ -443,7 +443,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
             for (int DrawCallIndex = 0; DrawCallIndex < Entry.InstancedDrawCallCount; ++DrawCallIndex) {
                 auto &DrawCall = *(Entry.InstancedDrawCall + DrawCallIndex);
                 if (DrawCall.Count > 0) {
-                    glUniformMatrix4fv(ProgramSimple3D.UniformModelID, DrawCall.Count, GL_FALSE,
+                    glUniformMatrix4fv(ProgramUber3D.UniformModelID, DrawCall.Count, GL_FALSE,
                                        &DrawCall.Transform[0][0][0]);
                     glDrawElementsInstanced(GL_TRIANGLES,
                                             DrawCall.SubGeometry->ElementCount,
@@ -453,7 +453,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
                 }
             }
         } else {
-            glUniformMatrix4fv(ProgramSimple3D.UniformModelID, 1, GL_FALSE, &Entry.Model[0][0]);
+            glUniformMatrix4fv(ProgramUber3D.UniformModelID, 1, GL_FALSE, &Entry.Model[0][0]);
             glDrawElements(GL_TRIANGLES, Entry.Geometry->ElementCount, GL_UNSIGNED_SHORT, nullptr);
         }
     }
@@ -479,8 +479,8 @@ void SRenderer::Flush(const SWindowData &WindowData) {
             case EProgram2DType::HUD:
                 Program = &ProgramHUD;
                 break;
-            case EProgram2DType::Simple2D:
-                Program = &ProgramSimple2D;
+            case EProgram2DType::Uber2D:
+                Program = &ProgramUber2D;
             default:
                 break;
         }
@@ -498,8 +498,8 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         }
         glUniform1i(Program->UniformModeID, Mode.ID);
 
-        if (Entry.Program2DType == EProgram2DType::Simple2D) {
-            if (Mode.ID == SIMPLE2D_MODE_BACK_BLUR) {
+        if (Entry.Program2DType == EProgram2DType::Uber2D) {
+            if (Mode.ID == UBER2D_MODE_BACK_BLUR) {
                 glDrawElementsInstanced(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr,
                                         static_cast<int>(Mode.ControlA[0]));
                 glUniform1i(Program->UniformModeID, 0);
@@ -549,7 +549,7 @@ void SRenderer::DrawHUD(glm::vec3 Position, glm::vec2 Size, int Mode) {
 
 void SRenderer::Draw2D(glm::vec3 Position, const SSpriteHandle &SpriteHandle) {
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
@@ -560,7 +560,7 @@ void SRenderer::Draw2D(glm::vec3 Position, const SSpriteHandle &SpriteHandle) {
 void
 SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA) {
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
@@ -574,7 +574,7 @@ void
 SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA,
                     glm::vec4 ModeControlB) {
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
@@ -588,12 +588,12 @@ void SRenderer::Draw2DHaze(glm::vec3 Position, const SSpriteHandle &SpriteHandle
                            float Speed) {
 
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = SIMPLE2D_MODE_HAZE, .ControlA = {XIntensity, YIntensity, Speed, 0.0f}};
+    Entry.Mode = SEntryMode{.ID = UBER2D_MODE_HAZE, .ControlA = {XIntensity, YIntensity, Speed, 0.0f}};
 
     Queue2D.Enqueue(Entry);
 }
@@ -601,24 +601,24 @@ void SRenderer::Draw2DHaze(glm::vec3 Position, const SSpriteHandle &SpriteHandle
 void
 SRenderer::Draw2DBackBlur(glm::vec3 Position, const SSpriteHandle &SpriteHandle, float Count, float Speed, float Step) {
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = SIMPLE2D_MODE_BACK_BLUR, .ControlA = {Count, Speed, Step, 0.0f}};
+    Entry.Mode = SEntryMode{.ID = UBER2D_MODE_BACK_BLUR, .ControlA = {Count, Speed, Step, 0.0f}};
 
     Queue2D.Enqueue(Entry);
 }
 
 void SRenderer::Draw2DGlow(glm::vec3 Position, const SSpriteHandle &SpriteHandle, glm::vec3 Color, float Intensity) {
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = SIMPLE2D_MODE_GLOW, .ControlA = {Color, Intensity}};
+    Entry.Mode = SEntryMode{.ID = UBER2D_MODE_GLOW, .ControlA = {Color, Intensity}};
 
     Queue2D.Enqueue(Entry);
 }
@@ -627,13 +627,13 @@ void
 SRenderer::Draw2DDisintegrate(glm::vec3 Position, const SSpriteHandle &SpriteHandle, const SSpriteHandle &NoiseHandle,
                               float Progress) {
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::Simple2D;
+    Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
     Entry.Mode = SEntryMode{
-            .ID = SIMPLE2D_MODE_DISINTEGRATE,
+            .ID = UBER2D_MODE_DISINTEGRATE,
             .ControlA = {Progress, 0.0f, 0.0f, 0.0f},
             .ControlB = {
                     NoiseHandle.Sprite->UVRect
@@ -650,7 +650,7 @@ void SRenderer::Draw3D(glm::vec3 Position, SGeometry *Geometry) {
     Entry.Model = glm::translate(glm::identity<glm::mat4x4>(), Position);
 
     Entry.Mode = SEntryMode{
-            .ID = SIMPLE3D_MODE_BASIC
+            .ID = UBER3D_MODE_BASIC
     };
 
     Queue3D.Enqueue(Entry);
@@ -705,7 +705,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level) {
     Entry.InstancedDrawCallCount = 2;
 
     Entry.Mode = SEntryMode{
-            .ID = SIMPLE3D_MODE_LEVEL
+            .ID = UBER3D_MODE_LEVEL
     };
 
     Queue3D.Enqueue(Entry);
