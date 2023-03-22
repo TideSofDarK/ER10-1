@@ -3,44 +3,56 @@
 #include <array>
 #include "CommonTypes.hpp"
 
-namespace ETileEdge {
-    enum Type {
-        Empty,
-        Wall,
-        Door
-    };
-}
+enum class ETileEdgeType {
+    Empty,
+    Wall,
+    Door
+};
+
+
+enum class ETileType {
+    Empty,
+    Floor,
+    Hole
+};
 
 struct STile {
-    std::array<ETileEdge::Type, EDirection::Count> Edges{};
+    std::array<ETileEdgeType, DIRECTION_COUNT> Edges{};
+
+    ETileType Type{ETileType::Floor};
 
     static STile Empty() {
-        return STile{};
+        return STile{.Type = ETileType::Empty};
     };
 
-    static STile WallNorth() { return STile{{ETileEdge::Wall}}; };
+    static STile WallsNoFloor() {
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall},
+                     ETileType::Empty};
+    };
 
-    static STile WallEast() { return STile{{ETileEdge::Empty, ETileEdge::Wall}}; };
+    static STile WallNorth() { return STile{{ETileEdgeType::Wall}}; };
 
-    static STile WallSouth() { return STile{{ETileEdge::Empty, ETileEdge::Empty, ETileEdge::Wall}}; };
+    static STile WallEast() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
+
+    static STile WallSouth() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
 
     static STile WallWest() {
-        return STile{{ETileEdge::Empty, ETileEdge::Empty, ETileEdge::Empty, ETileEdge::Wall}};
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 
     static STile WallNorthWest() {
-        return STile{{ETileEdge::Wall, ETileEdge::Empty, ETileEdge::Empty, ETileEdge::Wall}};
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 
     static STile WallNorthEast() {
-        return STile{{ETileEdge::Wall, ETileEdge::Wall, ETileEdge::Empty, ETileEdge::Empty}};
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty}};
     };
 
     static STile WallSouthWest() {
-        return STile{{ETileEdge::Empty, ETileEdge::Empty, ETileEdge::Wall, ETileEdge::Wall}};
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
     };
 
     static STile WallSouthEast() {
-        return STile{{ETileEdge::Empty, ETileEdge::Wall, ETileEdge::Wall, ETileEdge::Empty}};
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty}};
     };
 };

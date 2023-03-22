@@ -5,6 +5,7 @@
 #include "Draw.hpp"
 #include "Player.hpp"
 #include "Window.hpp"
+#include "Level.hpp"
 
 struct SGame {
 private:
@@ -17,7 +18,7 @@ public:
     SInputState OldInputState{}, InputState{};
     SCamera Camera;
     SPlayer Player;
-    SLevelGeometry LevelGeometry;
+    SLevel Level;
 
     SSpriteHandle NoiseSprite;
     SSpriteHandle RefSprite;

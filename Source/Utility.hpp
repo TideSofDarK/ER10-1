@@ -1,8 +1,12 @@
 #pragma once
 
 #include "glm/geometric.hpp"
+#include "glm/mat4x4.hpp"
+#include "CommonTypes.hpp"
 
 namespace Utility {
+    float RotationFromDirection(EDirection Direction);
+
     float GetRandomFloat();
 
     float SmoothDamp(float Current, float Target, float SmoothTime, float MaxSpeed, float DeltaTime);

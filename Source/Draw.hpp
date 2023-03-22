@@ -1,8 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <tuple>
 #include <array>
 #include <optional>
+#include <functional>
 
 #include "glm/glm.hpp"
 #include "glm/mat4x4.hpp"
@@ -10,7 +12,7 @@
 #include "Resource.hpp"
 
 #define RENDERER_QUEUE2D_SIZE 16
-#define RENDERER_QUEUE3D_SIZE 16
+#define RENDERER_QUEUE3D_SIZE 8
 
 #define TEXTURE_UNIT_TRANSIENT 0
 #define TEXTURE_UNIT_ATLAS_COMMON 1
@@ -29,6 +31,10 @@ struct SLevel;
 
 struct SProgram {
 private:
+    static void CheckShader(unsigned ShaderID);
+
+    static void CheckProgram(unsigned ShaderID);
+
     static unsigned int CreateVertexShader(const SResource *Resource);
 
     static unsigned int CreateFragmentShader(const SResource *Resource);
@@ -36,10 +42,13 @@ private:
     static unsigned int CreateProgram(unsigned int VertexShader, unsigned int FragmentShader);
 
 protected:
-    virtual void InitUniforms() = 0;
+    virtual void InitUniforms();
 
 public:
-    unsigned int ID{};
+    unsigned ID{};
+    int UniformModeID{};
+    int UniformModeControlAID{};
+    int UniformModeControlBID{};
 
     void
     Init(const SResource *VertexShaderData, const SResource *FragmentShaderData);
@@ -63,9 +72,6 @@ protected:
 
 public:
     int UniformBlockCommon2D{};
-    int UniformModeID{};
-    int UniformModeControlAID{};
-    int UniformModeControlBID{};
     int UniformPositionScreenSpaceID{};
     int UniformSizeScreenSpaceID{};
     int UniformUVRectID{};
@@ -109,12 +115,25 @@ struct SGeometry {
     virtual void Cleanup();
 };
 
-struct SLevelGeometry : SGeometry {
-private:
-    static std::vector<glm::vec3> Vertices;
-    static std::vector<unsigned short> Indices;
-public:
-    void InitFromLevel(const SLevel &Level);
+struct SSubGeometry {
+    int ElementOffset{};
+    int ElementCount{};
+};
+
+namespace ETileGeometryType {
+    enum {
+        Floor,
+        Wall,
+        Ceil,
+        Count
+    };
+}
+
+struct STileset : SGeometry {
+    /**  */
+    std::array<SSubGeometry, 5> TileGeometry;
+
+    void InitPlaceholder();
 };
 
 struct SCamera {
@@ -171,16 +190,33 @@ struct SEntryMode {
     glm::vec4 ControlB{};
 };
 
-struct SEntry2D {
+struct SEntry {
+    std::optional<SEntryMode> Mode{};
+};
+
+struct SEntry2D : SEntry {
     EProgram2DType Program2DType{};
     glm::vec3 Position{};
     glm::vec2 SizePixels{};
     glm::vec4 UVRect{};
-    std::optional<SEntryMode> Mode{};
 };
 
-struct SEntry3D {
+struct SInstancedDrawCall {
+    SSubGeometry *SubGeometry{};
+    int Count{};
+    std::vector<glm::mat4x4> Transform;
+};
+
+template<int Size>
+struct SInstancedDrawData {
+    std::array<SInstancedDrawCall, Size> DrawCalls;
+};
+
+struct SEntry3D : SEntry {
+    glm::mat4x4 Model{};
     SGeometry *Geometry{};
+    SInstancedDrawCall *InstancedDrawCall{};
+    int InstancedDrawCallCount{};
 };
 
 template<typename TEntry, int Size>
@@ -241,12 +277,16 @@ struct SRenderer {
     SRenderQueue<SEntry2D, RENDERER_QUEUE2D_SIZE> Queue2D;
     SRenderQueue<SEntry3D, RENDERER_QUEUE3D_SIZE> Queue3D;
     SAtlas Atlases[3];
+    STileset Tileset;
+
     SProgram2D ProgramSimple2D;
     SProgram2D ProgramHUD;
     SProgram3D ProgramSimple3D;
     SProgramPostProcess ProgramPostProcess;
+
     SFrameBuffer MainFrameBuffer;
     SGeometry Quad2D;
+    SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;
 
     void Init(int Width, int Height);
 
@@ -279,6 +319,8 @@ struct SRenderer {
 #pragma region Queue_3D_API
 
     void Draw3D(glm::vec3 Position, SGeometry *Geometry);
+
+    void Draw3DLevel(const SLevel &Level);
 
 #pragma endregion
 };

@@ -5,9 +5,7 @@
 
 struct SPlayer {
     /** Allowed values are 0..3 */
-//    unsigned Direction: 2;
-//    EDirection::Type Direction: 2;
-    unsigned Direction: EDirection::Count / 2;
+    unsigned Direction: 2{};
     int X{};
     int Y{};
 
@@ -24,6 +22,5 @@ struct SPlayer {
 
     void SetDirection(unsigned NewDirection, bool bImmediate);
 
-private:
-    void SetDirectionInternal(EDirection::Type NewDirection, bool bImmediate);
+    void SetDirection(EDirection NewDirection, bool bImmediate);
 };

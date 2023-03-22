@@ -14,15 +14,15 @@ struct SWindowData {
     bool bQuit{};
 };
 
-namespace EDirection {
-    enum Type : unsigned {
-        North = 0,
-        East,
-        South,
-        West,
-        Count
-    };
-}
+enum class EDirection : unsigned {
+    North = 0,
+    East,
+    South,
+    West,
+    Count
+};
+
+#define DIRECTION_COUNT static_cast<unsigned>(EDirection::Count)
 
 enum class EKeyState : unsigned {
     None,

@@ -34,8 +34,35 @@ DEFINE_RESOURCE(Simple3D_frag)
 DEFINE_RESOURCE(PostProcess_vert)
 DEFINE_RESOURCE(PostProcess_frag)
 
+void SProgram::CheckShader(unsigned int ShaderID) {
+    int Success;
+    glGetShaderiv(ShaderID, GL_COMPILE_STATUS, &Success);
+    if (!Success) {
+        GLint MaxLength = 0;
+        glGetShaderiv(ShaderID, GL_INFO_LOG_LENGTH, &MaxLength);
+        GLsizei LengthQuery(0);
+        std::vector<GLchar> InfoLog(MaxLength + 1, '\0');
+        glGetShaderInfoLog(ShaderID, GLsizei(InfoLog.size()), &LengthQuery, &InfoLog[0]);
+        std::cout << std::string(InfoLog.begin(), InfoLog.end()) << std::endl;
+    }
+}
+
+void SProgram::CheckProgram(unsigned int ProgramID) {
+    int Success;
+    glValidateProgram(ProgramID);
+    glGetProgramiv(ProgramID, GL_VALIDATE_STATUS, &Success);
+    if (!Success) {
+        GLint MaxLength = 0;
+        glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &MaxLength);
+        GLsizei LengthQuery(0);
+        std::vector<GLchar> InfoLog(MaxLength + 1, '\0');
+        glGetProgramInfoLog(ProgramID, GLsizei(InfoLog.size()), &LengthQuery, &InfoLog[0]);
+        std::cout << std::string(InfoLog.begin(), InfoLog.end()) << std::endl;
+    }
+}
+
 unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
-    unsigned VertexShader = glCreateShader(GL_VERTEX_SHADER);
+    unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
             reinterpret_cast<const char *>(ResourceShared_glsl.Ptr),
@@ -48,20 +75,14 @@ unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
             static_cast<int>(ShaderConstants.length()),
             static_cast<int>(Resource->Length)
     };
-    glShaderSource(VertexShader, 4, Blocks, &Lengths[0]);
-    glCompileShader(VertexShader);
-    int Success;
-    glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &Success);
-    if (!Success) {
-        char Log[512];
-        glGetShaderInfoLog(VertexShader, 512, nullptr, Log);
-        std::cout << Log << std::endl;
-    }
-    return VertexShader;
+    glShaderSource(VertexShaderID, 4, Blocks, &Lengths[0]);
+    glCompileShader(VertexShaderID);
+    CheckShader(VertexShaderID);
+    return VertexShaderID;
 }
 
 unsigned int SProgram::CreateFragmentShader(const SResource *Resource) {
-    unsigned FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
             reinterpret_cast<const char *>(ResourceShared_glsl.Ptr),
@@ -74,31 +95,25 @@ unsigned int SProgram::CreateFragmentShader(const SResource *Resource) {
             static_cast<int>(ShaderConstants.length()),
             static_cast<int>(Resource->Length)
     };
-    glShaderSource(FragmentShader, 4, Blocks, &Lengths[0]);
-    glCompileShader(FragmentShader);
-    int Success;
-    glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &Success);
-    if (!Success) {
-        char Log[512];
-        glGetShaderInfoLog(FragmentShader, 512, nullptr, Log);
-        std::cout << Log << std::endl;
-    }
-    return FragmentShader;
+    glShaderSource(FragmentShaderID, 4, Blocks, &Lengths[0]);
+    glCompileShader(FragmentShaderID);
+    CheckShader(FragmentShaderID);
+    return FragmentShaderID;
 }
 
 unsigned int SProgram::CreateProgram(unsigned int VertexShader, unsigned int FragmentShader) {
-    unsigned Program = glCreateProgram();
-    glAttachShader(Program, VertexShader);
-    glAttachShader(Program, FragmentShader);
-    glLinkProgram(Program);
-    int Success;
-    glGetProgramiv(Program, GL_LINK_STATUS, &Success);
-    if (!Success) {
-        char Log[512];
-        glGetProgramInfoLog(Program, 512, nullptr, Log);
-        printf("%s\n", Log);
-    }
-    return Program;
+    unsigned ProgramID = glCreateProgram();
+    glAttachShader(ProgramID, VertexShader);
+    glAttachShader(ProgramID, FragmentShader);
+    glLinkProgram(ProgramID);
+    CheckProgram(ProgramID);
+    return ProgramID;
+}
+
+void SProgram::InitUniforms() {
+    UniformModeID = glGetUniformLocation(ID, "u_mode");
+    UniformModeControlAID = glGetUniformLocation(ID, "u_modeControlA");
+    UniformModeControlBID = glGetUniformLocation(ID, "u_modeControlB");
 }
 
 void SProgram::Init(const SResource *VertexShaderData, const SResource *FragmentShaderData) {
@@ -107,6 +122,7 @@ void SProgram::Init(const SResource *VertexShaderData, const SResource *Fragment
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
+    SProgram::InitUniforms();
     InitUniforms();
 }
 
@@ -135,9 +151,6 @@ void SProgram3D::InitUniforms() {
 void SProgram2D::InitUniforms() {
     UniformBlockCommon2D = glGetUniformBlockIndex(ID, "ub_common");
     glUniformBlockBinding(ID, UniformBlockCommon2D, 0);
-    UniformModeID = glGetUniformLocation(ID, "u_mode");
-    UniformModeControlAID = glGetUniformLocation(ID, "u_modeControlA");
-    UniformModeControlBID = glGetUniformLocation(ID, "u_modeControlB");
     UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
     UniformUVRectID = glGetUniformLocation(ID, "u_uvRect");
@@ -154,51 +167,50 @@ void SGeometry::Cleanup() {
     std::cout << "Deleting SGeometry with ElementCount == " + std::to_string(ElementCount) << std::endl;
 }
 
-std::vector<glm::vec3> SLevelGeometry::Vertices;
-std::vector<unsigned short> SLevelGeometry::Indices;
+void STileset::InitPlaceholder() {
+    std::vector<glm::vec3> TempVertices;
+    TempVertices.reserve(8);
+    std::vector<unsigned short> Indices;
+    Indices.reserve(12);
 
-void SLevelGeometry::InitFromLevel(const SLevel &Level) {
-    ElementCount = 0;
+    /** Floor Quad */
+    auto &FloorGeometry = TileGeometry[ETileGeometryType::Floor];
+    FloorGeometry.ElementOffset = 0;
+    FloorGeometry.ElementCount = 6;
+    Indices.emplace_back(0);
+    Indices.emplace_back(1);
+    Indices.emplace_back(2);
+    Indices.emplace_back(0);
+    Indices.emplace_back(2);
+    Indices.emplace_back(3);
 
-    Vertices.reserve(Level.Width * Level.Height * 4);
-    Vertices.clear();
-    Indices.reserve(Level.Width * Level.Height * 6);
-    Indices.clear();
+    TempVertices.emplace_back(0.5f, 0.0f, 0.5f);
+    TempVertices.emplace_back(0.5f, 0.0f, -0.5f);
+    TempVertices.emplace_back(-0.5f, 0.0f, -0.5f);
+    TempVertices.emplace_back(-0.5f, 0.0f, 0.5f);
 
-    unsigned short CurrentQuadIndex = 0;
-    for (unsigned int X = 0; X < Level.Width; ++X) {
-        for (unsigned int Y = 0; Y < Level.Height; ++Y) {
-            const auto Index = (Y * Level.Width) + X;
-            const auto Tile = Level.Grid[Index];
+    /** Wall Quad */
+    auto &WallGeometry = TileGeometry[ETileGeometryType::Wall];
+    WallGeometry.ElementOffset = 12;
+    WallGeometry.ElementCount = 6;
+    Indices.emplace_back(4 + 0);
+    Indices.emplace_back(4 + 1);
+    Indices.emplace_back(4 + 2);
+    Indices.emplace_back(4 + 0);
+    Indices.emplace_back(4 + 2);
+    Indices.emplace_back(4 + 3);
 
-            if (std::any_of(Tile.Edges.begin(), Tile.Edges.end(),
-                            [](auto TileEdge) { return TileEdge != ETileEdge::Empty; })) {
-                auto XOffset = static_cast<float>(X);
-                auto YOffset = static_cast<float>(Y);
-
-                Indices.emplace_back(CurrentQuadIndex);
-                Indices.emplace_back(CurrentQuadIndex + 1);
-                Indices.emplace_back(CurrentQuadIndex + 2);
-                Indices.emplace_back(CurrentQuadIndex);
-                Indices.emplace_back(CurrentQuadIndex + 2);
-                Indices.emplace_back(CurrentQuadIndex + 3);
-
-                Vertices.emplace_back(0.5f + XOffset, 0.0f, 0.5f + YOffset);
-                Vertices.emplace_back(0.5f + XOffset, 0.0f, -0.5f + YOffset);
-                Vertices.emplace_back(-0.5f + XOffset, 0.0f, -0.5f + YOffset);
-                Vertices.emplace_back(-0.5f + XOffset, 0.0f, 0.5f + YOffset);
-
-                CurrentQuadIndex += 4;
-            }
-        }
-    }
+    TempVertices.emplace_back(-0.5f, 1.0f, -0.5f);
+    TempVertices.emplace_back(0.5f, 1.0f, -0.5f);
+    TempVertices.emplace_back(0.5f, 0.0f, -0.5f);
+    TempVertices.emplace_back(-0.5f, 0.0f, -0.5f);
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(Vertices.size() * sizeof(glm::vec3)), &Vertices[0],
+    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(TempVertices.size() * sizeof(glm::vec3)), &TempVertices[0],
                  GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -209,6 +221,8 @@ void SLevelGeometry::InitFromLevel(const SLevel &Level) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<long long>(ElementCount * sizeof(unsigned short)), &Indices[0],
                  GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
 }
 
 void SCamera::Regenerate(float InFieldOfViewY, float InAspect) {
@@ -386,6 +400,8 @@ void SRenderer::Init(int Width, int Height) {
     ProgramPostProcess.Init(&ResourcePostProcess_vert, &ResourcePostProcess_frag);
     ProgramPostProcess.Use();
     glUniform1i(ProgramPostProcess.UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
+
+    Tileset.InitPlaceholder();
 }
 
 void SRenderer::Cleanup() {
@@ -394,6 +410,7 @@ void SRenderer::Cleanup() {
         Atlas.Cleanup();
     }
     Quad2D.Cleanup();
+    Tileset.Cleanup();
     ProgramHUD.Cleanup();
     ProgramSimple2D.Cleanup();
     ProgramSimple3D.Cleanup();
@@ -408,15 +425,12 @@ void SRenderer::Flush(const SWindowData &WindowData) {
 
     /** Draw 3D */
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+//    glEnable(GL_CULL_FACE);
     glViewport(SCENE_OFFSET, SCENE_HEIGHT - SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
 
     Queue3D.CommonUniformBlock.Bind();
 
     ProgramSimple3D.Use();
-
-    auto ModelMatrix = glm::mat4(1.0);
-    glUniformMatrix4fv(ProgramSimple3D.UniformModelID, 1, GL_FALSE, &ModelMatrix[0][0]);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     for (int Index = 0; Index < Queue3D.CurrentIndex; ++Index) {
@@ -425,7 +439,23 @@ void SRenderer::Flush(const SWindowData &WindowData) {
             continue;
         }
         glBindVertexArray(Entry.Geometry->VAO);
-        glDrawElements(GL_TRIANGLES, Entry.Geometry->ElementCount, GL_UNSIGNED_SHORT, nullptr);
+        if (Entry.InstancedDrawCall != nullptr) {
+            for (int DrawCallIndex = 0; DrawCallIndex < Entry.InstancedDrawCallCount; ++DrawCallIndex) {
+                auto &DrawCall = *(Entry.InstancedDrawCall + DrawCallIndex);
+                if (DrawCall.Count > 0) {
+                    glUniformMatrix4fv(ProgramSimple3D.UniformModelID, DrawCall.Count, GL_FALSE,
+                                       &DrawCall.Transform[0][0][0]);
+                    glDrawElementsInstanced(GL_TRIANGLES,
+                                            DrawCall.SubGeometry->ElementCount,
+                                            GL_UNSIGNED_SHORT,
+                                            reinterpret_cast<void *>(DrawCall.SubGeometry->ElementOffset),
+                                            DrawCall.Count);
+                }
+            }
+        } else {
+            glUniformMatrix4fv(ProgramSimple3D.UniformModelID, 1, GL_FALSE, &Entry.Model[0][0]);
+            glDrawElements(GL_TRIANGLES, Entry.Geometry->ElementCount, GL_UNSIGNED_SHORT, nullptr);
+        }
     }
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -614,7 +644,71 @@ SRenderer::Draw2DDisintegrate(glm::vec3 Position, const SSpriteHandle &SpriteHan
 }
 
 void SRenderer::Draw3D(glm::vec3 Position, SGeometry *Geometry) {
-    Queue3D.Enqueue({Geometry});
+    SEntry3D Entry;
+
+    Entry.Geometry = Geometry;
+    Entry.Model = glm::translate(glm::identity<glm::mat4x4>(), Position);
+
+    Entry.Mode = SEntryMode{
+            .ID = SIMPLE3D_MODE_BASIC
+    };
+
+    Queue3D.Enqueue(Entry);
+}
+
+void SRenderer::Draw3DLevel(const SLevel &Level) {
+    for (auto &DrawCall: LevelDrawData.DrawCalls) {
+        DrawCall.Count = 0;
+        DrawCall.Transform.clear();
+    }
+
+    auto &FloorDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Floor];
+    FloorDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::Floor];
+
+    auto &WallDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Wall];
+    WallDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::Wall];
+
+    for (unsigned int X = 0; X < Level.Width; ++X) {
+        for (unsigned int Y = 0; Y < Level.Height; ++Y) {
+            const auto Index = (Y * Level.Width) + X;
+            const auto &Tile = Level.Grid[Index];
+
+            auto XOffset = static_cast<float>(X);
+            auto YOffset = static_cast<float>(Y);
+
+            if (Tile.Type == ETileType::Floor) {
+                FloorDrawCall.Transform.push_back(
+                        glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset)));
+                FloorDrawCall.Count++;
+            }
+
+            for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
+                auto &TileEdge = Tile.Edges[Direction];
+
+                if (TileEdge != ETileEdgeType::Empty) {
+                    auto Transform = glm::identity<glm::mat4x4>();
+                    Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
+                    Transform = glm::rotate(Transform, Utility::RotationFromDirection(EDirection{Direction}),
+                                            {0.0f, 1.0f, 0.0f});
+                    WallDrawCall.Transform.push_back(Transform);
+                    WallDrawCall.Count++;
+                }
+            }
+        }
+    }
+
+    SEntry3D Entry;
+
+    Entry.Geometry = &Tileset;
+    Entry.Model = glm::translate(glm::identity<glm::mat4x4>(), glm::zero<glm::vec3>());
+    Entry.InstancedDrawCall = &LevelDrawData.DrawCalls[0];
+    Entry.InstancedDrawCallCount = 2;
+
+    Entry.Mode = SEntryMode{
+            .ID = SIMPLE3D_MODE_LEVEL
+    };
+
+    Queue3D.Enqueue(Entry);
 }
 
 void STexture::InitFromPixels(int Width, int Height, bool bAlpha, const void *Pixels) {
@@ -730,3 +824,4 @@ void SAtlas::Build() {
         }
     }
 }
+

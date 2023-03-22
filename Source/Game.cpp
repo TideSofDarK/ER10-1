@@ -27,25 +27,23 @@ SGame::SGame() {
     FrameSprite = PrimaryAtlas2D.AddSprite(&ResourceFrame_png);
     PrimaryAtlas2D.Build();
 
-    Player.X = 1;
-    Player.Y = 1;
-    Player.SetDirection(EDirection::West, true);
+    Player.X = 0;
+    Player.Y = 0;
+    Player.SetDirection(EDirection::North, true);
 
     Camera.Regenerate(45.0f, SCENE_ASPECT);
 
-    SLevel Level{
+    Level = SLevel{
             5,
             5,
             {
                 STile::WallNorthWest(),STile::WallNorth(),STile::WallNorth(),STile::WallNorth(),STile::WallNorthEast(),
                 STile::WallWest(),STile(),STile(),STile(),STile::WallEast(),
-                STile::WallWest(),STile(),STile(),STile(),STile::WallEast(),
+                STile::WallWest(),STile(),STile::WallsNoFloor(),STile(),STile::WallEast(),
                 STile::WallWest(),STile(),STile(),STile(),STile::WallEast(),
                 STile::WallSouthWest(),STile::WallSouth(),STile::WallSouth(),STile::WallSouth(),STile::WallSouthEast(),
             }
     };
-
-    LevelGeometry.InitFromLevel(Level);
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
@@ -118,10 +116,12 @@ void SGame::Run() {
         Camera.Update();
 
         Renderer.UploadProjectionAndViewFromCamera(Camera);
-        Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
-//        Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, SIMPLE2D_MODE_DISINTEGRATE_PLASMA,
-//                          {Window.Seconds / 2.0, 0.9f, 0.2f, 0.1f},
-//                          NoiseSprite.Sprite->UVRect);
+//        Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
+//        Renderer.Draw3D({4.0f, 0.0f, -2.0f}, &Renderer.Tileset);
+        Renderer.Draw3DLevel(Level);
+        Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, SIMPLE2D_MODE_DISINTEGRATE_PLASMA,
+                          {Window.Seconds / 2.0, 0.9f, 0.2f, 0.1f},
+                          NoiseSprite.Sprite->UVRect);
 //        Renderer.Draw2DHaze({85 - 4, 50.0f, 0.0f}, AngelSprite, 0.07f, 4.0f, 4.0f);
 //        Renderer.Draw2DBackBlur({140 - 4, 50.0f, 0.0f}, AngelSprite, 4.0f, 2.9f, 0.08f);
 //        Renderer.Draw2DGlow({195 - 4, 50.0f, 0.0f}, AngelSprite, glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
@@ -134,7 +134,6 @@ void SGame::Run() {
         Window.SwapBuffers();
     }
 
-    LevelGeometry.Cleanup();
     Renderer.Cleanup();
     Window.Cleanup();
 }

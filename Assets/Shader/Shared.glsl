@@ -21,3 +21,12 @@ vec2 clampUV(in vec2 uv, in vec4 uvRect) {
 float sineIn(float t) {
     return sin((t - 1.0) * HALF_PI) + 1.0;
 }
+
+mat4 translationMatrix(vec3 delta)
+{
+    return mat4(
+        vec4(1.0, 0.0, 0.0, 0.0),
+        vec4(0.0, 1.0, 0.0, 0.0),
+        vec4(0.0, 0.0, 1.0, 0.0),
+        vec4(delta, 1.0));
+}
