@@ -56,7 +56,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm SDL)
 
-add_executable(${PROJECT_NAME})
+add_executable(${PROJECT_NAME} Source/fghgh.h)
 target_sources(
         ${PROJECT_NAME}
         PRIVATE

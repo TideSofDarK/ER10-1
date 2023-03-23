@@ -10,6 +10,7 @@
 #include "glm/mat4x4.hpp"
 #include "CommonTypes.hpp"
 #include "Resource.hpp"
+#include "ShaderConstants.hpp"
 
 #define RENDERER_QUEUE2D_SIZE 16
 #define RENDERER_QUEUE3D_SIZE 8
@@ -125,6 +126,11 @@ namespace ETileGeometryType {
         Floor,
         Wall,
         Ceil,
+        Door,
+        Hole,
+        CustomA,
+        CustomB,
+        CustomC,
         Count
     };
 }
@@ -203,8 +209,8 @@ struct SEntry2D : SEntry {
 
 struct SInstancedDrawCall {
     SSubGeometry *SubGeometry{};
+    std::array<glm::mat4x4, UBER3D_MODEL_COUNT> Transform{};
     int Count{};
-    std::vector<glm::mat4x4> Transform;
 };
 
 template<int Size>

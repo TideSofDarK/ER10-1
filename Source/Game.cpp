@@ -5,7 +5,6 @@
 #include "Constants.hpp"
 #include "Resource.hpp"
 #include "SDL.h"
-#include "ShaderConstants.hpp"
 
 DEFINE_RESOURCE(Frame_png)
 DEFINE_RESOURCE(Ref_png)

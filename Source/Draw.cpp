@@ -9,7 +9,6 @@
 #include "Level.hpp"
 #include "Constants.hpp"
 #include "Utility.hpp"
-#include "ShaderConstants.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -168,42 +167,40 @@ void SGeometry::Cleanup() {
 }
 
 void STileset::InitPlaceholder() {
-    std::vector<glm::vec3> TempVertices;
-    TempVertices.reserve(8);
-    std::vector<unsigned short> Indices;
-    Indices.reserve(12);
+    std::array<glm::vec3, 8> TempVertices{};
+    std::array<unsigned short, 12> Indices{};
 
     /** Floor Quad */
     auto &FloorGeometry = TileGeometry[ETileGeometryType::Floor];
     FloorGeometry.ElementOffset = 0;
     FloorGeometry.ElementCount = 6;
-    Indices.emplace_back(0);
-    Indices.emplace_back(1);
-    Indices.emplace_back(2);
-    Indices.emplace_back(0);
-    Indices.emplace_back(2);
-    Indices.emplace_back(3);
+    Indices[0] = 0;
+    Indices[1] = 1;
+    Indices[2] = 2;
+    Indices[3] = 0;
+    Indices[4] = 2;
+    Indices[5] = 3;
 
-    TempVertices.emplace_back(0.5f, 0.0f, 0.5f);
-    TempVertices.emplace_back(0.5f, 0.0f, -0.5f);
-    TempVertices.emplace_back(-0.5f, 0.0f, -0.5f);
-    TempVertices.emplace_back(-0.5f, 0.0f, 0.5f);
+    TempVertices[0] = {0.5f, 0.0f, 0.5f};
+    TempVertices[1] = {0.5f, 0.0f, -0.5f};
+    TempVertices[2] = {-0.5f, 0.0f, -0.5f};
+    TempVertices[3] = {-0.5f, 0.0f, 0.5f};
 
     /** Wall Quad */
     auto &WallGeometry = TileGeometry[ETileGeometryType::Wall];
     WallGeometry.ElementOffset = 12;
     WallGeometry.ElementCount = 6;
-    Indices.emplace_back(4 + 0);
-    Indices.emplace_back(4 + 1);
-    Indices.emplace_back(4 + 2);
-    Indices.emplace_back(4 + 0);
-    Indices.emplace_back(4 + 2);
-    Indices.emplace_back(4 + 3);
+    Indices[6] = 4 + 0;
+    Indices[7] = 4 + 1;
+    Indices[8] = 4 + 2;
+    Indices[9] = 4 + 0;
+    Indices[10] = 4 + 2;
+    Indices[11] = 4 + 3;
 
-    TempVertices.emplace_back(-0.5f, 1.0f, -0.5f);
-    TempVertices.emplace_back(0.5f, 1.0f, -0.5f);
-    TempVertices.emplace_back(0.5f, 0.0f, -0.5f);
-    TempVertices.emplace_back(-0.5f, 0.0f, -0.5f);
+    TempVertices[4] = {0.5f, 1.0f, -0.5f};
+    TempVertices[5] = {-0.5f, 1.0f, -0.5f};
+    TempVertices[6] = {-0.5f, 0.0f, -0.5f};
+    TempVertices[7] = {0.5f, 0.0f, -0.5f};
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
@@ -425,7 +422,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
 
     /** Draw 3D */
     glEnable(GL_DEPTH_TEST);
-//    glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
     glViewport(SCENE_OFFSET, SCENE_HEIGHT - SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
 
     Queue3D.CommonUniformBlock.Bind();
@@ -659,7 +656,6 @@ void SRenderer::Draw3D(glm::vec3 Position, SGeometry *Geometry) {
 void SRenderer::Draw3DLevel(const SLevel &Level) {
     for (auto &DrawCall: LevelDrawData.DrawCalls) {
         DrawCall.Count = 0;
-        DrawCall.Transform.clear();
     }
 
     auto &FloorDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Floor];
@@ -677,8 +673,8 @@ void SRenderer::Draw3DLevel(const SLevel &Level) {
             auto YOffset = static_cast<float>(Y);
 
             if (Tile.Type == ETileType::Floor) {
-                FloorDrawCall.Transform.push_back(
-                        glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset)));
+                FloorDrawCall.Transform[FloorDrawCall.Count] =
+                        glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset));
                 FloorDrawCall.Count++;
             }
 
@@ -690,7 +686,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level) {
                     Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
                     Transform = glm::rotate(Transform, Utility::RotationFromDirection(EDirection{Direction}),
                                             {0.0f, 1.0f, 0.0f});
-                    WallDrawCall.Transform.push_back(Transform);
+                    WallDrawCall.Transform[WallDrawCall.Count] = Transform;
                     WallDrawCall.Count++;
                 }
             }
