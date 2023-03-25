@@ -3,16 +3,11 @@
 #include <iostream>
 #include <algorithm>
 #include <numeric>
-#include <string>
 #include "glad/gl.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm/gtc/matrix_transform.hpp"
 #include "Level.hxx"
 #include "Constants.hxx"
 #include "Utility.hxx"
-
-#define STB_IMAGE_IMPLEMENTATION
-
-#include "stb_image.h"
 
 static std::string const GLSLVersion = "#version 410 core\n";
 static std::string const ShaderConstants{
@@ -157,7 +152,7 @@ void SProgram2D::InitUniforms() {
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
 }
 
-void SGeometry::InitFromRawMesh(const SRawMesh &RawMesh) {
+void SGeometry::InitFromRawMesh(const CRawMesh &RawMesh) {
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
@@ -473,7 +468,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         if (Entry.Geometry == nullptr) {
             continue;
         }
-        glUniform1i(ProgramUber3D.UniformModeID, Entry.Mode->ID);
+        glUniform1i(ProgramUber3D.UniformModeID, Entry.Mode.ID);
         glBindVertexArray(Entry.Geometry->VAO);
         if (Entry.InstancedDrawCall != nullptr) {
             for (int DrawCallIndex = 0; DrawCallIndex < Entry.InstancedDrawCallCount; ++DrawCallIndex) {
@@ -526,9 +521,8 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         glUniform2f(Program->UniformSizeScreenSpaceID, Entry.SizePixels.x, Entry.SizePixels.y);
         glUniform4fv(Program->UniformUVRectID, 1, &Entry.UVRect[0]);
 
-        SEntryMode Mode;
-        if (Entry.Mode.has_value()) {
-            Mode = Entry.Mode.value();
+        const SEntryMode &Mode = Entry.Mode;
+        if (Mode.ID > UBER2D_MODE_TEXTURE) {
             glUniform4fv(Program->UniformModeControlAID, 1, &Mode.ControlA[0]);
             glUniform4fv(Program->UniformModeControlBID, 1, &Mode.ControlB[0]);
         }
@@ -770,13 +764,8 @@ void STexture::InitEmpty(int Width, int Height, bool bAlpha) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void STexture::InitFromResource(const SResource *Resource) {
-    int Width, Height, Channels;
-    auto const Image = stbi_load_from_memory(Resource->Data, static_cast<int>(Resource->Length), &Width,
-                                             &Height, &Channels,
-                                             4);
-    InitFromPixels(Width, Height, Channels == 4, Image);
-    stbi_image_free(Image);
+void STexture::InitFromRawImage(const CRawImage &RawImage) {
+    InitFromPixels(RawImage.Width, RawImage.Height, RawImage.Channels == 4, RawImage.Data);
 }
 
 void STexture::Cleanup() {
@@ -798,14 +787,11 @@ void SAtlas::Init(int InTextureUnitID) {
     std::iota(SortingIndices.begin(), SortingIndices.end(), 0);
 }
 
-SSpriteHandle SAtlas::AddSprite(const SResource *Resource) {
-    int Width, Height, Channels, Result;
-    Result = stbi_info_from_memory(Resource->Data, static_cast<int>(Resource->Length), &Width, &Height, &Channels);
-    if (!Result) {
-        abort();
-    }
-    Sprites[CurrentIndex].SizePixels = {Width, Height};
-    Sprites[CurrentIndex].Resource = Resource;
+SSpriteHandle SAtlas::AddSprite(const SResource &Resource) {
+    CRawImageInfo const RawImageInfo(Resource);
+
+    Sprites[CurrentIndex].SizePixels = {RawImageInfo.Width, RawImageInfo.Height};
+    Sprites[CurrentIndex].Resource = &Resource;
     return {this, &Sprites[CurrentIndex++]};
 }
 
@@ -822,40 +808,34 @@ void SAtlas::Build() {
 
     for (int Index = 0; Index < CurrentIndex; ++Index) {
         auto &Sprite = Sprites[SortingIndices[Index]];
-        int Width, Height, Channels;
-        const auto Image = stbi_load_from_memory(Sprite.Resource->Data, static_cast<int>(Sprite.Resource->Length),
-                                                 &Width,
-                                                 &Height, &Channels,
-                                                 4);
+        CRawImage const Image(*Sprite.Resource);
 
-        if (CursorX + Width > WidthAndHeight) {
+        if (CursorX + Image.Width > WidthAndHeight) {
             CursorY += MaxHeight;
             CursorX = 0;
             MaxHeight = 0;
         }
 
-        if (CursorY + Height > WidthAndHeight) {
+        if (CursorY + Image.Height > WidthAndHeight) {
             break;
         }
 
         float MinU = static_cast<float>(CursorX) / static_cast<float>(WidthAndHeight);
         float MinV = static_cast<float>(CursorY) / static_cast<float>(WidthAndHeight);
-        float MaxU = MinU + (static_cast<float>(Width) / static_cast<float>(WidthAndHeight));
-        float MaxV = MinV + (static_cast<float>(Height) / static_cast<float>(WidthAndHeight));
+        float MaxU = MinU + (static_cast<float>(Image.Width) / static_cast<float>(WidthAndHeight));
+        float MaxV = MinV + (static_cast<float>(Image.Height) / static_cast<float>(WidthAndHeight));
         Sprite.UVRect = {MinU, MinV, MaxU, MaxV};
 
         glTexSubImage2D(GL_TEXTURE_2D, 0,
                         CursorX, CursorY,
-                        Width, Height,
+                        Image.Width, Image.Height,
                         GL_RGBA,
-                        GL_UNSIGNED_BYTE, Image);
+                        GL_UNSIGNED_BYTE, Image.Data);
 
-        stbi_image_free(Image);
+        CursorX += Image.Width;
 
-        CursorX += Width;
-
-        if (Height > MaxHeight) {
-            MaxHeight = Height;
+        if (Image.Height > MaxHeight) {
+            MaxHeight = Image.Height;
         }
     }
 }

@@ -21,17 +21,17 @@ SGame::SGame() {
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
-    NoiseSprite = CommonAtlas2D.AddSprite(&ResourceNoise_png);
-    RefSprite = CommonAtlas2D.AddSprite(&ResourceRef_png);
+    NoiseSprite = CommonAtlas2D.AddSprite(ResourceNoise_png);
+    RefSprite = CommonAtlas2D.AddSprite(ResourceRef_png);
     CommonAtlas2D.Build();
 
     auto &PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
-    AngelSprite = PrimaryAtlas2D.AddSprite(&ResourceAngel_png);
-    FrameSprite = PrimaryAtlas2D.AddSprite(&ResourceFrame_png);
+    AngelSprite = PrimaryAtlas2D.AddSprite(ResourceAngel_png);
+    FrameSprite = PrimaryAtlas2D.AddSprite(ResourceFrame_png);
     PrimaryAtlas2D.Build();
 
     auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
-    PrimaryAtlas3D.AddSprite(&ResourceHotelAtlas_png);
+    PrimaryAtlas3D.AddSprite(ResourceHotelAtlas_png);
     PrimaryAtlas3D.Build();
 
     Player.X = 0;
@@ -52,12 +52,8 @@ SGame::SGame() {
             }
     };
 
-    SRawMesh RawMesh;
-    ParseMeshOBJ(ResourceHotelFloor_obj, RawMesh);
-    Floor.InitFromRawMesh(RawMesh);
-
-    ParseMeshOBJ(ResourcePillar_obj, RawMesh);
-    TestGeometry.InitFromRawMesh(RawMesh);
+    Floor.InitFromRawMesh(CRawMesh(ResourceHotelFloor_obj));
+    TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillar_obj));
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
@@ -134,6 +130,9 @@ void SGame::Run() {
 //        Renderer.Draw3D({4.0f, 0.0f, -2.0f}, &Renderer.Tileset);
         Renderer.Draw3D({-3.0f, 0.0f, -3.0f}, &TestGeometry);
         Renderer.Draw3D({-4.0f, 0.0f, -4.0f}, &Floor);
+        Renderer.Draw3D({-5.0f, 0.0f, -4.0f}, &Floor);
+        Renderer.Draw3D({-6.0f, 0.0f, -4.0f}, &Floor);
+        Renderer.Draw3D({-7.0f, 0.0f, -4.0f}, &Floor);
         Renderer.Draw3DLevel(Level);
         Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
                           {Window.Seconds / 2.0, 0.9f, 0.2f, 0.1f},

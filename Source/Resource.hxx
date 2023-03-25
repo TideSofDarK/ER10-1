@@ -4,7 +4,6 @@
 #include <vector>
 #include "glm/vec3.hpp"
 #include "glm/vec2.hpp"
-#include "Player.hxx"
 
 #ifdef __APPLE__
 #include <mach-o/getsect.h>
@@ -31,12 +30,33 @@ struct SResource {
     ptrdiff_t Length;
 };
 
-struct SRawMesh {
+class CRawMesh {
+public:
     std::vector<glm::vec3> Positions{};
     std::vector<glm::vec2> TexCoords{};
     std::vector<glm::vec3> Normals{};
     std::vector<unsigned short> Indices;
+
+    explicit CRawMesh(const SResource &Resource);
 };
 
-void ParseMeshOBJ(const SResource &Resource,
-                  SRawMesh &RawMesh);
+class CRawImage {
+public:
+    int Width{};
+    int Height{};
+    int Channels{};
+    void *Data{};
+
+    explicit CRawImage(const SResource &Resource);
+
+    ~CRawImage();
+};
+
+class CRawImageInfo {
+public:
+    int Width{};
+    int Height{};
+    int Channels{};
+
+    explicit CRawImageInfo(const SResource &Resource);
+};

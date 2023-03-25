@@ -1,10 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <tuple>
 #include <array>
-#include <optional>
-#include <functional>
 
 #include "glm/glm.hpp"
 #include "glm/mat4x4.hpp"
@@ -113,7 +110,7 @@ struct SGeometry {
     unsigned CBO{};
     int ElementCount{};
 
-    void InitFromRawMesh(const SRawMesh &RawMesh);
+    void InitFromRawMesh(const CRawMesh &RawMesh);
 
     virtual void Cleanup();
 };
@@ -164,7 +161,7 @@ struct STexture {
 
     void InitEmpty(int Width, int Height, bool bAlpha);
 
-    void InitFromResource(const SResource *Resource);
+    void InitFromRawImage(const CRawImage &RawImage);
 
     void Cleanup();
 
@@ -199,7 +196,7 @@ struct SEntryMode {
 };
 
 struct SEntry {
-    std::optional<SEntryMode> Mode{};
+    SEntryMode Mode{};
 };
 
 struct SEntry2D : SEntry {
@@ -276,7 +273,7 @@ public:
 
     void Init(int InTextureUnitID);
 
-    SSpriteHandle AddSprite(const SResource *Resource);
+    SSpriteHandle AddSprite(const SResource &Resource);
 
     void Build();
 };
