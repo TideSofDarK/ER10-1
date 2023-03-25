@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include "CommonTypes.hpp"
+#include "CommonTypes.hxx"
 
 enum class ETileEdgeType {
     Empty,

@@ -2,7 +2,9 @@
 
 #include "glm/geometric.hpp"
 #include "glm/mat4x4.hpp"
-#include "CommonTypes.hpp"
+#include "CommonTypes.hxx"
+
+#define SIZE_OF_VECTOR_ELEMENT(Vector) sizeof(decltype(Vector)::value_type)
 
 namespace Utility {
     float RotationFromDirection(EDirection Direction);
@@ -24,3 +26,19 @@ namespace Utility {
         return Current + glm::clamp((Target - Current), -Step, Step);
     }
 }
+
+inline bool IsNumChar(char Char) {
+    return Char >= '0' && Char <= '9';
+}
+
+float Pow10(int n);
+
+float FastAtoF(const char *&num, const char *end);
+
+int FastAtoI(const char *&num, const char *end);
+
+/** Expects numbers to be separated by 1 char */
+void ParseFloats(const char *Start, const char *End, float *Floats, int FloatCount);
+
+/** Expects numbers to be separated by 1 char */
+void ParseInts(const char *Start, const char *End, int *Ints, int IntCount);

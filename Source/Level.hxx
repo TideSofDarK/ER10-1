@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include "Tile.hpp"
+#include "Tile.hxx"
 
 int constexpr LevelGridSize = 16 * 16;
 

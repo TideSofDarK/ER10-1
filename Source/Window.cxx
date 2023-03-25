@@ -1,5 +1,5 @@
-#include "Window.hpp"
-#include "Constants.hpp"
+#include "Window.hxx"
+#include "Constants.hxx"
 #include "glad/gl.h"
 
 #include <SDL.h>

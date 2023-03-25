@@ -8,9 +8,9 @@
 
 #include "glm/glm.hpp"
 #include "glm/mat4x4.hpp"
-#include "CommonTypes.hpp"
-#include "Resource.hpp"
-#include "ShaderConstants.hpp"
+#include "CommonTypes.hxx"
+#include "Resource.hxx"
+#include "ShaderConstants.hxx"
 
 #define RENDERER_QUEUE2D_SIZE 16
 #define RENDERER_QUEUE3D_SIZE 8
@@ -112,6 +112,8 @@ struct SGeometry {
     unsigned EBO{};
     unsigned CBO{};
     int ElementCount{};
+
+    void InitFromRawMesh(const SRawMesh &RawMesh);
 
     virtual void Cleanup();
 };

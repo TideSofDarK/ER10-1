@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "CommonTypes.hpp"
+#include "CommonTypes.hxx"
 
 struct SPlayer {
     /** Allowed values are 0..3 */

@@ -1,4 +1,4 @@
-#include "Draw.hpp"
+#include "Draw.hxx"
 
 #include <iostream>
 #include <algorithm>
@@ -6,9 +6,9 @@
 #include <string>
 #include "glad/gl.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include "Level.hpp"
-#include "Constants.hpp"
-#include "Utility.hpp"
+#include "Level.hxx"
+#include "Constants.hxx"
+#include "Utility.hxx"
 
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -18,7 +18,7 @@ static std::string const GLSLVersion = "#version 410 core\n";
 static std::string const ShaderConstants{
 #define SHADER_CONSTANTS_LITERAL
 
-#include "ShaderConstants.hpp"
+#include "ShaderConstants.hxx"
 
 #undef SHADER_CONSTANTS_LITERAL
 };
@@ -64,9 +64,9 @@ unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
-            reinterpret_cast<const char *>(ResourceShared_glsl.Ptr),
+            reinterpret_cast<const char *>(ResourceShared_glsl.Data),
             &ShaderConstants[0],
-            reinterpret_cast<const char *>(Resource->Ptr)
+            reinterpret_cast<const char *>(Resource->Data)
     };
     int const Lengths[4] = {
             static_cast<int>(GLSLVersion.length()),
@@ -84,9 +84,9 @@ unsigned int SProgram::CreateFragmentShader(const SResource *Resource) {
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
-            reinterpret_cast<const char *>(ResourceShared_glsl.Ptr),
+            reinterpret_cast<const char *>(ResourceShared_glsl.Data),
             &ShaderConstants[0],
-            reinterpret_cast<const char *>(Resource->Ptr)
+            reinterpret_cast<const char *>(Resource->Data)
     };
     int const Lengths[4] = {
             static_cast<int>(GLSLVersion.length()),
@@ -155,6 +155,44 @@ void SProgram2D::InitUniforms() {
     UniformUVRectID = glGetUniformLocation(ID, "u_uvRect");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
+}
+
+void SGeometry::InitFromRawMesh(const SRawMesh &RawMesh) {
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    glEnableVertexAttribArray(0);
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER,
+                 static_cast<long long>(RawMesh.Positions.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.Positions)),
+                 &RawMesh.Positions[0],
+                 GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glEnableVertexAttribArray(1);
+    glGenBuffers(1, &CBO);
+    glBindBuffer(GL_ARRAY_BUFFER, CBO);
+    glBufferData(GL_ARRAY_BUFFER,
+                 static_cast<long long>(RawMesh.TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.TexCoords)),
+                 &RawMesh.TexCoords[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+            1,
+            2,
+            GL_FLOAT,
+            GL_FALSE,
+            0,
+            nullptr
+    );
+
+    ElementCount = static_cast<int>(RawMesh.Indices.size());
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 static_cast<long long>(ElementCount * SIZE_OF_VECTOR_ELEMENT(RawMesh.Indices)), &RawMesh.Indices[0],
+                 GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
 }
 
 void SGeometry::Cleanup() {
@@ -429,12 +467,13 @@ void SRenderer::Flush(const SWindowData &WindowData) {
 
     ProgramUber3D.Use();
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+//    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     for (int Index = 0; Index < Queue3D.CurrentIndex; ++Index) {
         const auto &Entry = Queue3D.Entries[Index];
         if (Entry.Geometry == nullptr) {
             continue;
         }
+        glUniform1i(ProgramUber3D.UniformModeID, Entry.Mode->ID);
         glBindVertexArray(Entry.Geometry->VAO);
         if (Entry.InstancedDrawCall != nullptr) {
             for (int DrawCallIndex = 0; DrawCallIndex < Entry.InstancedDrawCallCount; ++DrawCallIndex) {
@@ -454,7 +493,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
             glDrawElements(GL_TRIANGLES, Entry.Geometry->ElementCount, GL_UNSIGNED_SHORT, nullptr);
         }
     }
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     /** Draw 2D */
     glEnable(GL_BLEND);
@@ -733,7 +772,7 @@ void STexture::InitEmpty(int Width, int Height, bool bAlpha) {
 
 void STexture::InitFromResource(const SResource *Resource) {
     int Width, Height, Channels;
-    auto const Image = stbi_load_from_memory(Resource->Ptr, static_cast<int>(Resource->Length), &Width,
+    auto const Image = stbi_load_from_memory(Resource->Data, static_cast<int>(Resource->Length), &Width,
                                              &Height, &Channels,
                                              4);
     InitFromPixels(Width, Height, Channels == 4, Image);
@@ -761,7 +800,7 @@ void SAtlas::Init(int InTextureUnitID) {
 
 SSpriteHandle SAtlas::AddSprite(const SResource *Resource) {
     int Width, Height, Channels, Result;
-    Result = stbi_info_from_memory(Resource->Ptr, static_cast<int>(Resource->Length), &Width, &Height, &Channels);
+    Result = stbi_info_from_memory(Resource->Data, static_cast<int>(Resource->Length), &Width, &Height, &Channels);
     if (!Result) {
         abort();
     }
@@ -784,7 +823,7 @@ void SAtlas::Build() {
     for (int Index = 0; Index < CurrentIndex; ++Index) {
         auto &Sprite = Sprites[SortingIndices[Index]];
         int Width, Height, Channels;
-        const auto Image = stbi_load_from_memory(Sprite.Resource->Ptr, static_cast<int>(Sprite.Resource->Length),
+        const auto Image = stbi_load_from_memory(Sprite.Resource->Data, static_cast<int>(Sprite.Resource->Length),
                                                  &Width,
                                                  &Height, &Channels,
                                                  4);

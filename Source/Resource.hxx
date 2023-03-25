@@ -1,5 +1,11 @@
 #pragma once
 
+#include <cstddef>
+#include <vector>
+#include "glm/vec3.hpp"
+#include "glm/vec2.hpp"
+#include "Player.hxx"
+
 #ifdef __APPLE__
 #include <mach-o/getsect.h>
 #define EXTLD(NAME) \
@@ -20,10 +26,17 @@
     EXTLD(NAME) \
     const SResource Resource ## NAME{LDVAR(NAME), LDLEN(NAME)};
 
-typedef const unsigned char *const TResource;
-
 struct SResource {
-    TResource Ptr;
+    const unsigned char *const Data;
     ptrdiff_t Length;
 };
 
+struct SRawMesh {
+    std::vector<glm::vec3> Positions{};
+    std::vector<glm::vec2> TexCoords{};
+    std::vector<glm::vec3> Normals{};
+    std::vector<unsigned short> Indices;
+};
+
+void ParseMeshOBJ(const SResource &Resource,
+                  SRawMesh &RawMesh);

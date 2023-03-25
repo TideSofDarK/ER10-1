@@ -1,5 +1,5 @@
-#include "Player.hpp"
-#include "Utility.hpp"
+#include "Player.hxx"
+#include "Utility.hxx"
 
 #define EYE_HEIGHT 0.4f
 

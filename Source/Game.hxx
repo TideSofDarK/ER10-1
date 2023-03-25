@@ -1,11 +1,11 @@
 #pragma once
 
 #include <memory>
-#include "CommonTypes.hpp"
-#include "Draw.hpp"
-#include "Player.hpp"
-#include "Window.hpp"
-#include "Level.hpp"
+#include "CommonTypes.hxx"
+#include "Draw.hxx"
+#include "Player.hxx"
+#include "Window.hxx"
+#include "Level.hxx"
 
 struct SGame {
 private:
@@ -19,6 +19,8 @@ public:
     SCamera Camera;
     SPlayer Player;
     SLevel Level;
+    SGeometry TestGeometry;
+    SGeometry Floor;
 
     SSpriteHandle NoiseSprite;
     SSpriteHandle RefSprite;

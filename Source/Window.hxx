@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SDL_video.h"
-#include "CommonTypes.hpp"
+#include "CommonTypes.hxx"
 
 struct SWindow : SWindowData {
     SDL_Window *Window{};

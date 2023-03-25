@@ -31,7 +31,12 @@ macro(embed_asset ASSET_PATH)
     )
 endmacro()
 
-file(GLOB_RECURSE ASSET_FILES "Assets/*.png" "Assets/*.glsl" "Assets/*.vert" "Assets/*.frag")
+file(GLOB_RECURSE ASSET_FILES
+        "Assets/*.png"
+        "Assets/*.obj"
+        "Assets/*.glsl"
+        "Assets/*.vert"
+        "Assets/*.frag")
 foreach (ASSET_FILE ${ASSET_FILES})
     embed_asset(${ASSET_FILE})
 endforeach ()
@@ -56,19 +61,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm SDL)
 
-add_executable(${PROJECT_NAME} Source/fghgh.h)
+add_executable(${PROJECT_NAME})
 target_sources(
         ${PROJECT_NAME}
         PRIVATE
         Vendor/glad/src/gl.c
-        Source/Utility.cpp
-        Source/Main.cpp
-        Source/Window.cpp
-        Source/Game.cpp
-        Source/Draw.cpp
-        Source/Level.cpp
-        Source/Player.cpp
-        Source/Tile.cpp
+        Source/Utility.cxx
+        Source/Main.cxx
+        Source/Window.cxx
+        Source/Game.cxx
+        Source/Draw.cxx
+        Source/Level.cxx
+        Source/Player.cxx
+        Source/Tile.cxx
+        Source/Resource.cxx
 )
 target_include_directories(
         ${PROJECT_NAME}

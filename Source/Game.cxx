@@ -1,15 +1,19 @@
-#include "Game.hpp"
+#include "Game.hxx"
 
 #include <iostream>
-#include "Level.hpp"
-#include "Constants.hpp"
-#include "Resource.hpp"
+#include "Level.hxx"
+#include "Constants.hxx"
+#include "Resource.hxx"
 #include "SDL.h"
 
 DEFINE_RESOURCE(Frame_png)
 DEFINE_RESOURCE(Ref_png)
 DEFINE_RESOURCE(Angel_png)
 DEFINE_RESOURCE(Noise_png)
+DEFINE_RESOURCE(Quad_obj)
+DEFINE_RESOURCE(Pillar_obj)
+DEFINE_RESOURCE(HotelFloor_obj)
+DEFINE_RESOURCE(HotelAtlas_png)
 
 SGame::SGame() {
     Window.Init();
@@ -25,6 +29,10 @@ SGame::SGame() {
     AngelSprite = PrimaryAtlas2D.AddSprite(&ResourceAngel_png);
     FrameSprite = PrimaryAtlas2D.AddSprite(&ResourceFrame_png);
     PrimaryAtlas2D.Build();
+
+    auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
+    PrimaryAtlas3D.AddSprite(&ResourceHotelAtlas_png);
+    PrimaryAtlas3D.Build();
 
     Player.X = 0;
     Player.Y = 0;
@@ -43,6 +51,13 @@ SGame::SGame() {
                 STile::WallSouthWest(),STile::WallSouth(),STile::WallSouth(),STile::WallSouth(),STile::WallSouthEast(),
             }
     };
+
+    SRawMesh RawMesh;
+    ParseMeshOBJ(ResourceHotelFloor_obj, RawMesh);
+    Floor.InitFromRawMesh(RawMesh);
+
+    ParseMeshOBJ(ResourcePillar_obj, RawMesh);
+    TestGeometry.InitFromRawMesh(RawMesh);
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
@@ -117,6 +132,8 @@ void SGame::Run() {
         Renderer.UploadProjectionAndViewFromCamera(Camera);
 //        Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
 //        Renderer.Draw3D({4.0f, 0.0f, -2.0f}, &Renderer.Tileset);
+        Renderer.Draw3D({-3.0f, 0.0f, -3.0f}, &TestGeometry);
+        Renderer.Draw3D({-4.0f, 0.0f, -4.0f}, &Floor);
         Renderer.Draw3DLevel(Level);
         Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
                           {Window.Seconds / 2.0, 0.9f, 0.2f, 0.1f},
