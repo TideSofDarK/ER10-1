@@ -256,8 +256,8 @@ void STileset::InitPlaceholder() {
 }
 
 void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratchBuffer &ScratchBuffer) {
-    auto TempPositions = ScratchBuffer.GetVector<glm::vec3>();
-    auto TempTexCoords = ScratchBuffer.GetVector<glm::vec2>();
+    auto Positions = ScratchBuffer.GetVector<glm::vec3>();
+    auto TexCoords = ScratchBuffer.GetVector<glm::vec2>();
     auto Indices = ScratchBuffer.GetVector<unsigned short>();
 
     /** Floor */
@@ -272,15 +272,15 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratch
     }
 
     for (int Index = 0; Index < FloorMesh.Positions.size(); ++Index) {
-        TempPositions.push_back(FloorMesh.Positions[Index]);
-        TempTexCoords.push_back(FloorMesh.TexCoords[Index]);
+        Positions.push_back(FloorMesh.Positions[Index]);
+        TexCoords.push_back(FloorMesh.TexCoords[Index]);
     }
 
     /** Wall */
     auto WallMesh = CRawMesh(Wall, ScratchBuffer);
 
     auto &WallGeometry = TileGeometry[ETileGeometryType::Wall];
-    WallGeometry.ElementOffset = 16 * 9;
+    WallGeometry.ElementOffset = FloorMesh.Indices.size() * sizeof(unsigned short);
     WallGeometry.ElementCount = WallMesh.Indices.size();
 
     for (int Index = 0; Index < WallGeometry.ElementCount; ++Index) {
@@ -288,8 +288,8 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratch
     }
 
     for (int Index = 0; Index < WallMesh.Positions.size(); ++Index) {
-        TempPositions.push_back(WallMesh.Positions[Index]);
-        TempTexCoords.push_back(WallMesh.TexCoords[Index]);
+        Positions.push_back(WallMesh.Positions[Index]);
+        TexCoords.push_back(WallMesh.TexCoords[Index]);
     }
 
     glGenVertexArrays(1, &VAO);
@@ -298,7 +298,7 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratch
     glEnableVertexAttribArray(0);
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(TempPositions.size() * sizeof(glm::vec3)), &TempPositions[0],
+    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(Positions.size() * sizeof(glm::vec3)), &Positions[0],
                  GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -306,8 +306,8 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratch
     glGenBuffers(1, &CBO);
     glBindBuffer(GL_ARRAY_BUFFER, CBO);
     glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<long long>(TempTexCoords.size() * SIZE_OF_VECTOR_ELEMENT(TempTexCoords)),
-                 &TempTexCoords[0], GL_STATIC_DRAW);
+                 static_cast<long long>(TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(TexCoords)),
+                 &TexCoords[0], GL_STATIC_DRAW);
     glVertexAttribPointer(
             1,
             2,
