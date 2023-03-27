@@ -280,11 +280,11 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratch
     auto WallMesh = CRawMesh(Wall, ScratchBuffer);
 
     auto &WallGeometry = TileGeometry[ETileGeometryType::Wall];
-    WallGeometry.ElementOffset = 12;
+    WallGeometry.ElementOffset = 16 * 9;
     WallGeometry.ElementCount = WallMesh.Indices.size();
 
     for (int Index = 0; Index < WallGeometry.ElementCount; ++Index) {
-        Indices.push_back(WallMesh.Indices[Index] + 4);
+        Indices.push_back(WallMesh.Indices[Index] + FloorMesh.Positions.size());
     }
 
     for (int Index = 0; Index < WallMesh.Positions.size(); ++Index) {
