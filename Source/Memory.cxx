@@ -12,7 +12,8 @@ namespace Memory {
         }
 
         BaseResource = new CNewDeleteResource();
-        std::pmr::set_default_resource(BaseResource);
+        std::pmr::set_default_resource(std::pmr::null_memory_resource());
+//        std::pmr::set_default_resource(BaseResource);
 
         ScratchBufferData = std::calloc(ScratchBufferSize, 1);
         ScratchBufferResource = new std::pmr::monotonic_buffer_resource(ScratchBufferData, ScratchBufferSize);

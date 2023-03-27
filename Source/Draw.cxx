@@ -255,40 +255,42 @@ void STileset::InitPlaceholder() {
     glBindVertexArray(0);
 }
 
-void STileset::InitBasic(const CRawMesh &Floor) {
-    std::array<glm::vec3, 8> TempPositions{};
-    std::array<glm::vec2, 8> TempTexCoords{};
-    std::array<unsigned short, 12> Indices{};
+void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratchBuffer &ScratchBuffer) {
+    auto TempPositions = ScratchBuffer.GetVector<glm::vec3>();
+    auto TempTexCoords = ScratchBuffer.GetVector<glm::vec2>();
+    auto Indices = ScratchBuffer.GetVector<unsigned short>();
 
-    /** Floor Quad */
+    /** Floor */
+    auto FloorMesh = CRawMesh(Floor, ScratchBuffer);
+
     auto &FloorGeometry = TileGeometry[ETileGeometryType::Floor];
     FloorGeometry.ElementOffset = 0;
-    FloorGeometry.ElementCount = 6;
+    FloorGeometry.ElementCount = FloorMesh.Indices.size();
 
-    for (int Index = 0; Index < 6; ++Index) {
-        Indices[Index] = Floor.Indices[Index];
+    for (int Index = 0; Index < FloorGeometry.ElementCount; ++Index) {
+        Indices.push_back(FloorMesh.Indices[Index] + 0);
     }
 
-    for (int Index = 0; Index < 4; ++Index) {
-        TempPositions[Index] = Floor.Positions[Index];
-        TempTexCoords[Index] = Floor.TexCoords[Index];
+    for (int Index = 0; Index < FloorMesh.Positions.size(); ++Index) {
+        TempPositions.push_back(FloorMesh.Positions[Index]);
+        TempTexCoords.push_back(FloorMesh.TexCoords[Index]);
     }
 
-    /** Wall Quad */
+    /** Wall */
+    auto WallMesh = CRawMesh(Wall, ScratchBuffer);
+
     auto &WallGeometry = TileGeometry[ETileGeometryType::Wall];
     WallGeometry.ElementOffset = 12;
-    WallGeometry.ElementCount = 6;
-    Indices[6] = 4 + 0;
-    Indices[7] = 4 + 1;
-    Indices[8] = 4 + 2;
-    Indices[9] = 4 + 0;
-    Indices[10] = 4 + 2;
-    Indices[11] = 4 + 3;
+    WallGeometry.ElementCount = WallMesh.Indices.size();
 
-    TempPositions[4] = {0.5f, 1.0f, -0.5f};
-    TempPositions[5] = {-0.5f, 1.0f, -0.5f};
-    TempPositions[6] = {-0.5f, 0.0f, -0.5f};
-    TempPositions[7] = {0.5f, 0.0f, -0.5f};
+    for (int Index = 0; Index < WallGeometry.ElementCount; ++Index) {
+        Indices.push_back(WallMesh.Indices[Index] + 4);
+    }
+
+    for (int Index = 0; Index < WallMesh.Positions.size(); ++Index) {
+        TempPositions.push_back(WallMesh.Positions[Index]);
+        TempTexCoords.push_back(WallMesh.TexCoords[Index]);
+    }
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);

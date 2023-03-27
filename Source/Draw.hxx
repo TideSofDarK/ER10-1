@@ -140,7 +140,7 @@ struct STileset : SGeometry {
 
     void InitPlaceholder();
 
-    void InitBasic(const CRawMesh &Floor);
+    void InitBasic(const SResource &Floor, const SResource &Wall, CScratchBuffer &ScratchBuffer);
 };
 
 struct SCamera {

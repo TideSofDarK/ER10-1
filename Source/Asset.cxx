@@ -43,7 +43,7 @@ CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
         TexCoords(ScratchBuffer.GetVector<glm::vec2>()),
         Normals(ScratchBuffer.GetVector<glm::vec3>()),
         Indices(ScratchBuffer.GetVector<unsigned short>()) {
-    auto ScratchVertices = ScratchBuffer.GetVector<glm::vec3>();
+    auto ScratchPositions = ScratchBuffer.GetVector<glm::vec3>();
     auto ScratchTexCoords = ScratchBuffer.GetVector<glm::vec2>();
     auto ScratchNormals = ScratchBuffer.GetVector<glm::vec3>();
     auto ScratchOBJIndices = ScratchBuffer.GetVector<glm::vec<3, int>>();
@@ -67,7 +67,7 @@ CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
         if (Token == "v") {
             glm::vec3 Position{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 3);
-            ScratchVertices.emplace_back(Position);
+            ScratchPositions.emplace_back(Position);
         } else if (Token == "vn") {
             glm::vec3 Position{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 3);
@@ -86,7 +86,7 @@ CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
                 OBJIndex.z = OBJIndices[Index + 2] - 1;
                 auto ExistingOBJIndex = std::find(ScratchOBJIndices.begin(), ScratchOBJIndices.end(), OBJIndex);
                 if (ExistingOBJIndex == ScratchOBJIndices.end()) {
-                    Positions.emplace_back(ScratchVertices[OBJIndex.x]);
+                    Positions.emplace_back(ScratchPositions[OBJIndex.x]);
                     TexCoords.emplace_back(ScratchTexCoords[OBJIndex.y]);
                     Normals.emplace_back(ScratchNormals[OBJIndex.z]);
 
