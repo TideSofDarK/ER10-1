@@ -6,7 +6,7 @@
 #include "glm/glm.hpp"
 #include "glm/mat4x4.hpp"
 #include "CommonTypes.hxx"
-#include "Resource.hxx"
+#include "Asset.hxx"
 #include "ShaderConstants.hxx"
 
 #define RENDERER_QUEUE2D_SIZE 16
@@ -265,7 +265,7 @@ struct SSprite {
 struct SAtlas : STexture {
 private:
     static std::array<int, ATLAS_MAX_SPRITE_COUNT> SortingIndices;
-    const int WidthAndHeight = ATLAS_SIZE;
+    static constexpr int WidthAndHeight = ATLAS_SIZE;
     int CurrentIndex{};
     int TextureUnitID{};
 public:

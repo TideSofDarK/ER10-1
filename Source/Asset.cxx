@@ -1,25 +1,52 @@
-#include "Resource.hxx"
+#include "Asset.hxx"
 
 #include <string>
 #include <algorithm>
 #include <array>
+#include "Utility.hxx"
+#include "Memory.hxx"
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_JPEG
+#define STBI_NO_GIF
+#define STBI_NO_BMP
+#define STBI_NO_PSD
+#define STBI_NO_PIC
+#define STBI_NO_PNM
+#define STBI_NO_HDR
+#define STBI_NO_TGA
+#define STBI_NO_FAILURE_STRINGS
+#define STBI_MALLOC STBIMalloc
+#define STBI_REALLOC STBIRealloc
+#define STBI_FREE STBIFree
+
+CScratchBuffer *STBIScratchBuffer{};
+
+void *STBIMalloc(size_t Length) {
+    auto Allocator = STBIScratchBuffer->GetAllocator();
+    return Allocator->allocate(Length);
+}
+
+void *STBIRealloc(void *Pointer, size_t Length) {
+    auto Allocator = STBIScratchBuffer->GetAllocator();
+    return Allocator->allocate(Length);
+}
+
+void STBIFree(void *Pointer) {
+    STBIScratchBuffer->GetAllocator()->release();
+}
 
 #include "stb_image.h"
 
-#include "Utility.hxx"
-
-std::vector<glm::vec3> TempVertices(128);
-std::vector<glm::vec2> TempTexCoords(64);
-std::vector<glm::vec3> TempNormals(64);
-std::vector<glm::vec<3, int>> TempOBJIndices(64);
-
-CRawMesh::CRawMesh(const SResource &Resource) {
-    TempVertices.clear();
-    TempTexCoords.clear();
-    TempNormals.clear();
-    TempOBJIndices.clear();
+CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
+        Positions(ScratchBuffer.GetVector<glm::vec3>()),
+        TexCoords(ScratchBuffer.GetVector<glm::vec2>()),
+        Normals(ScratchBuffer.GetVector<glm::vec3>()),
+        Indices(ScratchBuffer.GetVector<unsigned short>()) {
+    auto ScratchVertices = ScratchBuffer.GetVector<glm::vec3>();
+    auto ScratchTexCoords = ScratchBuffer.GetVector<glm::vec2>();
+    auto ScratchNormals = ScratchBuffer.GetVector<glm::vec3>();
+    auto ScratchOBJIndices = ScratchBuffer.GetVector<glm::vec<3, int>>();
 
     Positions.clear();
     Normals.clear();
@@ -40,15 +67,15 @@ CRawMesh::CRawMesh(const SResource &Resource) {
         if (Token == "v") {
             glm::vec3 Position{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 3);
-            TempVertices.emplace_back(Position);
+            ScratchVertices.emplace_back(Position);
         } else if (Token == "vn") {
             glm::vec3 Position{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 3);
-            TempNormals.emplace_back(Position);
+            ScratchNormals.emplace_back(Position);
         } else if (Token == "vt") {
             glm::vec2 Position{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 2);
-            TempTexCoords.emplace_back(Position);
+            ScratchTexCoords.emplace_back(Position);
         } else if (Token == "f") {
             std::array<int, 9> OBJIndices{};
             Utility::ParseInts(Data.data(), Data.data() + Data.size(), &OBJIndices[0], OBJIndices.size());
@@ -57,18 +84,18 @@ CRawMesh::CRawMesh(const SResource &Resource) {
                 OBJIndex.x = OBJIndices[Index] - 1;
                 OBJIndex.y = OBJIndices[Index + 1] - 1;
                 OBJIndex.z = OBJIndices[Index + 2] - 1;
-                auto ExistingOBJIndex = std::find(TempOBJIndices.begin(), TempOBJIndices.end(), OBJIndex);
-                if (ExistingOBJIndex == TempOBJIndices.end()) {
-                    Positions.emplace_back(TempVertices[OBJIndex.x]);
-                    TexCoords.emplace_back(TempTexCoords[OBJIndex.y]);
-                    Normals.emplace_back(TempNormals[OBJIndex.z]);
+                auto ExistingOBJIndex = std::find(ScratchOBJIndices.begin(), ScratchOBJIndices.end(), OBJIndex);
+                if (ExistingOBJIndex == ScratchOBJIndices.end()) {
+                    Positions.emplace_back(ScratchVertices[OBJIndex.x]);
+                    TexCoords.emplace_back(ScratchTexCoords[OBJIndex.y]);
+                    Normals.emplace_back(ScratchNormals[OBJIndex.z]);
 
-                    TempOBJIndices.emplace_back(OBJIndex);
+                    ScratchOBJIndices.emplace_back(OBJIndex);
 
                     /** Add freshly added vertex index */
                     Indices.emplace_back(Positions.size() - 1);
                 } else {
-                    std::size_t ExistingIndex = std::distance(std::begin(TempOBJIndices), ExistingOBJIndex);
+                    std::size_t ExistingIndex = std::distance(std::begin(ScratchOBJIndices), ExistingOBJIndex);
                     Indices.emplace_back(ExistingIndex);
                 }
             }
@@ -84,20 +111,22 @@ CRawMesh::CRawMesh(const SResource &Resource) {
     }
 }
 
-CRawImage::CRawImage(const SResource &Resource) {
+CRawImage::CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
+    STBIScratchBuffer = &ScratchBuffer;
+
+    stbi_png
     Data = stbi_load_from_memory(Resource.Data, static_cast<int>(Resource.Length),
                                  &Width,
                                  &Height, &Channels,
                                  4);
 }
 
-CRawImage::~CRawImage() {
-    stbi_image_free(Data);
-}
+CRawImageInfo::CRawImageInfo(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
+    STBIScratchBuffer = &ScratchBuffer;
 
-CRawImageInfo::CRawImageInfo(const SResource &Resource) {
     auto Result = stbi_info_from_memory(Resource.Data, static_cast<int>(Resource.Length), &Width, &Height, &Channels);
     if (!Result) {
         abort();
     }
 }
+

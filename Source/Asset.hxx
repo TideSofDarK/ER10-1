@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstddef>
-#include <vector>
 #include "glm/vec3.hpp"
 #include "glm/vec2.hpp"
+#include "Memory.hxx"
 
 #ifdef __APPLE__
 #include <mach-o/getsect.h>
@@ -32,12 +31,12 @@ struct SResource {
 
 class CRawMesh {
 public:
-    std::vector<glm::vec3> Positions{};
-    std::vector<glm::vec2> TexCoords{};
-    std::vector<glm::vec3> Normals{};
-    std::vector<unsigned short> Indices;
+    std::pmr::vector<glm::vec3> Positions;
+    std::pmr::vector<glm::vec2> TexCoords;
+    std::pmr::vector<glm::vec3> Normals;
+    std::pmr::vector<unsigned short> Indices;
 
-    explicit CRawMesh(const SResource &Resource);
+    CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer);
 };
 
 class CRawImage {
@@ -47,9 +46,7 @@ public:
     int Channels{};
     void *Data{};
 
-    explicit CRawImage(const SResource &Resource);
-
-    ~CRawImage();
+    CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer);
 };
 
 class CRawImageInfo {
@@ -58,5 +55,5 @@ public:
     int Height{};
     int Channels{};
 
-    explicit CRawImageInfo(const SResource &Resource);
+    CRawImageInfo(const SResource &Resource, CScratchBuffer &ScratchBuffer);
 };

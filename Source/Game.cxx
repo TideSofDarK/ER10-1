@@ -1,9 +1,8 @@
 #include "Game.hxx"
 
 #include <iostream>
-#include "Level.hxx"
 #include "Constants.hxx"
-#include "Resource.hxx"
+#include "Asset.hxx"
 #include "SDL.h"
 
 DEFINE_RESOURCE(Frame_png)
@@ -52,8 +51,9 @@ SGame::SGame() {
             }
     };
 
-    Floor.InitFromRawMesh(CRawMesh(ResourceHotelFloor_obj));
-    TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillar_obj));
+    auto ScratchBuffer = Memory::GetScratchBuffer();
+    Floor.InitFromRawMesh(CRawMesh(ResourceHotelFloor_obj, ScratchBuffer));
+    TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillar_obj, ScratchBuffer));
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {

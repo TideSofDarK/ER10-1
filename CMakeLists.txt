@@ -66,6 +66,7 @@ target_sources(
         ${PROJECT_NAME}
         PRIVATE
         Vendor/glad/src/gl.c
+        Source/Memory.cxx
         Source/Utility.cxx
         Source/Main.cxx
         Source/Window.cxx
@@ -74,7 +75,7 @@ target_sources(
         Source/Level.cxx
         Source/Player.cxx
         Source/Tile.cxx
-        Source/Resource.cxx
+        Source/Asset.cxx
 )
 target_include_directories(
         ${PROJECT_NAME}
@@ -99,7 +100,7 @@ if (MINGW)
     set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
 endif ()
 
-if (WIN32)
+if (WIN32 AND CMAKE_BUILD_TYPE MATCHES Release)
     # No console
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
 endif ()
@@ -108,3 +109,10 @@ if (MSVC)
     set_property(TARGET ${PROJECT_NAME} PROPERTY
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
+
+target_link_options(
+        ${PROJECT_NAME}
+        PRIVATE
+        -Wl,-wrap,malloc
+        -Wl,-wrap,free
+)

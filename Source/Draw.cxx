@@ -788,7 +788,8 @@ void SAtlas::Init(int InTextureUnitID) {
 }
 
 SSpriteHandle SAtlas::AddSprite(const SResource &Resource) {
-    CRawImageInfo const RawImageInfo(Resource);
+    auto ScratchBuffer = Memory::GetScratchBuffer();
+    CRawImageInfo const RawImageInfo(Resource, ScratchBuffer);
 
     Sprites[CurrentIndex].SizePixels = {RawImageInfo.Width, RawImageInfo.Height};
     Sprites[CurrentIndex].Resource = &Resource;
@@ -807,8 +808,9 @@ void SAtlas::Build() {
     int MaxHeight{};
 
     for (int Index = 0; Index < CurrentIndex; ++Index) {
+        auto ScratchBuffer = Memory::GetScratchBuffer();
         auto &Sprite = Sprites[SortingIndices[Index]];
-        CRawImage const Image(*Sprite.Resource);
+        CRawImage const Image(*Sprite.Resource, ScratchBuffer);
 
         if (CursorX + Image.Width > WidthAndHeight) {
             CursorY += MaxHeight;
