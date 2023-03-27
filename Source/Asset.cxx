@@ -114,7 +114,6 @@ CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
 CRawImage::CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
     STBIScratchBuffer = &ScratchBuffer;
 
-    stbi_png
     Data = stbi_load_from_memory(Resource.Data, static_cast<int>(Resource.Length),
                                  &Width,
                                  &Height, &Channels,

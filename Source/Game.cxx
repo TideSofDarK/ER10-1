@@ -43,11 +43,13 @@ SGame::SGame() {
             5,
             5,
             {
-                STile::WallNorthWest(),STile::WallNorth(),STile::WallNorth(),STile::WallNorth(),STile::WallNorthEast(),
-                STile::WallWest(),STile(),STile(),STile(),STile::WallEast(),
-                STile::WallWest(),STile(),STile::WallsNoFloor(),STile(),STile::WallEast(),
-                STile::WallWest(),STile(),STile(),STile(),STile::WallEast(),
-                STile::WallSouthWest(),STile::WallSouth(),STile::WallSouth(),STile::WallSouth(),STile::WallSouthEast(),
+                    STile::WallNorthWest(), STile::WallNorth(), STile::WallNorth(), STile::WallNorth(),
+                    STile::WallNorthEast(),
+                    STile::WallWest(), STile(), STile(), STile(), STile::WallEast(),
+                    STile::WallWest(), STile(), STile::WallsNoFloor(), STile(), STile::WallEast(),
+                    STile::WallWest(), STile(), STile(), STile(), STile::WallEast(),
+                    STile::WallSouthWest(), STile::WallSouth(), STile::WallSouth(), STile::WallSouth(),
+                    STile::WallSouthEast(),
             }
     };
 

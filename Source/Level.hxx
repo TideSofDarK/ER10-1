@@ -10,7 +10,8 @@ struct SLevel {
     int Height{};
     std::array<STile, LevelGridSize> Grid{};
 
-    STile const & GetTileAt(int X, int Y);
+    STile const &GetTileAt(int X, int Y);
+
     [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; };
 };
 

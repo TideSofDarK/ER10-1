@@ -21,7 +21,7 @@ public:
         return MemoryResource;
     }
 
-    template <typename T2>
+    template<typename T2>
     auto GetVector() {
         return std::pmr::vector<T2>(MemoryResource);
     }
