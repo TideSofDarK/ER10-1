@@ -19,19 +19,26 @@ SGame::SGame() {
 
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
-    NoiseSprite = CommonAtlas2D.AddSprite(ResourceNoise_png);
-    RefSprite = CommonAtlas2D.AddSprite(ResourceRef_png);
-    CommonAtlas2D.Build();
+    {
+        auto ScratchBuffer = Memory::GetScratchBuffer();
 
-    auto &PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
-    AngelSprite = PrimaryAtlas2D.AddSprite(ResourceAngel_png);
-    FrameSprite = PrimaryAtlas2D.AddSprite(ResourceFrame_png);
-    PrimaryAtlas2D.Build();
+        auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
+        NoiseSprite = CommonAtlas2D.AddSprite(ResourceNoise_png, ScratchBuffer);
+        RefSprite = CommonAtlas2D.AddSprite(ResourceRef_png, ScratchBuffer);
+        CommonAtlas2D.Build(ScratchBuffer);
 
-    auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
-    PrimaryAtlas3D.AddSprite(ResourceHotelAtlas_png);
-    PrimaryAtlas3D.Build();
+        auto &PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
+        AngelSprite = PrimaryAtlas2D.AddSprite(ResourceAngel_png, ScratchBuffer);
+        FrameSprite = PrimaryAtlas2D.AddSprite(ResourceFrame_png, ScratchBuffer);
+        PrimaryAtlas2D.Build(ScratchBuffer);
+
+        auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
+        PrimaryAtlas3D.AddSprite(ResourceHotelAtlas_png, ScratchBuffer);
+        PrimaryAtlas3D.Build(ScratchBuffer);
+
+        Floor.InitFromRawMesh(CRawMesh(ResourceHotelFloor_obj, ScratchBuffer));
+        TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillar_obj, ScratchBuffer));
+    }
 
     Player.X = 0;
     Player.Y = 0;
@@ -52,10 +59,6 @@ SGame::SGame() {
                     STile::WallSouthEast(),
             }
     };
-
-    auto ScratchBuffer = Memory::GetScratchBuffer();
-    Floor.InitFromRawMesh(CRawMesh(ResourceHotelFloor_obj, ScratchBuffer));
-    TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillar_obj, ScratchBuffer));
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {

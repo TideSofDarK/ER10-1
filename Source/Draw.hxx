@@ -273,9 +273,9 @@ public:
 
     void Init(int InTextureUnitID);
 
-    SSpriteHandle AddSprite(const SResource &Resource);
+    SSpriteHandle AddSprite(const SResource &Resource, CScratchBuffer &ScratchBuffer);
 
-    void Build();
+    void Build(CScratchBuffer &ScratchBuffer);
 };
 
 struct SRenderer {

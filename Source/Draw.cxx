@@ -787,8 +787,7 @@ void SAtlas::Init(int InTextureUnitID) {
     std::iota(SortingIndices.begin(), SortingIndices.end(), 0);
 }
 
-SSpriteHandle SAtlas::AddSprite(const SResource &Resource) {
-    auto ScratchBuffer = Memory::GetScratchBuffer();
+SSpriteHandle SAtlas::AddSprite(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
     CRawImageInfo const RawImageInfo(Resource, ScratchBuffer);
 
     Sprites[CurrentIndex].SizePixels = {RawImageInfo.Width, RawImageInfo.Height};
@@ -796,7 +795,7 @@ SSpriteHandle SAtlas::AddSprite(const SResource &Resource) {
     return {this, &Sprites[CurrentIndex++]};
 }
 
-void SAtlas::Build() {
+void SAtlas::Build(CScratchBuffer &ScratchBuffer) {
     BindToTextureUnit(TextureUnitID);
 
     std::sort(SortingIndices.begin(), SortingIndices.end(), [&](const int &IndexA, const int &IndexB) {
@@ -808,7 +807,6 @@ void SAtlas::Build() {
     int MaxHeight{};
 
     for (int Index = 0; Index < CurrentIndex; ++Index) {
-        auto ScratchBuffer = Memory::GetScratchBuffer();
         auto &Sprite = Sprites[SortingIndices[Index]];
         CRawImage const Image(*Sprite.Resource, ScratchBuffer);
 
