@@ -255,6 +255,75 @@ void STileset::InitPlaceholder() {
     glBindVertexArray(0);
 }
 
+void STileset::InitBasic(const CRawMesh &Floor) {
+    std::array<glm::vec3, 8> TempPositions{};
+    std::array<glm::vec2, 8> TempTexCoords{};
+    std::array<unsigned short, 12> Indices{};
+
+    /** Floor Quad */
+    auto &FloorGeometry = TileGeometry[ETileGeometryType::Floor];
+    FloorGeometry.ElementOffset = 0;
+    FloorGeometry.ElementCount = 6;
+
+    for (int Index = 0; Index < 6; ++Index) {
+        Indices[Index] = Floor.Indices[Index];
+    }
+
+    for (int Index = 0; Index < 4; ++Index) {
+        TempPositions[Index] = Floor.Positions[Index];
+        TempTexCoords[Index] = Floor.TexCoords[Index];
+    }
+
+    /** Wall Quad */
+    auto &WallGeometry = TileGeometry[ETileGeometryType::Wall];
+    WallGeometry.ElementOffset = 12;
+    WallGeometry.ElementCount = 6;
+    Indices[6] = 4 + 0;
+    Indices[7] = 4 + 1;
+    Indices[8] = 4 + 2;
+    Indices[9] = 4 + 0;
+    Indices[10] = 4 + 2;
+    Indices[11] = 4 + 3;
+
+    TempPositions[4] = {0.5f, 1.0f, -0.5f};
+    TempPositions[5] = {-0.5f, 1.0f, -0.5f};
+    TempPositions[6] = {-0.5f, 0.0f, -0.5f};
+    TempPositions[7] = {0.5f, 0.0f, -0.5f};
+
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    glEnableVertexAttribArray(0);
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(TempPositions.size() * sizeof(glm::vec3)), &TempPositions[0],
+                 GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    glEnableVertexAttribArray(1);
+    glGenBuffers(1, &CBO);
+    glBindBuffer(GL_ARRAY_BUFFER, CBO);
+    glBufferData(GL_ARRAY_BUFFER,
+                 static_cast<long long>(TempTexCoords.size() * SIZE_OF_VECTOR_ELEMENT(TempTexCoords)),
+                 &TempTexCoords[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(
+            1,
+            2,
+            GL_FLOAT,
+            GL_FALSE,
+            0,
+            nullptr
+    );
+
+    ElementCount = static_cast<int>(Indices.size());
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<long long>(ElementCount * sizeof(unsigned short)), &Indices[0],
+                 GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+}
+
 void SCamera::Regenerate(float InFieldOfViewY, float InAspect) {
     FieldOfViewY = InFieldOfViewY;
     Aspect = InAspect;
@@ -430,8 +499,6 @@ void SRenderer::Init(int Width, int Height) {
     ProgramPostProcess.Init(&ResourcePostProcess_vert, &ResourcePostProcess_frag);
     ProgramPostProcess.Use();
     glUniform1i(ProgramPostProcess.UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
-
-    Tileset.InitPlaceholder();
 }
 
 void SRenderer::Cleanup() {

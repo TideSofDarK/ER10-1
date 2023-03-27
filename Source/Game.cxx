@@ -36,8 +36,11 @@ SGame::SGame() {
         PrimaryAtlas3D.AddSprite(ResourceHotelAtlas_png, ScratchBuffer);
         PrimaryAtlas3D.Build(ScratchBuffer);
 
-        Floor.InitFromRawMesh(CRawMesh(ResourceHotelFloor_obj, ScratchBuffer));
+        auto FloorMesh = CRawMesh(ResourceHotelFloor_obj, ScratchBuffer);
+        Floor.InitFromRawMesh(FloorMesh);
         TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillar_obj, ScratchBuffer));
+
+        Renderer.Tileset.InitBasic(FloorMesh);
     }
 
     Player.X = 0;

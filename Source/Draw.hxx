@@ -139,6 +139,8 @@ struct STileset : SGeometry {
     std::array<SSubGeometry, 5> TileGeometry;
 
     void InitPlaceholder();
+
+    void InitBasic(const CRawMesh &Floor);
 };
 
 struct SCamera {

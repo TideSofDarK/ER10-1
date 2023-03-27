@@ -18,7 +18,7 @@ void main()
     }
 
     if (u_mode == UBER3D_MODE_LEVEL) {
-        color = f_vertexColor;
+        color = texture(u_primaryAtlas, f_texCoord);
     }
 
     float fog = 1.0 - (f_distanceToCamera * 0.2);
