@@ -1,7 +1,6 @@
-#include <SDL.h>
-#include <map>
-#include "Game.hxx"
 #include "Memory.hxx"
+#include <SDL.h>
+#include "Game.hxx"
 
 int SDL_main([[maybe_unused]] int ArgCount, [[maybe_unused]] char *Arguments[]) {
     Memory::Init();

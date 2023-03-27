@@ -101,7 +101,6 @@ if (MINGW)
 endif ()
 
 if (WIN32 AND CMAKE_BUILD_TYPE MATCHES Release)
-    # No console
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
 endif ()
 
@@ -109,10 +108,3 @@ if (MSVC)
     set_property(TARGET ${PROJECT_NAME} PROPERTY
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
-
-target_link_options(
-        ${PROJECT_NAME}
-        PRIVATE
-        -Wl,-wrap,malloc
-        -Wl,-wrap,free
-)

@@ -33,7 +33,7 @@ void *STBIRealloc(void *Pointer, size_t Length) {
 }
 
 void STBIFree(void *Pointer) {
-    STBIScratchBuffer->GetAllocator()->release();
+//    STBIScratchBuffer->GetAllocator()->release();
 }
 
 #include "stb_image.h"
