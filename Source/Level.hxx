@@ -9,6 +9,7 @@ struct SLevel {
     int Width{};
     int Height{};
     std::array<STile, LevelGridSize> Grid{};
+    bool bUseWallJoints = true;
 
     STile const &GetTileAt(int X, int Y);
 

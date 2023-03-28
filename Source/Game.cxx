@@ -13,6 +13,7 @@ DEFINE_RESOURCE(Quad_obj)
 DEFINE_RESOURCE(Pillar_obj)
 DEFINE_RESOURCE(HotelFloor_obj)
 DEFINE_RESOURCE(HotelWall_obj)
+DEFINE_RESOURCE(HotelWallJoint_obj)
 DEFINE_RESOURCE(HotelAtlas_png)
 
 SGame::SGame() {
@@ -41,7 +42,7 @@ SGame::SGame() {
         Floor.InitFromRawMesh(FloorMesh);
         TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillar_obj, ScratchBuffer));
 
-        Renderer.Tileset.InitBasic(ResourceHotelFloor_obj, ResourceHotelWall_obj, ScratchBuffer);
+        Renderer.Tileset.InitBasic(ResourceHotelFloor_obj, ResourceHotelWall_obj, ResourceHotelWallJoint_obj, ScratchBuffer);
     }
 
     Player.X = 0;

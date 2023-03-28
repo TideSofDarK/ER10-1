@@ -36,6 +36,8 @@ public:
     std::pmr::vector<glm::vec3> Normals;
     std::pmr::vector<unsigned short> Indices;
 
+    int GetVertexCount() { return Positions.size(); }
+
     CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer);
 };
 

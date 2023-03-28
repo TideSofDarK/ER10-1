@@ -256,42 +256,38 @@ void STileset::InitPlaceholder() {
     glBindVertexArray(0);
 }
 
-void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratchBuffer &ScratchBuffer) {
+void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SResource &WallJoint,
+                         CScratchBuffer &ScratchBuffer) {
     auto Positions = ScratchBuffer.GetVector<glm::vec3>();
     auto TexCoords = ScratchBuffer.GetVector<glm::vec2>();
     auto Indices = ScratchBuffer.GetVector<unsigned short>();
 
-    /** Floor */
-    auto FloorMesh = CRawMesh(Floor, ScratchBuffer);
+    int LastElementOffset = 0;
+    int LastVertexOffset = 0;
 
-    auto &FloorGeometry = TileGeometry[ETileGeometryType::Floor];
-    FloorGeometry.ElementOffset = 0;
-    FloorGeometry.ElementCount = FloorMesh.Indices.size();
+    auto InitGeometry = [&](const SResource &Resource, int Type) {
+        auto Mesh = CRawMesh(Resource, ScratchBuffer);
 
-    for (int Index = 0; Index < FloorGeometry.ElementCount; ++Index) {
-        Indices.push_back(FloorMesh.Indices[Index] + 0);
-    }
+        auto &Geometry = TileGeometry[Type];
+        Geometry.ElementOffset = LastElementOffset;
+        Geometry.ElementCount = Mesh.Indices.size();
 
-    for (int Index = 0; Index < FloorMesh.Positions.size(); ++Index) {
-        Positions.push_back(FloorMesh.Positions[Index]);
-        TexCoords.push_back(FloorMesh.TexCoords[Index]);
-    }
+        for (int Index = 0; Index < Geometry.ElementCount; ++Index) {
+            Indices.push_back(Mesh.Indices[Index] + LastVertexOffset);
+        }
 
-    /** Wall */
-    auto WallMesh = CRawMesh(Wall, ScratchBuffer);
+        for (int Index = 0; Index < Mesh.GetVertexCount(); ++Index) {
+            Positions.push_back(Mesh.Positions[Index]);
+            TexCoords.push_back(Mesh.TexCoords[Index]);
+        }
 
-    auto &WallGeometry = TileGeometry[ETileGeometryType::Wall];
-    WallGeometry.ElementOffset = FloorMesh.Indices.size() * sizeof(unsigned short);
-    WallGeometry.ElementCount = WallMesh.Indices.size();
+        LastVertexOffset = Mesh.GetVertexCount();
+        LastElementOffset = static_cast<int>((Geometry.ElementCount) * sizeof(unsigned short));
+    };
 
-    for (int Index = 0; Index < WallGeometry.ElementCount; ++Index) {
-        Indices.push_back(WallMesh.Indices[Index] + FloorMesh.Positions.size());
-    }
-
-    for (int Index = 0; Index < WallMesh.Positions.size(); ++Index) {
-        Positions.push_back(WallMesh.Positions[Index]);
-        TexCoords.push_back(WallMesh.TexCoords[Index]);
-    }
+    InitGeometry(Floor, ETileGeometryType::Floor);
+    InitGeometry(Wall, ETileGeometryType::Wall);
+    InitGeometry(WallJoint, ETileGeometryType::WallJoint);
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
@@ -767,11 +763,14 @@ void SRenderer::Draw3DLevel(const SLevel &Level) {
         DrawCall.Count = 0;
     }
 
-    auto &FloorDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Floor];
+    auto &FloorDrawCall = LevelDrawData.DrawCalls[0];
     FloorDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::Floor];
 
-    auto &WallDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Wall];
+    auto &WallDrawCall = LevelDrawData.DrawCalls[1];
     WallDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::Wall];
+
+    auto &WallJointDrawCall = LevelDrawData.DrawCalls[2];
+    WallJointDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::WallJoint];
 
     for (unsigned int X = 0; X < Level.Width; ++X) {
         for (unsigned int Y = 0; Y < Level.Height; ++Y) {
@@ -787,6 +786,28 @@ void SRenderer::Draw3DLevel(const SLevel &Level) {
                 FloorDrawCall.Count++;
             }
 
+            /** Wall Joints */
+            if (Level.bUseWallJoints) {
+                for (int Direction = 0; Direction < 4; ++Direction) {
+                    if (Tile.Edges[Direction] == ETileEdgeType::Wall &&
+                        Tile.Edges[(Direction + 1) % 3] == ETileEdgeType::Wall) {
+                        auto Transform = glm::identity<glm::mat4x4>();
+                        Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
+//                    Transform = glm::rotate(Transform, Utility::RotationFromDirection(EDirection{Direction}),
+//                                            {0.0f, 1.0f, 0.0f});
+                        WallJointDrawCall.Transform[WallJointDrawCall.Count] = Transform;
+                        WallJointDrawCall.Count++;
+                    }
+                }
+//                if (Tile.Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall &&
+//                    Tile.Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall) {
+//                    auto Transform = glm::identity<glm::mat4x4>();
+//                    Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
+//                    WallJointDrawCall.Transform[WallJointDrawCall.Count] = Transform;
+//                    WallJointDrawCall.Count++;
+//                }
+            }
+
             for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
                 auto &TileEdge = Tile.Edges[Direction];
 
@@ -795,8 +816,11 @@ void SRenderer::Draw3DLevel(const SLevel &Level) {
                     Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
                     Transform = glm::rotate(Transform, Utility::RotationFromDirection(EDirection{Direction}),
                                             {0.0f, 1.0f, 0.0f});
-                    WallDrawCall.Transform[WallDrawCall.Count] = Transform;
-                    WallDrawCall.Count++;
+
+                    if (TileEdge == ETileEdgeType::Wall) {
+                        WallDrawCall.Transform[WallDrawCall.Count] = Transform;
+                        WallDrawCall.Count++;
+                    }
                 }
             }
         }
@@ -807,7 +831,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level) {
     Entry.Geometry = &Tileset;
     Entry.Model = glm::translate(glm::identity<glm::mat4x4>(), glm::zero<glm::vec3>());
     Entry.InstancedDrawCall = &LevelDrawData.DrawCalls[0];
-    Entry.InstancedDrawCallCount = 2;
+    Entry.InstancedDrawCallCount = 3;
 
     Entry.Mode = SEntryMode{
             .ID = UBER3D_MODE_LEVEL

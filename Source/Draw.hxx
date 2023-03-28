@@ -124,6 +124,7 @@ namespace ETileGeometryType {
     enum {
         Floor,
         Wall,
+        WallJoint,
         Ceil,
         Door,
         Hole,
@@ -140,7 +141,7 @@ struct STileset : SGeometry {
 
     void InitPlaceholder();
 
-    void InitBasic(const SResource &Floor, const SResource &Wall, CScratchBuffer &ScratchBuffer);
+    void InitBasic(const SResource &Floor, const SResource &Wall, const SResource &WallJoint, CScratchBuffer &ScratchBuffer);
 };
 
 struct SCamera {
