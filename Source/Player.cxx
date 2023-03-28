@@ -1,15 +1,13 @@
 #include "Player.hxx"
 #include "Utility.hxx"
 
-#define EYE_HEIGHT 0.4f
-
 void SPlayer::Update(float DeltaTime) {
     EyePositionCurrent = Utility::InterpolateToConstant(EyePositionCurrent, EyePositionTarget, DeltaTime, 4.0f);
     EyeForwardCurrent = Utility::InterpolateToConstant(EyeForwardCurrent, EyeForwardTarget, DeltaTime, 4.0f);
 }
 
 SPlayer::SPlayer() : Direction(0) {
-    EyePositionCurrent = EyePositionTarget = {static_cast<float>(X), EYE_HEIGHT, static_cast<float>(Y)};
+    EyePositionCurrent = EyePositionTarget = {static_cast<float>(X), EyeHeight, static_cast<float>(Y)};
     SetDirection(Direction, true);
 }
 

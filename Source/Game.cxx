@@ -48,7 +48,7 @@ SGame::SGame() {
     Player.Y = 0;
     Player.SetDirection(EDirection::North, true);
 
-    Camera.Regenerate(45.0f, SCENE_ASPECT);
+    Camera.RegenerateProjection();
 
     Level = SLevel{
             5,
@@ -56,9 +56,9 @@ SGame::SGame() {
             {
                     STile::WallNorthWest(), STile::WallNorth(), STile::WallNorth(), STile::WallNorth(),
                     STile::WallNorthEast(),
-                    STile::WallWest(), STile(), STile(), STile(), STile::WallEast(),
-                    STile::WallWest(), STile(), STile::WallsNoFloor(), STile(), STile::WallEast(),
-                    STile::WallWest(), STile(), STile(), STile(), STile::WallEast(),
+                    STile::WallWestEast(), STile(), STile(), STile(), STile::WallEast(),
+                    STile::WallWestEast(), STile(), STile::WallsNoFloor(), STile(), STile::WallEast(),
+                    STile::WallWestEast(), STile(), STile(), STile(), STile::WallEast(),
                     STile::WallSouthWest(), STile::WallSouth(), STile::WallSouth(), STile::WallSouth(),
                     STile::WallSouthEast(),
             }
@@ -114,6 +114,13 @@ void SGame::Run() {
         InputState.Right = UpdateKeyState(OldInputState.Right, KeyboardState, SDL_SCANCODE_D);
         InputState.Down = UpdateKeyState(OldInputState.Down, KeyboardState, SDL_SCANCODE_S);
         InputState.Left = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_A);
+
+        InputState.L = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_Q);
+        InputState.R = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_E);
+
+        InputState.ZL = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_Z);
+        InputState.ZR = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_C);
+
         InputState.Accept = UpdateKeyState(OldInputState.Accept, KeyboardState, SDL_SCANCODE_SPACE);
         InputState.Cancel = UpdateKeyState(OldInputState.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
         InputState.ToggleFullscreen = UpdateKeyState(OldInputState.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
@@ -157,6 +164,10 @@ void SGame::Run() {
 
         Window.SwapBuffers();
     }
+
+    std::printf("EyeHeight: %f\n", Player.EyeHeight);
+    std::printf("FieldOfViewY: %f\n", Camera.FieldOfViewY);
+    std::printf("Aspect: %f\n", Camera.Aspect);
 
     Renderer.Cleanup();
     Window.Cleanup();

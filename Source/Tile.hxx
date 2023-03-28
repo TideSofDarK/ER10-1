@@ -40,6 +40,10 @@ struct STile {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 
+    static STile WallWestEast() {
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
+    };
+
     static STile WallNorthWest() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };

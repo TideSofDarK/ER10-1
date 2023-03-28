@@ -8,6 +8,7 @@
 #include "Level.hxx"
 #include "Constants.hxx"
 #include "Utility.hxx"
+#include "Math.hxx"
 
 static std::string const GLSLVersion = "#version 410 core\n";
 static std::string const ShaderConstants{
@@ -326,10 +327,16 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, CScratch
     glBindVertexArray(0);
 }
 
-void SCamera::Regenerate(float InFieldOfViewY, float InAspect) {
-    FieldOfViewY = InFieldOfViewY;
-    Aspect = InAspect;
-    Projection = glm::perspective(glm::radians(FieldOfViewY), Aspect, 0.01f, 100.0f);
+void SCamera::RegenerateProjection() {
+    float const FOVRadians = Math::Radians(FieldOfViewY);
+    float const TanHalfFovY = std::tan(FOVRadians / 2.0f);
+
+    Projection = glm::zero<glm::mat4x4>();
+    Projection[0][0] = 1.0f / (Aspect * TanHalfFovY);
+    Projection[1][1] = 1.0f / (TanHalfFovY);
+    Projection[2][2] = -(ZFar + ZNear) / (ZFar - ZNear);
+    Projection[2][3] = -1.0f;
+    Projection[3][2] = -(2.0f * ZFar * ZNear) / (ZFar - ZNear);
 }
 
 void SCamera::Update() {

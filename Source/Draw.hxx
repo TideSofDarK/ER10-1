@@ -148,10 +148,13 @@ struct SCamera {
     glm::mat4x4 Projection;
     glm::vec3 Position;
     glm::vec3 Target;
-    float Aspect{};
-    float FieldOfViewY{};
 
-    void Regenerate(float InFieldOfViewY, float InAspect);
+    float Aspect = 2.4f;
+    float FieldOfViewY = 77.7f;
+    float ZNear = 0.01f;
+    float ZFar = 100.0f;
+
+    void RegenerateProjection();
 
     void Update();
 };

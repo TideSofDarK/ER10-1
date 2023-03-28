@@ -9,6 +9,8 @@ struct SPlayer {
     int X{};
     int Y{};
 
+    float EyeHeight = 0.22f;
+
     glm::vec3 EyeForwardCurrent{};
     glm::vec3 EyeForwardTarget{};
     glm::vec3 EyePositionCurrent{};
