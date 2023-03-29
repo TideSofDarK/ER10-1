@@ -2,25 +2,11 @@
 
 #include <algorithm>
 #include <random>
-#include "glm/ext/scalar_constants.hpp"
 
 namespace Utility {
     std::random_device RandomDevice;
     std::mt19937 RNG(RandomDevice());
     std::uniform_real_distribution<float> NormalizedDistribution(0.0f, 1.0f);
-
-    float RotationFromDirection(EDirection Direction) {
-        switch (Direction) {
-            case EDirection::East:
-                return glm::pi<float>() * -0.5f;
-            case EDirection::South:
-                return glm::pi<float>();
-            case EDirection::West:
-                return glm::pi<float>() / 2.0f;
-            default:
-                return 0.0f;
-        }
-    }
 
     float GetRandomFloat() {
         return NormalizedDistribution(RNG);

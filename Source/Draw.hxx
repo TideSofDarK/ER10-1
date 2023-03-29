@@ -8,6 +8,7 @@
 #include "CommonTypes.hxx"
 #include "Asset.hxx"
 #include "ShaderConstants.hxx"
+#include "Math.hxx"
 
 #define RENDERER_QUEUE2D_SIZE 16
 #define RENDERER_QUEUE3D_SIZE 8
@@ -334,7 +335,7 @@ struct SRenderer {
 
     void Draw3D(glm::vec3 Position, SGeometry *Geometry);
 
-    void Draw3DLevel(const SLevel &Level);
+    void Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, const SDirection &POVDirection);
 
 #pragma endregion
 };

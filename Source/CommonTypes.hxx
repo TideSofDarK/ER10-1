@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Math.hxx"
+
 struct SWindowData {
     int Width{};
     int Height{};
@@ -20,6 +22,66 @@ enum class EDirection : unsigned {
     South,
     West,
     Count
+};
+
+struct SDirection {
+    unsigned Direction: 2;
+
+    explicit SDirection(unsigned InDirection) : Direction(InDirection) {}
+
+    SDirection(EDirection InDirection) : Direction(static_cast<unsigned>(InDirection)) {}
+
+    EDirection GetEnum() const { return static_cast<EDirection>(Direction); }
+
+//    bool operator==(const SDirection &Other) const {
+//        return Direction == Other.Direction;
+//    }
+//
+//    bool operator==(const int &InDirection) const {
+//        return Direction == InDirection;
+//    }
+//
+//    SDirection &operator=(int InDirection) {
+//        Direction = InDirection;
+//        return *this;
+//    }
+
+    void CycleCW() {
+        Direction++;
+    }
+
+    void CycleCCW() {
+        Direction--;
+    }
+
+    template<typename T>
+    SVec2<T> DirectionVectorFromDirection() const {
+        switch (GetEnum()) {
+            case EDirection::North:
+                return {0, 1};
+            case EDirection::East:
+                return {-1, 0};
+            case EDirection::South:
+                return {0, -1};
+            case EDirection::West:
+                return {1, 0};
+            default:
+                return {};
+        }
+    }
+
+    [[nodiscard]] float RotationFromDirection() const {
+        switch (GetEnum()) {
+            case EDirection::East:
+                return Math::PI * -0.5f;
+            case EDirection::South:
+                return Math::PI;
+            case EDirection::West:
+                return Math::PI / 2.0f;
+            default:
+                return 0.0f;
+        }
+    }
 };
 
 #define DIRECTION_COUNT static_cast<unsigned>(EDirection::Count)

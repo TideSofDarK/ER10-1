@@ -2,12 +2,11 @@
 
 #include "glm/geometric.hpp"
 #include "CommonTypes.hxx"
+#include "Math.hxx"
 
 #define SIZE_OF_VECTOR_ELEMENT(Vector) sizeof(decltype(Vector)::value_type)
 
 namespace Utility {
-    float RotationFromDirection(EDirection Direction);
-
     float GetRandomFloat();
 
     float SmoothDamp(float Current, float Target, float SmoothTime, float MaxSpeed, float DeltaTime);

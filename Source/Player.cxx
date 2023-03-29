@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "Player.hxx"
 #include "Utility.hxx"
 
@@ -6,45 +7,31 @@ void SPlayer::Update(float DeltaTime) {
     EyeForwardCurrent = Utility::InterpolateToConstant(EyeForwardCurrent, EyeForwardTarget, DeltaTime, 4.0f);
 }
 
-SPlayer::SPlayer() : Direction(0) {
-    EyePositionCurrent = EyePositionTarget = {static_cast<float>(X), EyeHeight, static_cast<float>(Y)};
-    SetDirection(Direction, true);
+SPlayer::SPlayer() : Direction(EDirection::North) {
+    EyePositionCurrent = EyePositionTarget = {static_cast<float>(Coords.X), EyeHeight, static_cast<float>(Coords.Y)};
+    ApplyDirection(true);
 }
 
 void SPlayer::HandleInput(const SInputState InputState) {
     if (InputState.Left == EKeyState::Pressed) {
-        SetDirection(Direction - 1, false);
+        Direction.CycleCCW();
+        ApplyDirection(false);
     } else if (InputState.Right == EKeyState::Pressed) {
-        SetDirection(Direction + 1, false);
+        Direction.CycleCW();
+        ApplyDirection(false);
     }
     if (InputState.Up == EKeyState::Pressed) {
         EyePositionTarget += EyeForwardTarget;
+        Coords += Direction.DirectionVectorFromDirection<int>();
+        std::printf("%d %d", Coords.X, Coords.Y);
     }
 }
 
-void SPlayer::SetDirection(unsigned NewDirection, bool bImmediate) {
-    Direction = NewDirection;
-    SetDirection(static_cast<EDirection>(Direction), bImmediate);
-}
-
-void SPlayer::SetDirection(EDirection NewDirection, bool bImmediate) {
+void SPlayer::ApplyDirection(bool bImmediate) {
     EyeForwardTarget = {0.0f, 0.0f, 0.0f};
-    switch (NewDirection) {
-        case EDirection::North:
-            EyeForwardTarget.z += 1.0f;
-            break;
-        case EDirection::East:
-            EyeForwardTarget.x -= 1.0f;
-            break;
-        case EDirection::South:
-            EyeForwardTarget.z -= 1.0f;
-            break;
-        case EDirection::West:
-            EyeForwardTarget.x += 1.0f;
-            break;
-        default:
-            break;
-    }
+    auto DirectionVector = Direction.DirectionVectorFromDirection<float>();
+    EyeForwardTarget.x += DirectionVector.X;
+    EyeForwardTarget.z += DirectionVector.Y;
     if (bImmediate) {
         EyeForwardCurrent = EyeForwardTarget;
     }

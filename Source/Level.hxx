@@ -13,6 +13,18 @@ struct SLevel {
 
     STile const &GetTileAt(int X, int Y);
 
+    [[nodiscard]] bool IsValidTile(UVec2Int Coords) const {
+        return IsValidCoordX(Coords.X) && IsValidCoordY(Coords.Y);
+    }
+
+    [[nodiscard]] bool IsValidCoordX(int Coord) const {
+        return Coord >= 0 && Coord < Width;
+    }
+
+    [[nodiscard]] bool IsValidCoordY(int Coord) const {
+        return Coord >= 0 && Coord < Height;
+    }
+
     [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; };
 };
 

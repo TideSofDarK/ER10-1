@@ -45,9 +45,7 @@ SGame::SGame() {
         Renderer.Tileset.InitBasic(ResourceHotelFloor_obj, ResourceHotelWall_obj, ResourceHotelWallJoint_obj, ScratchBuffer);
     }
 
-    Player.X = 0;
-    Player.Y = 0;
-    Player.SetDirection(EDirection::North, true);
+    Player.ApplyDirection(true);
 
     Camera.RegenerateProjection();
 
@@ -150,7 +148,7 @@ void SGame::Run() {
         Renderer.Draw3D({-5.0f, 0.0f, -4.0f}, &Floor);
         Renderer.Draw3D({-6.0f, 0.0f, -4.0f}, &Floor);
         Renderer.Draw3D({-7.0f, 0.0f, -4.0f}, &Floor);
-        Renderer.Draw3DLevel(Level);
+        Renderer.Draw3DLevel(Level, Player.Coords, Player.Direction);
         Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
                           {Window.Seconds / 2.0, 0.9f, 0.2f, 0.1f},
                           NoiseSprite.Sprite->UVRect);

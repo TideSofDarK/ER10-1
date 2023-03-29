@@ -2,12 +2,11 @@
 
 #include <glm/glm.hpp>
 #include "CommonTypes.hxx"
+#include "Math.hxx"
 
 struct SPlayer {
-    /** Allowed values are 0..3 */
-    unsigned Direction: 2;
-    int X{};
-    int Y{};
+    SDirection Direction;
+    UVec2Int Coords{};
 
     float EyeHeight = 0.22f;
 
@@ -22,7 +21,5 @@ struct SPlayer {
 
     void Update(float DeltaTime);
 
-    void SetDirection(unsigned NewDirection, bool bImmediate);
-
-    void SetDirection(EDirection NewDirection, bool bImmediate);
+    void ApplyDirection(bool bImmediate);
 };
