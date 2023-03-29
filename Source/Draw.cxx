@@ -281,8 +281,8 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SR
             TexCoords.push_back(Mesh.TexCoords[Index]);
         }
 
-        LastVertexOffset = Mesh.GetVertexCount();
-        LastElementOffset = static_cast<int>((Geometry.ElementCount) * sizeof(unsigned short));
+        LastVertexOffset += Mesh.GetVertexCount();
+        LastElementOffset += static_cast<int>((Geometry.ElementCount) * sizeof(unsigned short));
     };
 
     InitGeometry(Floor, ETileGeometryType::Floor);
