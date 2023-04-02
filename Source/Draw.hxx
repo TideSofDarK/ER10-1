@@ -137,7 +137,7 @@ namespace ETileGeometryType {
     };
 }
 
-struct STileset : SGeometry {
+struct STileSet : SGeometry {
     /**  */
     std::array<SSubGeometry, 5> TileGeometry;
 
@@ -290,7 +290,7 @@ struct SRenderer {
     SRenderQueue<SEntry2D, RENDERER_QUEUE2D_SIZE> Queue2D;
     SRenderQueue<SEntry3D, RENDERER_QUEUE3D_SIZE> Queue3D;
     SAtlas Atlases[3];
-    STileset Tileset;
+    STileSet TileSet;
 
     SProgram2D ProgramHUD;
     SProgram2D ProgramUber2D;

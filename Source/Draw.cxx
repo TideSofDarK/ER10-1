@@ -202,7 +202,7 @@ void SGeometry::Cleanup() {
     std::cout << "Deleting SGeometry with ElementCount == " + std::to_string(ElementCount) << std::endl;
 }
 
-void STileset::InitPlaceholder() {
+void STileSet::InitPlaceholder() {
     std::array<glm::vec3, 8> TempVertices{};
     std::array<unsigned short, 12> Indices{};
 
@@ -258,7 +258,7 @@ void STileset::InitPlaceholder() {
     glBindVertexArray(0);
 }
 
-void STileset::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint) {
+void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint) {
     auto ScratchBuffer = Memory::GetScratchBuffer();
 
     auto Positions = ScratchBuffer.GetVector<glm::vec3>();
@@ -515,7 +515,7 @@ void SRenderer::Cleanup() {
         Atlas.Cleanup();
     }
     Quad2D.Cleanup();
-    Tileset.Cleanup();
+    TileSet.Cleanup();
     ProgramHUD.Cleanup();
     ProgramUber2D.Cleanup();
     ProgramUber3D.Cleanup();
@@ -767,19 +767,19 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
     }
 
     auto &FloorDrawCall = LevelDrawData.DrawCalls[0];
-    FloorDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::Floor];
+    FloorDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::Floor];
 
     auto &WallDrawCall = LevelDrawData.DrawCalls[1];
-    WallDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::Wall];
+    WallDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::Wall];
 
     auto &WallJointDrawCall = LevelDrawData.DrawCalls[2];
-    WallJointDrawCall.SubGeometry = &Tileset.TileGeometry[ETileGeometryType::WallJoint];
+    WallJointDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::WallJoint];
 
     if (!Level.IsValidTile(POVOrigin)) {
         return;
     }
 
-    auto const DrawDistanceForward = 4;
+    auto const DrawDistanceForward = 3;
     auto const DrawDistanceSide = 2;
 
     auto POVDirectionVectorForward = POVDirection.DirectionVectorFromDirection<int>();
@@ -787,38 +787,34 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
 
     for (int ForwardCounter = -1; ForwardCounter < DrawDistanceForward; ++ForwardCounter) {
         for (int SideCounter = -DrawDistanceSide; SideCounter <= DrawDistanceSide; ++SideCounter) {
-
             auto X = POVOrigin.X + (POVDirectionVectorForward.X * ForwardCounter) +
                      (POVDirectionVectorSide.X * SideCounter);
             auto Y = POVOrigin.Y + (POVDirectionVectorForward.Y * ForwardCounter) +
                      (POVDirectionVectorSide.Y * SideCounter);
 
+            auto XOffset = static_cast<float>(X);
+            auto YOffset = static_cast<float>(Y);
+
+            if (Level.bUseWallJoints && Level.IsValidWallJoint({X, Y})) {
+                auto bWallJoint = Level.GetWallJointAt({X, Y});
+                if (bWallJoint) {
+                    auto Transform = glm::identity<glm::mat4x4>();
+                    Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
+                    WallJointDrawCall.Transform[WallJointDrawCall.Count] = Transform;
+                    WallJointDrawCall.Count++;
+                }
+            }
+
             if (!Level.IsValidTile({X, Y})) {
                 continue;
             }
 
-            const auto &Tile = Level.GetTileAt(X, Y);
-
-            auto XOffset = static_cast<float>(X);
-            auto YOffset = static_cast<float>(Y);
+            const auto &Tile = Level.GetTileAt({X, Y});
 
             if (Tile.Type == ETileType::Floor) {
                 FloorDrawCall.Transform[FloorDrawCall.Count] =
                         glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset));
                 FloorDrawCall.Count++;
-            }
-
-            /** Wall Joints */
-            if (Level.bUseWallJoints) {
-                for (int Direction = 0; Direction < 4; ++Direction) {
-                    if (Tile.Edges[Direction] == ETileEdgeType::Wall &&
-                        Tile.Edges[(Direction + 1) % 3] == ETileEdgeType::Wall) {
-                        auto Transform = glm::identity<glm::mat4x4>();
-                        Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
-                        WallJointDrawCall.Transform[WallJointDrawCall.Count] = Transform;
-                        WallJointDrawCall.Count++;
-                    }
-                }
             }
 
             for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
@@ -841,7 +837,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
 
     SEntry3D Entry;
 
-    Entry.Geometry = &Tileset;
+    Entry.Geometry = &TileSet;
     Entry.Model = glm::translate(glm::identity<glm::mat4x4>(), glm::zero<glm::vec3>());
     Entry.InstancedDrawCall = &LevelDrawData.DrawCalls[0];
     Entry.InstancedDrawCallCount = 3;

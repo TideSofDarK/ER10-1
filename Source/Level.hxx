@@ -1,31 +1,76 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include "Tile.hxx"
 
-int constexpr LevelGridSize = 16 * 16;
+int constexpr LevelGridWidth = 16;
+int constexpr LevelGridHeight = 16;
+int constexpr LevelGridSize = LevelGridWidth * LevelGridHeight;
 
 struct SLevel {
-    int Width{};
-    int Height{};
-    std::array<STile, LevelGridSize> Grid{};
-    bool bUseWallJoints = true;
+    using UWallJoint = bool;
 
-    [[nodiscard]] STile const &GetTileAt(int X, int Y) const;
-
-    [[nodiscard]] bool IsValidTile(UVec2Int Coords) const {
-        return IsValidCoordX(Coords.X) && IsValidCoordY(Coords.Y);
+private:
+    [[nodiscard]] STile &GetTileAtMutable(UVec2Int Coords) {
+        auto Index = CoordsToIndex(Coords.X, Coords.Y);
+        return Tiles[Index];
     }
 
-    [[nodiscard]] bool IsValidCoordX(int Coord) const {
+    [[nodiscard]] UWallJoint *GetWallJointAtMutable(UVec2Int Coords) {
+        if (IsValidWallJoint(Coords)) {
+            auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
+            return &WallJoints[Index];
+        }
+        return nullptr;
+    }
+
+public:
+    int Width{};
+    int Height{};
+    std::array<STile, LevelGridSize> Tiles{};
+    std::array<UWallJoint, (LevelGridWidth + 1) * (LevelGridHeight + 1)> WallJoints{};
+    bool bUseWallJoints = false;
+
+    [[nodiscard]] STile const &GetTileAt(UVec2Int Coords) const {
+        auto Index = CoordsToIndex(Coords.X, Coords.Y);
+        return Tiles[Index];
+    };
+
+    [[nodiscard]] bool IsValidTile(UVec2Int Coords) const {
+        return IsValidTileX(Coords.X) && IsValidTileY(Coords.Y);
+    }
+
+    [[nodiscard]] bool IsValidTileX(int Coord) const {
         return Coord >= 0 && Coord < Width;
     }
 
-    [[nodiscard]] bool IsValidCoordY(int Coord) const {
+    [[nodiscard]] bool IsValidTileY(int Coord) const {
         return Coord >= 0 && Coord < Height;
     }
 
     [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; };
+
+    [[nodiscard]] UWallJoint GetWallJointAt(UVec2Int Coords) const {
+        auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
+        return WallJoints[Index];
+    };
+
+    [[nodiscard]] bool IsValidWallJoint(UVec2Int Coords) const {
+        return IsValidWallJointX(Coords.X) && IsValidWallJointY(Coords.Y);
+    }
+
+    [[nodiscard]] bool IsValidWallJointX(int Coord) const {
+        return Coord >= 0 && Coord < Width + 1;
+    }
+
+    [[nodiscard]] bool IsValidWallJointY(int Coord) const {
+        return Coord >= 0 && Coord < Height + 1;
+    }
+
+    [[nodiscard]] inline int WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; };
+
+    void InitWallJoints();
 };
 
 

@@ -16,7 +16,17 @@ struct SWindowData {
     bool bQuit{};
 };
 
-enum class EDirection : unsigned {
+enum class EDiagonalDirection {
+    None = -1,
+    NorthWest = 0,
+    NorthEast,
+    SouthEast,
+    SouthWest,
+    Count
+};
+
+enum class EDirection {
+    None = -1,
     North = 0,
     East,
     South,
@@ -29,22 +39,9 @@ struct SDirection {
 
     explicit SDirection(unsigned InDirection) : Direction(InDirection) {}
 
-    SDirection(EDirection InDirection) : Direction(static_cast<unsigned>(InDirection)) {}
+    explicit SDirection(EDirection InDirection) : Direction(static_cast<unsigned>(InDirection)) {}
 
-    EDirection GetEnum() const { return static_cast<EDirection>(Direction); }
-
-//    bool operator==(const SDirection &Other) const {
-//        return Direction == Other.Direction;
-//    }
-//
-//    bool operator==(const int &InDirection) const {
-//        return Direction == InDirection;
-//    }
-//
-//    SDirection &operator=(int InDirection) {
-//        Direction = InDirection;
-//        return *this;
-//    }
+    [[nodiscard]] EDirection GetEnum() const { return static_cast<EDirection>(Direction); }
 
     void CycleCW() {
         Direction++;

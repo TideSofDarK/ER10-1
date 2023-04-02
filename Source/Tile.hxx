@@ -9,7 +9,6 @@ enum class ETileEdgeType {
     Door
 };
 
-
 enum class ETileType {
     Empty,
     Floor,
@@ -25,38 +24,46 @@ struct STile {
         return STile{.Type = ETileType::Empty};
     };
 
-    static STile WallsNoFloor() {
+    static STile WallsNF() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall},
                      ETileType::Empty};
     };
 
-    static STile WallNorth() { return STile{{ETileEdgeType::Wall}}; };
+    static STile WallN() { return STile{{ETileEdgeType::Wall}}; };
 
-    static STile WallEast() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
+    static STile WallE() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
 
-    static STile WallSouth() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
+    static STile WallS() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
 
-    static STile WallWest() {
+    static STile WallW() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 
-    static STile WallWestEast() {
+    static STile WallWE() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 
-    static STile WallNorthWest() {
+    static STile WallNW() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 
-    static STile WallNorthEast() {
+    static STile WallNE() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty}};
     };
 
-    static STile WallSouthWest() {
+    static STile WallSW() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
     };
 
-    static STile WallSouthEast() {
+    static STile WallSE() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty}};
+    };
+
+    static STile WallNWS() {
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
+    };
+
+    static STile WallNEW() {
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 };

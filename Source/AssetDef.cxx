@@ -15,10 +15,6 @@ namespace Asset::Common {
     DEFINE_ASSET(NoisePNG, "../Asset/Texture/Noise.png")
     DEFINE_ASSET(QuadOBJ, "../Asset/Mesh/Quad.obj")
     DEFINE_ASSET(PillarOBJ, "../Asset/Mesh/Pillar.obj")
-    DEFINE_ASSET(HotelFloorOBJ, "../Asset/Tileset/Hotel/HotelFloor.obj")
-    DEFINE_ASSET(HotelWallOBJ, "../Asset/Tileset/Hotel/HotelWall.obj")
-    DEFINE_ASSET(HotelWallJointOBJ, "../Asset/Tileset/Hotel/HotelWallJoint.obj")
-    DEFINE_ASSET(HotelAtlasPNG, "../Asset/Tileset/Hotel/HotelAtlas.png")
 }
 
 namespace Asset::Shader {
@@ -33,6 +29,9 @@ namespace Asset::Shader {
     DEFINE_ASSET(PostProcessFRAG, "../Asset/Shader/PostProcess.frag")
 }
 
-namespace Asset::TileSet {
-
+namespace Asset::TileSet::Hotel {
+    DEFINE_ASSET(FloorOBJ, "../Asset/TileSet/Hotel/Floor.obj")
+    DEFINE_ASSET(WallOBJ, "../Asset/TileSet/Hotel/Wall.obj")
+    DEFINE_ASSET(WallJointOBJ, "../Asset/TileSet/Hotel/WallJoint.obj")
+    DEFINE_ASSET(AtlasPNG, "../Asset/TileSet/Hotel/Atlas.png")
 }

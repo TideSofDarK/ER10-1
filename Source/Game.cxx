@@ -12,10 +12,13 @@ namespace Asset::Common {
     EXTERN_ASSET(NoisePNG)
     EXTERN_ASSET(QuadOBJ)
     EXTERN_ASSET(PillarOBJ)
-    EXTERN_ASSET(HotelFloorOBJ)
-    EXTERN_ASSET(HotelWallOBJ)
-    EXTERN_ASSET(HotelWallJointOBJ)
-    EXTERN_ASSET(HotelAtlasPNG)
+}
+
+namespace Asset::TileSet::Hotel {
+    EXTERN_ASSET(FloorOBJ)
+    EXTERN_ASSET(WallOBJ)
+    EXTERN_ASSET(WallJointOBJ)
+    EXTERN_ASSET(AtlasPNG)
 }
 
 SGame::SGame() {
@@ -39,21 +42,21 @@ SGame::SGame() {
 
     auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
     PrimaryAtlas3D.AddSprite(
-            Asset::Common::HotelAtlasPNG);
+            Asset::TileSet::Hotel::AtlasPNG);
     PrimaryAtlas3D.Build();
 
     {
         auto ScratchBuffer = Memory::GetScratchBuffer();
         auto FloorMesh = CRawMesh(
-                Asset::Common::HotelFloorOBJ, ScratchBuffer);
+                Asset::TileSet::Hotel::FloorOBJ, ScratchBuffer);
         Floor.InitFromRawMesh(FloorMesh);
         TestGeometry.InitFromRawMesh(CRawMesh(
                 Asset::Common::PillarOBJ, ScratchBuffer));
     }
 
-    Renderer.Tileset.InitBasic(
-            Asset::Common::HotelFloorOBJ, Asset::Common::HotelWallOBJ,
-            Asset::Common::HotelWallJointOBJ);
+    Renderer.TileSet.InitBasic(
+            Asset::TileSet::Hotel::FloorOBJ, Asset::TileSet::Hotel::WallOBJ,
+            Asset::TileSet::Hotel::WallJointOBJ);
 
     Player.ApplyDirection(true);
 
@@ -63,15 +66,14 @@ SGame::SGame() {
             5,
             5,
             {
-                    STile::WallNorthWest(), STile::WallNorth(), STile::WallNorth(), STile::WallNorth(),
-                    STile::WallNorthEast(),
-                    STile::WallSouth(), STile(), STile(), STile(), STile::WallEast(),
-                    STile::WallWestEast(), STile(), STile::WallsNoFloor(), STile(), STile::WallEast(),
-                    STile::WallWestEast(), STile(), STile(), STile(), STile::WallEast(),
-                    STile::WallSouthWest(), STile::WallSouth(), STile::WallSouth(), STile::WallSouth(),
-                    STile::WallSouthEast(),
+                    STile::WallNWS(), STile::WallN(), STile::WallN(), STile::WallN(), STile::WallNE(),
+                    STile::WallNEW(), STile::WallW(), STile::WallS(), STile(), STile::WallE(),
+                    STile::WallWE(), STile::WallWE(), STile::WallsNF(), STile::WallW(), STile::WallE(),
+                    STile::WallWE(), STile::WallW(), STile::WallN(), STile(), STile::WallE(),
+                    STile::WallSW(), STile::WallS(), STile::WallS(), STile::WallS(), STile::WallSE(),
             }
     };
+    Level.InitWallJoints();
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {

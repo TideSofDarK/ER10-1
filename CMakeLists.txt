@@ -44,7 +44,7 @@ target_sources(
 
 # Make sure AssetDef gets recompiled whenever an asset is added or modified
 file(GLOB_RECURSE ASSET_FILES
-#        CONFIGURE_DEPENDS
+        CONFIGURE_DEPENDS
         "Asset/*.png"
         "Asset/*.obj"
         "Asset/*.glsl"
