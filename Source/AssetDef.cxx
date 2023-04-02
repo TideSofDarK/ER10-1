@@ -4,10 +4,17 @@
 
 #include "incbin.h"
 
+#if defined(__clang__)
+#define DEFINE_ASSET(NAME, PATH) \
+    INCBIN(NAME, PATH); \
+    extern const SAsset NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
+#else
 #define DEFINE_ASSET(NAME, PATH) \
     INCBIN(NAME, PATH); \
     inline const SAsset NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
+#endif
 
+DEFINE_ASSET(FrameBPNG, "../Asset/Texture/Frame.png")
 namespace Asset::Common {
     DEFINE_ASSET(FramePNG, "../Asset/Texture/Frame.png")
     DEFINE_ASSET(RefPNG, "../Asset/Texture/Ref.png")
