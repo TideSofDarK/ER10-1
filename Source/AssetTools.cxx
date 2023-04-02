@@ -1,4 +1,4 @@
-#include "Asset.hxx"
+#include "AssetTools.hxx"
 
 #include <string>
 #include <algorithm>
@@ -38,7 +38,7 @@ void STBIFree(void *Pointer) {
 
 #include "stb_image.h"
 
-CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
+CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
         Positions(ScratchBuffer.GetVector<glm::vec3>()),
         TexCoords(ScratchBuffer.GetVector<glm::vec2>()),
         Normals(ScratchBuffer.GetVector<glm::vec3>()),
@@ -111,7 +111,7 @@ CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
     }
 }
 
-CRawImage::CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
+CRawImage::CRawImage(const SAsset &Resource, CScratchBuffer &ScratchBuffer) {
     STBIScratchBuffer = &ScratchBuffer;
 
     Data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data), static_cast<int>(Resource.Length),
@@ -120,10 +120,11 @@ CRawImage::CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
                                  4);
 }
 
-CRawImageInfo::CRawImageInfo(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
+CRawImageInfo::CRawImageInfo(const SAsset &Resource, CScratchBuffer &ScratchBuffer) {
     STBIScratchBuffer = &ScratchBuffer;
 
-    auto Result = stbi_info_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data), static_cast<int>(Resource.Length), &Width, &Height, &Channels);
+    auto Result = stbi_info_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data),
+                                        static_cast<int>(Resource.Length), &Width, &Height, &Channels);
     if (!Result) {
         abort();
     }

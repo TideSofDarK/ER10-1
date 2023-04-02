@@ -28,13 +28,14 @@ void main()
     vec3 vertexPositionCameraSpace = (u_view * model * vec4(a_vertexPositionModelSpace, 1)).xyz;
     f_eyeDirectionCameraSpace = vec3(0, 0, 0) - vertexPositionCameraSpace;
 
-    f_distanceToCamera = length(vertexPositionCameraSpace);
-    f_distanceToCamera = length(f_positionWorldSpace);
+    //    f_distanceToCamera = length(vertexPositionCameraSpace);
+    //    f_distanceToCamera = length(f_positionWorldSpace);
+    f_distanceToCamera = -vertexPositionCameraSpace.z;
 
-//    f_vertexColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //    f_vertexColor = vec4(1.0, 0.0, 0.0, 1.0);
     f_vertexColor = vec4(a_texCoord.x, a_texCoord.y, 0.0, 1.0);
 
     f_texCoord = a_texCoord;
-//    f_texCoord.x = 1.0 - f_texCoord.x;
+    //    f_texCoord.x = 1.0 - f_texCoord.x;
     f_texCoord.y = 1.0 - f_texCoord.y;
 }

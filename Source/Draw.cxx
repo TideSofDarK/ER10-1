@@ -19,15 +19,17 @@ static std::string const ShaderConstants{
 #undef SHADER_CONSTANTS_LITERAL
 };
 
-DEFINE_RESOURCE(SharedGLSL, "../Assets/Shader/Shared.glsl")
-DEFINE_RESOURCE(HUDVERT, "../Assets/Shader/HUD.vert")
-DEFINE_RESOURCE(HUDFRAG, "../Assets/Shader/HUD.frag")
-DEFINE_RESOURCE(Uber2DVERT, "../Assets/Shader/Uber2D.vert")
-DEFINE_RESOURCE(Uber2DFRAG, "../Assets/Shader/Uber2D.frag")
-DEFINE_RESOURCE(Uber3DVERT, "../Assets/Shader/Uber3D.vert")
-DEFINE_RESOURCE(Uber3DFRAG, "../Assets/Shader/Uber3D.frag")
-DEFINE_RESOURCE(PostProcessVERT, "../Assets/Shader/PostProcess.vert")
-DEFINE_RESOURCE(PostProcessFRAG, "../Assets/Shader/PostProcess.frag")
+namespace Asset::Shader {
+    EXTERN_ASSET(SharedGLSL)
+    EXTERN_ASSET(HUDVERT)
+    EXTERN_ASSET(HUDFRAG)
+    EXTERN_ASSET(Uber2DVERT)
+    EXTERN_ASSET(Uber2DFRAG)
+    EXTERN_ASSET(Uber3DVERT)
+    EXTERN_ASSET(Uber3DFRAG)
+    EXTERN_ASSET(PostProcessVERT)
+    EXTERN_ASSET(PostProcessFRAG)
+}
 
 void SProgram::CheckShader(unsigned int ShaderID) {
     int Success;
@@ -56,19 +58,19 @@ void SProgram::CheckProgram(unsigned int ProgramID) {
     }
 }
 
-unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
+unsigned int SProgram::CreateVertexShader(const SAsset &Resource) {
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
-            reinterpret_cast<const char *>(ResourceSharedGLSL.Data),
+            reinterpret_cast<const char *>(Asset::Shader::SharedGLSL.Data),
             &ShaderConstants[0],
-            reinterpret_cast<const char *>(Resource->Data)
+            reinterpret_cast<const char *>(Resource.Data)
     };
     int const Lengths[4] = {
             static_cast<int>(GLSLVersion.length()),
-            static_cast<int>(ResourceSharedGLSL.Length),
+            static_cast<int>(Asset::Shader::SharedGLSL.Length),
             static_cast<int>(ShaderConstants.length()),
-            static_cast<int>(Resource->Length)
+            static_cast<int>(Resource.Length)
     };
     glShaderSource(VertexShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(VertexShaderID);
@@ -76,19 +78,19 @@ unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
     return VertexShaderID;
 }
 
-unsigned int SProgram::CreateFragmentShader(const SResource *Resource) {
+unsigned int SProgram::CreateFragmentShader(const SAsset &Resource) {
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
-            reinterpret_cast<const char *>(ResourceSharedGLSL.Data),
+            reinterpret_cast<const char *>(Asset::Shader::SharedGLSL.Data),
             &ShaderConstants[0],
-            reinterpret_cast<const char *>(Resource->Data)
+            reinterpret_cast<const char *>(Resource.Data)
     };
     int const Lengths[4] = {
             static_cast<int>(GLSLVersion.length()),
-            static_cast<int>(ResourceSharedGLSL.Length),
+            static_cast<int>(Asset::Shader::SharedGLSL.Length),
             static_cast<int>(ShaderConstants.length()),
-            static_cast<int>(Resource->Length)
+            static_cast<int>(Resource.Length)
     };
     glShaderSource(FragmentShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(FragmentShaderID);
@@ -111,7 +113,7 @@ void SProgram::InitUniforms() {
     UniformModeControlBID = glGetUniformLocation(ID, "u_modeControlB");
 }
 
-void SProgram::Init(const SResource *VertexShaderData, const SResource *FragmentShaderData) {
+void SProgram::Init(const SAsset &VertexShaderData, const SAsset &FragmentShaderData) {
     unsigned VertexShader = CreateVertexShader(VertexShaderData);
     unsigned FragmentShader = CreateFragmentShader(FragmentShaderData);
     ID = CreateProgram(VertexShader, FragmentShader);
@@ -256,7 +258,7 @@ void STileset::InitPlaceholder() {
     glBindVertexArray(0);
 }
 
-void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SResource &WallJoint,
+void STileset::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint,
                          CScratchBuffer &ScratchBuffer) {
     auto Positions = ScratchBuffer.GetVector<glm::vec3>();
     auto TexCoords = ScratchBuffer.GetVector<glm::vec2>();
@@ -265,7 +267,7 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SR
     int LastElementOffset = 0;
     int LastVertexOffset = 0;
 
-    auto InitGeometry = [&](const SResource &Resource, int Type) {
+    auto InitGeometry = [&](const SAsset &Resource, int Type) {
         auto Mesh = CRawMesh(Resource, ScratchBuffer);
 
         auto &Geometry = TileGeometry[Type];
@@ -487,21 +489,21 @@ void SRenderer::Init(int Width, int Height) {
     Atlases[ATLAS_PRIMARY3D].Init(TEXTURE_UNIT_ATLAS_PRIMARY3D);
 
     /** Initialize shaders */
-    ProgramHUD.Init(&ResourceHUDVERT, &ResourceHUDFRAG);
+    ProgramHUD.Init(Asset::Shader::HUDVERT, Asset::Shader::HUDFRAG);
     ProgramHUD.Use();
     glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 
-    ProgramUber2D.Init(&ResourceUber2DVERT, &ResourceUber2DFRAG);
+    ProgramUber2D.Init(Asset::Shader::Uber2DVERT, Asset::Shader::Uber2DFRAG);
     ProgramUber2D.Use();
     glUniform1i(ProgramUber2D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
     glUniform1i(ProgramUber2D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
 
-    ProgramUber3D.Init(&ResourceUber3DVERT, &ResourceUber3DFRAG);
+    ProgramUber3D.Init(Asset::Shader::Uber3DVERT, Asset::Shader::Uber3DFRAG);
     ProgramUber3D.Use();
     glUniform1i(ProgramUber3D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
     glUniform1i(ProgramUber3D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
 
-    ProgramPostProcess.Init(&ResourcePostProcessVERT, &ResourcePostProcessFRAG);
+    ProgramPostProcess.Init(Asset::Shader::PostProcessVERT, Asset::Shader::PostProcessFRAG);
     ProgramPostProcess.Use();
     glUniform1i(ProgramPostProcess.UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
 }
@@ -782,7 +784,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
     auto POVDirectionVectorForward = POVDirection.DirectionVectorFromDirection<int>();
     auto POVDirectionVectorSide = POVDirectionVectorForward.Swapped();
 
-    for (int ForwardCounter = 0; ForwardCounter < DrawDistanceForward; ++ForwardCounter) {
+    for (int ForwardCounter = -1; ForwardCounter < DrawDistanceForward; ++ForwardCounter) {
         for (int SideCounter = -DrawDistanceSide; SideCounter <= DrawDistanceSide; ++SideCounter) {
 
             auto X = POVOrigin.X + (POVDirectionVectorForward.X * ForwardCounter) +
@@ -897,7 +899,7 @@ void SAtlas::Init(int InTextureUnitID) {
     std::iota(SortingIndices.begin(), SortingIndices.end(), 0);
 }
 
-SSpriteHandle SAtlas::AddSprite(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
+SSpriteHandle SAtlas::AddSprite(const SAsset &Resource, CScratchBuffer &ScratchBuffer) {
     CRawImageInfo const RawImageInfo(Resource, ScratchBuffer);
 
     Sprites[CurrentIndex].SizePixels = {RawImageInfo.Width, RawImageInfo.Height};

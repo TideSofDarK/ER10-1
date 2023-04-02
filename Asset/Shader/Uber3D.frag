@@ -21,6 +21,6 @@ void main()
         color = texture(u_primaryAtlas, f_texCoord);
     }
 
-//    color = mix(color, vec4(0.0), getFogFactor(f_distanceToCamera));
-//    color = vec4(0.0);
+    color = mix(color, vec4(0.0), getFogFactor(f_distanceToCamera));
+    //    color = vec4(0.0);
 }

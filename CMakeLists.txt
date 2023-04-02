@@ -29,6 +29,7 @@ target_sources(
         ${PROJECT_NAME}
         PRIVATE
         Vendor/glad/src/gl.c
+        Source/AssetDef.cxx
         Source/Memory.cxx
         Source/Utility.cxx
         Source/Main.cxx
@@ -38,11 +39,21 @@ target_sources(
         Source/Level.cxx
         Source/Player.cxx
         Source/Tile.cxx
-        Source/Asset.cxx
+        Source/AssetTools.cxx
 )
-set_source_files_properties(Source/Draw.cxx OBJECT_DEPENDS
-        ${CMAKE_SOURCE_DIR}/Assets/Shader/Uber3D.frag
+
+# Make sure AssetDef gets recompiled whenever an asset is added or modified
+file(GLOB_RECURSE ASSET_FILES
+#        CONFIGURE_DEPENDS
+        "Asset/*.png"
+        "Asset/*.obj"
+        "Asset/*.glsl"
+        "Asset/*.vert"
+        "Asset/*.frag"
         )
+list(JOIN ASSET_FILES "\;" ASSET_FILES)
+set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSET_FILES})
+
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE

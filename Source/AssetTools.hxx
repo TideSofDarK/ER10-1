@@ -3,18 +3,14 @@
 #include "glm/vec3.hpp"
 #include "glm/vec2.hpp"
 #include "Memory.hxx"
-#define INCBIN_PREFIX _INCBIN_
-#include "incbin.h"
 
-#define DEFINE_RESOURCE(NAME, PATH) \
-    INCBIN(NAME, PATH); \
-    const SResource Resource ## NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
+#define EXTERN_ASSET(NAME) extern const SAsset NAME;
 
-struct SResource {
+struct SAsset {
     const unsigned char *Data;
     size_t Length;
 
-    [[nodiscard]] std::string ToString() const { return std::string(reinterpret_cast<const char*>(Data), Length); }
+    [[nodiscard]] std::string ToString() const { return std::string(reinterpret_cast<const char *>(Data), Length); }
 };
 
 class CRawMesh {
@@ -28,7 +24,7 @@ public:
 
     [[nodiscard]] int GetElementCount() const { return static_cast<int>(Indices.size()); }
 
-    CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer);
+    CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
 };
 
 class CRawImage {
@@ -38,7 +34,7 @@ public:
     int Channels{};
     void *Data{};
 
-    CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer);
+    CRawImage(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
 };
 
 class CRawImageInfo {
@@ -47,5 +43,5 @@ public:
     int Height{};
     int Channels{};
 
-    CRawImageInfo(const SResource &Resource, CScratchBuffer &ScratchBuffer);
+    CRawImageInfo(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
 };

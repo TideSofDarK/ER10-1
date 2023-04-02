@@ -2,19 +2,21 @@
 
 #include <iostream>
 #include "Constants.hxx"
-#include "Asset.hxx"
+#include "AssetTools.hxx"
 #include "SDL.h"
 
-DEFINE_RESOURCE(FramePNG, "../Assets/Texture/Frame.png")
-DEFINE_RESOURCE(RefPNG, "../Assets/Texture/Ref.png")
-DEFINE_RESOURCE(AngelPNG, "../Assets/Texture/Angel.png")
-DEFINE_RESOURCE(NoisePNG, "../Assets/Texture/Noise.png")
-DEFINE_RESOURCE(QuadOBJ, "../Assets/Mesh/Quad.obj")
-DEFINE_RESOURCE(PillarOBJ, "../Assets/Mesh/Pillar.obj")
-DEFINE_RESOURCE(HotelFloorOBJ, "../Assets/Tileset/Hotel/HotelFloor.obj")
-DEFINE_RESOURCE(HotelWallOBJ, "../Assets/Tileset/Hotel/HotelWall.obj")
-DEFINE_RESOURCE(HotelWallJointOBJ, "../Assets/Tileset/Hotel/HotelWallJoint.obj")
-DEFINE_RESOURCE(HotelAtlasPNG, "../Assets/Tileset/Hotel/HotelAtlas.png")
+namespace Asset::Common {
+    EXTERN_ASSET(FramePNG)
+    EXTERN_ASSET(RefPNG)
+    EXTERN_ASSET(AngelPNG)
+    EXTERN_ASSET(NoisePNG)
+    EXTERN_ASSET(QuadOBJ)
+    EXTERN_ASSET(PillarOBJ)
+    EXTERN_ASSET(HotelFloorOBJ)
+    EXTERN_ASSET(HotelWallOBJ)
+    EXTERN_ASSET(HotelWallJointOBJ)
+    EXTERN_ASSET(HotelAtlasPNG)
+}
 
 SGame::SGame() {
     Window.Init();
@@ -25,24 +27,33 @@ SGame::SGame() {
         auto ScratchBuffer = Memory::GetScratchBuffer();
 
         auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
-        NoiseSprite = CommonAtlas2D.AddSprite(ResourceNoisePNG, ScratchBuffer);
-        RefSprite = CommonAtlas2D.AddSprite(ResourceRefPNG, ScratchBuffer);
+        NoiseSprite = CommonAtlas2D.AddSprite(
+                Asset::Common::NoisePNG, ScratchBuffer);
+        RefSprite = CommonAtlas2D.AddSprite(
+                Asset::Common::RefPNG, ScratchBuffer);
         CommonAtlas2D.Build(ScratchBuffer);
 
         auto &PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
-        AngelSprite = PrimaryAtlas2D.AddSprite(ResourceAngelPNG, ScratchBuffer);
-        FrameSprite = PrimaryAtlas2D.AddSprite(ResourceFramePNG, ScratchBuffer);
+        AngelSprite = PrimaryAtlas2D.AddSprite(
+                Asset::Common::AngelPNG, ScratchBuffer);
+        FrameSprite = PrimaryAtlas2D.AddSprite(
+                Asset::Common::FramePNG, ScratchBuffer);
         PrimaryAtlas2D.Build(ScratchBuffer);
 
         auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
-        PrimaryAtlas3D.AddSprite(ResourceHotelAtlasPNG, ScratchBuffer);
+        PrimaryAtlas3D.AddSprite(
+                Asset::Common::HotelAtlasPNG, ScratchBuffer);
         PrimaryAtlas3D.Build(ScratchBuffer);
 
-        auto FloorMesh = CRawMesh(ResourceHotelFloorOBJ, ScratchBuffer);
+        auto FloorMesh = CRawMesh(
+                Asset::Common::HotelFloorOBJ, ScratchBuffer);
         Floor.InitFromRawMesh(FloorMesh);
-        TestGeometry.InitFromRawMesh(CRawMesh(ResourcePillarOBJ, ScratchBuffer));
+        TestGeometry.InitFromRawMesh(CRawMesh(
+                Asset::Common::PillarOBJ, ScratchBuffer));
 
-        Renderer.Tileset.InitBasic(ResourceHotelFloorOBJ, ResourceHotelWallOBJ, ResourceHotelWallJointOBJ, ScratchBuffer);
+        Renderer.Tileset.InitBasic(
+                Asset::Common::HotelFloorOBJ, Asset::Common::HotelWallOBJ,
+                Asset::Common::HotelWallJointOBJ, ScratchBuffer);
     }
 
     Player.ApplyDirection(true);

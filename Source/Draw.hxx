@@ -6,7 +6,7 @@
 #include "glm/glm.hpp"
 #include "glm/mat4x4.hpp"
 #include "CommonTypes.hxx"
-#include "Asset.hxx"
+#include "AssetTools.hxx"
 #include "ShaderConstants.hxx"
 #include "Math.hxx"
 
@@ -26,6 +26,7 @@
 #define ATLAS_PRIMARY2D 1
 #define ATLAS_PRIMARY3D 2
 
+
 struct SLevel;
 
 struct SProgram {
@@ -34,9 +35,9 @@ private:
 
     static void CheckProgram(unsigned ShaderID);
 
-    static unsigned int CreateVertexShader(const SResource *Resource);
+    static unsigned int CreateVertexShader(const SAsset &Resource);
 
-    static unsigned int CreateFragmentShader(const SResource *Resource);
+    static unsigned int CreateFragmentShader(const SAsset &Resource);
 
     static unsigned int CreateProgram(unsigned int VertexShader, unsigned int FragmentShader);
 
@@ -50,7 +51,7 @@ public:
     int UniformModeControlBID{};
 
     void
-    Init(const SResource *VertexShaderData, const SResource *FragmentShaderData);
+    Init(const SAsset &VertexShaderData, const SAsset &FragmentShaderData);
 
     void Cleanup() const;
 
@@ -142,7 +143,7 @@ struct STileset : SGeometry {
 
     void InitPlaceholder();
 
-    void InitBasic(const SResource &Floor, const SResource &Wall, const SResource &WallJoint, CScratchBuffer &ScratchBuffer);
+    void InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint, CScratchBuffer &ScratchBuffer);
 };
 
 struct SCamera {
@@ -266,7 +267,7 @@ struct SSpriteHandle {
 struct SSprite {
     glm::vec4 UVRect{};
     glm::vec<2, int> SizePixels{};
-    const SResource *Resource{};
+    const SAsset *Resource{};
 };
 
 struct SAtlas : STexture {
@@ -280,7 +281,7 @@ public:
 
     void Init(int InTextureUnitID);
 
-    SSpriteHandle AddSprite(const SResource &Resource, CScratchBuffer &ScratchBuffer);
+    SSpriteHandle AddSprite(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
 
     void Build(CScratchBuffer &ScratchBuffer);
 };

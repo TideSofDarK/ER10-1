@@ -22,8 +22,8 @@ void main()
     float borderSize = 2.0;
 
     // Border mask
-    float borderX = clamp(abs( (texCoordNDC.x * u_sizeScreenSpace.x))  - (u_sizeScreenSpace.x - borderSize), 0.0, 1.0);
-    float borderY = clamp(abs( (texCoordNDC.y * u_sizeScreenSpace.y))  - (u_sizeScreenSpace.y - borderSize), 0.0, 1.0);
+    float borderX = clamp(abs((texCoordNDC.x * u_sizeScreenSpace.x))  - (u_sizeScreenSpace.x - borderSize), 0.0, 1.0);
+    float borderY = clamp(abs((texCoordNDC.y * u_sizeScreenSpace.y))  - (u_sizeScreenSpace.y - borderSize), 0.0, 1.0);
 
     if (u_mode == 0) {
         // Border dash
@@ -46,8 +46,8 @@ void main()
     }
 
     // Border color
-//    vec3 borderColor = border * vec3(0.5, 0.5, 0.5);
-//    float border = clamp(floor(f_texcoord.x) + 0.1 + floor(f_texcoord.y), 0.0, 1.0);
+    //    vec3 borderColor = border * vec3(0.5, 0.5, 0.5);
+    //    float border = clamp(floor(f_texcoord.x) + 0.1 + floor(f_texcoord.y), 0.0, 1.0);
     color = vec4(borderColor, 1.0);
-//    color = texture(u_colorTexture, f_texcoord);
+    //    color = texture(u_colorTexture, f_texcoord);
 }
