@@ -3,30 +3,18 @@
 #include "glm/vec3.hpp"
 #include "glm/vec2.hpp"
 #include "Memory.hxx"
+#define INCBIN_PREFIX _INCBIN_
+#include "incbin.h"
 
-#ifdef __APPLE__
-#include <mach-o/getsect.h>
-#define EXTLD(NAME) \
-  extern "C" const unsigned char _section$__DATA__ ## NAME [];
-#define LDVAR(NAME) _section$__DATA__ ## NAME
-#define LDLEN(NAME) (getsectbyname("__DATA", "__" #NAME)->size)
-#else
-#define EXTLD(NAME) \
-  extern "C" const unsigned char _binary_ ## NAME ## _start[]; \
-  extern "C" const unsigned char _binary_ ## NAME ## _end[];
-#define LDVAR(NAME) \
-  _binary_ ## NAME ## _start
-#define LDLEN(NAME) \
-  ((_binary_ ## NAME ## _end) - (_binary_ ## NAME ## _start))
-#endif
-
-#define DEFINE_RESOURCE(NAME) \
-    EXTLD(NAME) \
-    const SResource Resource ## NAME{LDVAR(NAME), LDLEN(NAME)};
+#define DEFINE_RESOURCE(NAME, PATH) \
+    INCBIN(NAME, PATH); \
+    const SResource Resource ## NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
 
 struct SResource {
-    const unsigned char *const Data;
-    ptrdiff_t Length;
+    const unsigned char *Data;
+    size_t Length;
+
+    [[nodiscard]] std::string ToString() const { return std::string(reinterpret_cast<const char*>(Data), Length); }
 };
 
 class CRawMesh {
@@ -36,7 +24,9 @@ public:
     std::pmr::vector<glm::vec3> Normals;
     std::pmr::vector<unsigned short> Indices;
 
-    int GetVertexCount() { return Positions.size(); }
+    [[nodiscard]] int GetVertexCount() const { return static_cast<int>(Positions.size()); }
+
+    [[nodiscard]] int GetElementCount() const { return static_cast<int>(Indices.size()); }
 
     CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer);
 };

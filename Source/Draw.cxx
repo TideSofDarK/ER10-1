@@ -19,15 +19,15 @@ static std::string const ShaderConstants{
 #undef SHADER_CONSTANTS_LITERAL
 };
 
-DEFINE_RESOURCE(Shared_glsl)
-DEFINE_RESOURCE(HUD_vert)
-DEFINE_RESOURCE(HUD_frag)
-DEFINE_RESOURCE(Uber2D_vert)
-DEFINE_RESOURCE(Uber2D_frag)
-DEFINE_RESOURCE(Uber3D_vert)
-DEFINE_RESOURCE(Uber3D_frag)
-DEFINE_RESOURCE(PostProcess_vert)
-DEFINE_RESOURCE(PostProcess_frag)
+DEFINE_RESOURCE(SharedGLSL, "../Assets/Shader/Shared.glsl")
+DEFINE_RESOURCE(HUDVERT, "../Assets/Shader/HUD.vert")
+DEFINE_RESOURCE(HUDFRAG, "../Assets/Shader/HUD.frag")
+DEFINE_RESOURCE(Uber2DVERT, "../Assets/Shader/Uber2D.vert")
+DEFINE_RESOURCE(Uber2DFRAG, "../Assets/Shader/Uber2D.frag")
+DEFINE_RESOURCE(Uber3DVERT, "../Assets/Shader/Uber3D.vert")
+DEFINE_RESOURCE(Uber3DFRAG, "../Assets/Shader/Uber3D.frag")
+DEFINE_RESOURCE(PostProcessVERT, "../Assets/Shader/PostProcess.vert")
+DEFINE_RESOURCE(PostProcessFRAG, "../Assets/Shader/PostProcess.frag")
 
 void SProgram::CheckShader(unsigned int ShaderID) {
     int Success;
@@ -60,13 +60,13 @@ unsigned int SProgram::CreateVertexShader(const SResource *Resource) {
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
-            reinterpret_cast<const char *>(ResourceShared_glsl.Data),
+            reinterpret_cast<const char *>(ResourceSharedGLSL.Data),
             &ShaderConstants[0],
             reinterpret_cast<const char *>(Resource->Data)
     };
     int const Lengths[4] = {
             static_cast<int>(GLSLVersion.length()),
-            static_cast<int>(ResourceShared_glsl.Length),
+            static_cast<int>(ResourceSharedGLSL.Length),
             static_cast<int>(ShaderConstants.length()),
             static_cast<int>(Resource->Length)
     };
@@ -80,13 +80,13 @@ unsigned int SProgram::CreateFragmentShader(const SResource *Resource) {
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const *Blocks[4] = {
             &GLSLVersion[0],
-            reinterpret_cast<const char *>(ResourceShared_glsl.Data),
+            reinterpret_cast<const char *>(ResourceSharedGLSL.Data),
             &ShaderConstants[0],
             reinterpret_cast<const char *>(Resource->Data)
     };
     int const Lengths[4] = {
             static_cast<int>(GLSLVersion.length()),
-            static_cast<int>(ResourceShared_glsl.Length),
+            static_cast<int>(ResourceSharedGLSL.Length),
             static_cast<int>(ShaderConstants.length()),
             static_cast<int>(Resource->Length)
     };
@@ -270,7 +270,7 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SR
 
         auto &Geometry = TileGeometry[Type];
         Geometry.ElementOffset = LastElementOffset;
-        Geometry.ElementCount = Mesh.Indices.size();
+        Geometry.ElementCount = Mesh.GetElementCount();
 
         for (int Index = 0; Index < Geometry.ElementCount; ++Index) {
             Indices.push_back(Mesh.Indices[Index] + LastVertexOffset);
@@ -487,21 +487,21 @@ void SRenderer::Init(int Width, int Height) {
     Atlases[ATLAS_PRIMARY3D].Init(TEXTURE_UNIT_ATLAS_PRIMARY3D);
 
     /** Initialize shaders */
-    ProgramHUD.Init(&ResourceHUD_vert, &ResourceHUD_frag);
+    ProgramHUD.Init(&ResourceHUDVERT, &ResourceHUDFRAG);
     ProgramHUD.Use();
     glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 
-    ProgramUber2D.Init(&ResourceUber2D_vert, &ResourceUber2D_frag);
+    ProgramUber2D.Init(&ResourceUber2DVERT, &ResourceUber2DFRAG);
     ProgramUber2D.Use();
     glUniform1i(ProgramUber2D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
     glUniform1i(ProgramUber2D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
 
-    ProgramUber3D.Init(&ResourceUber3D_vert, &ResourceUber3D_frag);
+    ProgramUber3D.Init(&ResourceUber3DVERT, &ResourceUber3DFRAG);
     ProgramUber3D.Use();
     glUniform1i(ProgramUber3D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
     glUniform1i(ProgramUber3D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
 
-    ProgramPostProcess.Init(&ResourcePostProcess_vert, &ResourcePostProcess_frag);
+    ProgramPostProcess.Init(&ResourcePostProcessVERT, &ResourcePostProcessFRAG);
     ProgramPostProcess.Use();
     glUniform1i(ProgramPostProcess.UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
 }
@@ -776,59 +776,46 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
         return;
     }
 
-    auto const DrawDistanceForward = 2;
+    auto const DrawDistanceForward = 4;
     auto const DrawDistanceSide = 2;
 
     auto POVDirectionVectorForward = POVDirection.DirectionVectorFromDirection<int>();
     auto POVDirectionVectorSide = POVDirectionVectorForward.Swapped();
 
-    auto FromX = POVOrigin.X;
-    auto FromY = POVOrigin.Y;
+    for (int ForwardCounter = 0; ForwardCounter < DrawDistanceForward; ++ForwardCounter) {
+        for (int SideCounter = -DrawDistanceSide; SideCounter <= DrawDistanceSide; ++SideCounter) {
 
-    for (int Forward = 0;
-         Forward < DrawDistanceForward; ++Forward) {
-        auto X = FromX + (POVDirectionVectorForward.X * Forward);
-        auto Y = FromY + (POVDirectionVectorForward.Y * Forward);
+            auto X = POVOrigin.X + (POVDirectionVectorForward.X * ForwardCounter) +
+                     (POVDirectionVectorSide.X * SideCounter);
+            auto Y = POVOrigin.Y + (POVDirectionVectorForward.Y * ForwardCounter) +
+                     (POVDirectionVectorSide.Y * SideCounter);
 
-        if (!Level.IsValidCoordX(X)) {
-            continue;
-        }
-        if (!Level.IsValidCoordY(Y)) {
-            continue;
-        }
+            if (!Level.IsValidTile({X, Y})) {
+                continue;
+            }
 
-        const auto Index = (Y * Level.Width) + X;
-        const auto &Tile = Level.Grid[Index];
+            const auto &Tile = Level.GetTileAt(X, Y);
 
-        auto XOffset = static_cast<float>(X);
-        auto YOffset = static_cast<float>(Y);
+            auto XOffset = static_cast<float>(X);
+            auto YOffset = static_cast<float>(Y);
 
-        if (Tile.Type == ETileType::Floor) {
-            FloorDrawCall.Transform[FloorDrawCall.Count] =
-                    glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset));
-            FloorDrawCall.Count++;
-        }
+            if (Tile.Type == ETileType::Floor) {
+                FloorDrawCall.Transform[FloorDrawCall.Count] =
+                        glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset));
+                FloorDrawCall.Count++;
+            }
 
-        /** Wall Joints */
-        if (Level.bUseWallJoints) {
-            for (int Direction = 0; Direction < 4; ++Direction) {
-                if (Tile.Edges[Direction] == ETileEdgeType::Wall &&
-                    Tile.Edges[(Direction + 1) % 3] == ETileEdgeType::Wall) {
-                    auto Transform = glm::identity<glm::mat4x4>();
-                    Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
-//                    Transform = glm::rotate(Transform, Utility::RotationFromDirection(EDirection{Direction}),
-//                                            {0.0f, 1.0f, 0.0f});
+            /** Wall Joints */
+            if (Level.bUseWallJoints) {
+                for (int Direction = 0; Direction < 4; ++Direction) {
+                    if (Tile.Edges[Direction] == ETileEdgeType::Wall &&
+                        Tile.Edges[(Direction + 1) % 3] == ETileEdgeType::Wall) {
+                        auto Transform = glm::identity<glm::mat4x4>();
+                        Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
                         WallJointDrawCall.Transform[WallJointDrawCall.Count] = Transform;
                         WallJointDrawCall.Count++;
                     }
                 }
-//                if (Tile.Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall &&
-//                    Tile.Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall) {
-//                    auto Transform = glm::identity<glm::mat4x4>();
-//                    Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
-//                    WallJointDrawCall.Transform[WallJointDrawCall.Count] = Transform;
-//                    WallJointDrawCall.Count++;
-//                }
             }
 
             for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
@@ -846,6 +833,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
                     }
                 }
             }
+        }
     }
 
     SEntry3D Entry;

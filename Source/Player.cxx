@@ -23,7 +23,6 @@ void SPlayer::HandleInput(const SInputState InputState) {
     if (InputState.Up == EKeyState::Pressed) {
         EyePositionTarget += EyeForwardTarget;
         Coords += Direction.DirectionVectorFromDirection<int>();
-        std::printf("%d %d", Coords.X, Coords.Y);
     }
 }
 

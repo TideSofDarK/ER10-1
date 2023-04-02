@@ -114,7 +114,7 @@ CRawMesh::CRawMesh(const SResource &Resource, CScratchBuffer &ScratchBuffer) :
 CRawImage::CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
     STBIScratchBuffer = &ScratchBuffer;
 
-    Data = stbi_load_from_memory(Resource.Data, static_cast<int>(Resource.Length),
+    Data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data), static_cast<int>(Resource.Length),
                                  &Width,
                                  &Height, &Channels,
                                  4);
@@ -123,7 +123,7 @@ CRawImage::CRawImage(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
 CRawImageInfo::CRawImageInfo(const SResource &Resource, CScratchBuffer &ScratchBuffer) {
     STBIScratchBuffer = &ScratchBuffer;
 
-    auto Result = stbi_info_from_memory(Resource.Data, static_cast<int>(Resource.Length), &Width, &Height, &Channels);
+    auto Result = stbi_info_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data), static_cast<int>(Resource.Length), &Width, &Height, &Channels);
     if (!Result) {
         abort();
     }

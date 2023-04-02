@@ -11,7 +11,7 @@ struct SLevel {
     std::array<STile, LevelGridSize> Grid{};
     bool bUseWallJoints = true;
 
-    STile const &GetTileAt(int X, int Y);
+    [[nodiscard]] STile const &GetTileAt(int X, int Y) const;
 
     [[nodiscard]] bool IsValidTile(UVec2Int Coords) const {
         return IsValidCoordX(Coords.X) && IsValidCoordY(Coords.Y);
