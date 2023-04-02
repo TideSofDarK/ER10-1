@@ -3,8 +3,8 @@
 #include "Utility.hxx"
 
 void SPlayer::Update(float DeltaTime) {
-    EyePositionCurrent = Utility::InterpolateToConstant(EyePositionCurrent, EyePositionTarget, DeltaTime, 4.0f);
-    EyeForwardCurrent = Utility::InterpolateToConstant(EyeForwardCurrent, EyeForwardTarget, DeltaTime, 4.0f);
+    EyePositionCurrent = Utility::InterpolateToConstant(EyePositionCurrent, EyePositionTarget, DeltaTime, 3.1f);
+    EyeForwardCurrent = Utility::InterpolateToConstant(EyeForwardCurrent, EyeForwardTarget, DeltaTime, 3.5f);
 }
 
 SPlayer::SPlayer() : Direction(EDirection::North) {
