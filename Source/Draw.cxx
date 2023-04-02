@@ -161,7 +161,7 @@ void SGeometry::InitFromRawMesh(const CRawMesh &RawMesh) {
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<long long>(RawMesh.Positions.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.Positions)),
+                 static_cast<GLsizeiptr>(RawMesh.Positions.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.Positions)),
                  &RawMesh.Positions[0],
                  GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -170,7 +170,7 @@ void SGeometry::InitFromRawMesh(const CRawMesh &RawMesh) {
     glGenBuffers(1, &CBO);
     glBindBuffer(GL_ARRAY_BUFFER, CBO);
     glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<long long>(RawMesh.TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.TexCoords)),
+                 static_cast<GLsizeiptr>(RawMesh.TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.TexCoords)),
                  &RawMesh.TexCoords[0], GL_STATIC_DRAW);
     glVertexAttribPointer(
             1,
@@ -185,7 +185,7 @@ void SGeometry::InitFromRawMesh(const CRawMesh &RawMesh) {
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 static_cast<long long>(ElementCount * SIZE_OF_VECTOR_ELEMENT(RawMesh.Indices)), &RawMesh.Indices[0],
+                 static_cast<GLsizeiptr>(ElementCount * SIZE_OF_VECTOR_ELEMENT(RawMesh.Indices)), &RawMesh.Indices[0],
                  GL_STATIC_DRAW);
 
     glBindVertexArray(0);
@@ -250,7 +250,7 @@ void STileset::InitPlaceholder() {
     ElementCount = static_cast<int>(Indices.size());
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<long long>(ElementCount * sizeof(unsigned short)), &Indices[0],
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(ElementCount * sizeof(unsigned short)), &Indices[0],
                  GL_STATIC_DRAW);
 
     glBindVertexArray(0);
@@ -295,7 +295,7 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SR
     glEnableVertexAttribArray(0);
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(Positions.size() * sizeof(glm::vec3)), &Positions[0],
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(Positions.size() * sizeof(glm::vec3)), &Positions[0],
                  GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -303,7 +303,7 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SR
     glGenBuffers(1, &CBO);
     glBindBuffer(GL_ARRAY_BUFFER, CBO);
     glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<long long>(TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(TexCoords)),
+                 static_cast<GLsizeiptr>(TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(TexCoords)),
                  &TexCoords[0], GL_STATIC_DRAW);
     glVertexAttribPointer(
             1,
@@ -317,7 +317,7 @@ void STileset::InitBasic(const SResource &Floor, const SResource &Wall, const SR
     ElementCount = static_cast<int>(Indices.size());
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<long long>(ElementCount * sizeof(unsigned short)), &Indices[0],
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(ElementCount * sizeof(unsigned short)), &Indices[0],
                  GL_STATIC_DRAW);
 
     glBindVertexArray(0);
