@@ -40,6 +40,9 @@ target_sources(
         Source/Tile.cxx
         Source/Asset.cxx
 )
+set_source_files_properties(Source/Draw.cxx OBJECT_DEPENDS
+        ${CMAKE_SOURCE_DIR}/Assets/Shader/Uber3D.frag
+        )
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE

@@ -22,4 +22,5 @@ void main()
     }
 
 //    color = mix(color, vec4(0.0), getFogFactor(f_distanceToCamera));
+//    color = vec4(0.0);
 }
