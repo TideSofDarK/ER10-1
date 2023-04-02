@@ -30,3 +30,14 @@ mat4 translationMatrix(vec3 delta)
         vec4(0.0, 0.0, 1.0, 0.0),
         vec4(delta, 1.0));
 }
+
+float getFogFactor(float d)
+{
+    const float FogMax = 1.5;
+    const float FogMin = 0.0;
+
+//    if (d>=FogMax) return 1;
+//    if (d<=FogMin) return 0;
+
+    return clamp(1 - (FogMax - d) / (FogMax - FogMin), 0, 1);
+}

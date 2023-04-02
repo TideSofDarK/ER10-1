@@ -21,10 +21,5 @@ void main()
         color = texture(u_primaryAtlas, f_texCoord);
     }
 
-    float fog = 1.0 - (f_distanceToCamera * 0.2);
-    fog *= 64.0;
-    fog = round(fog);
-    fog = fog / 64.0;
-    fog = clamp(fog, 0.0, 1.0);
-    color = color * fog;
+//    color = mix(color, vec4(0.0), getFogFactor(f_distanceToCamera));
 }

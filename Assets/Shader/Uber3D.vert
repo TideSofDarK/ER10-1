@@ -29,7 +29,7 @@ void main()
     f_eyeDirectionCameraSpace = vec3(0, 0, 0) - vertexPositionCameraSpace;
 
     f_distanceToCamera = length(vertexPositionCameraSpace);
-    f_distanceToCamera = -vertexPositionCameraSpace.z;
+    f_distanceToCamera = length(f_positionWorldSpace);
 
 //    f_vertexColor = vec4(1.0, 0.0, 0.0, 1.0);
     f_vertexColor = vec4(a_texCoord.x, a_texCoord.y, 0.0, 1.0);
