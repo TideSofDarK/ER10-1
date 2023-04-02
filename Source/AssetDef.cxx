@@ -6,7 +6,7 @@
 
 #define DEFINE_ASSET(NAME, PATH) \
     INCBIN(NAME, PATH); \
-    extern const SAsset NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
+    inline const SAsset NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
 
 namespace Asset::Common {
     DEFINE_ASSET(FramePNG, "../Asset/Texture/Frame.png")
