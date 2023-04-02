@@ -258,8 +258,9 @@ void STileset::InitPlaceholder() {
     glBindVertexArray(0);
 }
 
-void STileset::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint,
-                         CScratchBuffer &ScratchBuffer) {
+void STileset::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint) {
+    auto ScratchBuffer = Memory::GetScratchBuffer();
+
     auto Positions = ScratchBuffer.GetVector<glm::vec3>();
     auto TexCoords = ScratchBuffer.GetVector<glm::vec2>();
     auto Indices = ScratchBuffer.GetVector<unsigned short>();
@@ -899,7 +900,9 @@ void SAtlas::Init(int InTextureUnitID) {
     std::iota(SortingIndices.begin(), SortingIndices.end(), 0);
 }
 
-SSpriteHandle SAtlas::AddSprite(const SAsset &Resource, CScratchBuffer &ScratchBuffer) {
+SSpriteHandle SAtlas::AddSprite(const SAsset &Resource) {
+    auto ScratchBuffer = Memory::GetScratchBuffer();
+
     CRawImageInfo const RawImageInfo(Resource, ScratchBuffer);
 
     Sprites[CurrentIndex].SizePixels = {RawImageInfo.Width, RawImageInfo.Height};
@@ -907,7 +910,9 @@ SSpriteHandle SAtlas::AddSprite(const SAsset &Resource, CScratchBuffer &ScratchB
     return {this, &Sprites[CurrentIndex++]};
 }
 
-void SAtlas::Build(CScratchBuffer &ScratchBuffer) {
+void SAtlas::Build() {
+    auto ScratchBuffer = Memory::GetScratchBuffer();
+
     BindToTextureUnit(TextureUnitID);
 
     std::sort(SortingIndices.begin(), SortingIndices.end(), [&](const int &IndexA, const int &IndexB) {

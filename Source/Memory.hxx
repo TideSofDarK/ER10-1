@@ -30,7 +30,7 @@ public:
 class CNewDeleteResource final : public std::pmr::memory_resource {
     void *
     do_allocate(size_t Length, size_t Alignment) override {
-        std::printf("Allocating %zu bytes through NewDeleteResource\n", Length);
+        std::printf("Allocating %zu bytes through NewDeleteResource, probably ScratchBuffer overflow!\n", Length);
         return ::operator new(Length, std::align_val_t(Alignment));
     }
 

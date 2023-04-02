@@ -143,7 +143,7 @@ struct STileset : SGeometry {
 
     void InitPlaceholder();
 
-    void InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint, CScratchBuffer &ScratchBuffer);
+    void InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint);
 };
 
 struct SCamera {
@@ -281,9 +281,9 @@ public:
 
     void Init(int InTextureUnitID);
 
-    SSpriteHandle AddSprite(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
+    SSpriteHandle AddSprite(const SAsset &Resource);
 
-    void Build(CScratchBuffer &ScratchBuffer);
+    void Build();
 };
 
 struct SRenderer {

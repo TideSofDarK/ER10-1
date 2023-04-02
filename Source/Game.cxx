@@ -23,38 +23,37 @@ SGame::SGame() {
 
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+    auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
+    NoiseSprite = CommonAtlas2D.AddSprite(
+            Asset::Common::NoisePNG);
+    RefSprite = CommonAtlas2D.AddSprite(
+            Asset::Common::RefPNG);
+    CommonAtlas2D.Build();
+
+    auto &PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
+    AngelSprite = PrimaryAtlas2D.AddSprite(
+            Asset::Common::AngelPNG);
+    FrameSprite = PrimaryAtlas2D.AddSprite(
+            Asset::Common::FramePNG);
+    PrimaryAtlas2D.Build();
+
+    auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
+    PrimaryAtlas3D.AddSprite(
+            Asset::Common::HotelAtlasPNG);
+    PrimaryAtlas3D.Build();
+
     {
         auto ScratchBuffer = Memory::GetScratchBuffer();
-
-        auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
-        NoiseSprite = CommonAtlas2D.AddSprite(
-                Asset::Common::NoisePNG, ScratchBuffer);
-        RefSprite = CommonAtlas2D.AddSprite(
-                Asset::Common::RefPNG, ScratchBuffer);
-        CommonAtlas2D.Build(ScratchBuffer);
-
-        auto &PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
-        AngelSprite = PrimaryAtlas2D.AddSprite(
-                Asset::Common::AngelPNG, ScratchBuffer);
-        FrameSprite = PrimaryAtlas2D.AddSprite(
-                Asset::Common::FramePNG, ScratchBuffer);
-        PrimaryAtlas2D.Build(ScratchBuffer);
-
-        auto &PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
-        PrimaryAtlas3D.AddSprite(
-                Asset::Common::HotelAtlasPNG, ScratchBuffer);
-        PrimaryAtlas3D.Build(ScratchBuffer);
-
         auto FloorMesh = CRawMesh(
                 Asset::Common::HotelFloorOBJ, ScratchBuffer);
         Floor.InitFromRawMesh(FloorMesh);
         TestGeometry.InitFromRawMesh(CRawMesh(
                 Asset::Common::PillarOBJ, ScratchBuffer));
-
-        Renderer.Tileset.InitBasic(
-                Asset::Common::HotelFloorOBJ, Asset::Common::HotelWallOBJ,
-                Asset::Common::HotelWallJointOBJ, ScratchBuffer);
     }
+
+    Renderer.Tileset.InitBasic(
+            Asset::Common::HotelFloorOBJ, Asset::Common::HotelWallOBJ,
+            Asset::Common::HotelWallJointOBJ);
 
     Player.ApplyDirection(true);
 
