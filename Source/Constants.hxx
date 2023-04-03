@@ -2,13 +2,13 @@
 
 #define GAME_NAME "Equinox Reach"
 
-#define WINDOW_WIDTH    1280
-#define WINDOW_HEIGHT   720
+#define WINDOW_WIDTH    960
+#define WINDOW_HEIGHT   540
 #define WINDOW_ASPECT   static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT)
 #define WINDOW_CLEAR_COLOR {0.0f, 0.0f, 0.0f}
 
-#define SCREEN_WIDTH    320
-#define SCREEN_HEIGHT   240
+#define SCREEN_WIDTH    480
+#define SCREEN_HEIGHT   270
 #define SCREEN_ASPECT   (static_cast<float>(SCREEN_WIDTH) / static_cast<float>(SCREEN_HEIGHT))
 
 #define SCENE_WIDTH  288

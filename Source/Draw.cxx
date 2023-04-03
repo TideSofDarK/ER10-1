@@ -531,7 +531,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
     /** Draw 3D */
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glViewport(SCENE_OFFSET, SCENE_HEIGHT - SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
+    glViewport(SCENE_OFFSET, SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
 
     Queue3D.CommonUniformBlock.Bind();
 
@@ -805,20 +805,20 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
                 }
             }
 
-            if (!Level.IsValidTile({X, Y})) {
+            auto Tile = Level.GetTileAt({X, Y});
+
+            if (Tile == nullptr) {
                 continue;
             }
 
-            const auto &Tile = Level.GetTileAt({X, Y});
-
-            if (Tile.Type == ETileType::Floor) {
+            if (Tile->Type == ETileType::Floor) {
                 FloorDrawCall.Transform[FloorDrawCall.Count] =
                         glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset));
                 FloorDrawCall.Count++;
             }
 
             for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
-                auto &TileEdge = Tile.Edges[Direction];
+                auto &TileEdge = Tile->Edges[Direction];
 
                 if (TileEdge != ETileEdgeType::Empty) {
                     auto Transform = glm::identity<glm::mat4x4>();

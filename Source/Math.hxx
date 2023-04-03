@@ -21,6 +21,10 @@ struct SVec2 {
         return *this;
     }
 
+    SVec2<T> operator-() {
+        return {-X, -Y};
+    }
+
     SVec2<T> Swapped() {
         return {Y, X};
     }

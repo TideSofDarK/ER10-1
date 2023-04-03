@@ -22,4 +22,6 @@ struct SPlayer {
     void Update(float DeltaTime);
 
     void ApplyDirection(bool bImmediate);
+
+    void MoveForward();
 };

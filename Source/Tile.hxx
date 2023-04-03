@@ -20,6 +20,14 @@ struct STile {
 
     ETileType Type{ETileType::Floor};
 
+    [[nodiscard]] bool IsWalkable() const {
+        return Type != ETileType::Empty;
+    }
+
+    [[nodiscard]] bool IsTraversable(unsigned Direction) const {
+        return Edges[Direction] != ETileEdgeType::Wall;
+    }
+
     static STile Empty() {
         return STile{.Type = ETileType::Empty};
     };

@@ -12,9 +12,12 @@ struct SLevel {
     using UWallJoint = bool;
 
 private:
-    [[nodiscard]] STile &GetTileAtMutable(UVec2Int Coords) {
-        auto Index = CoordsToIndex(Coords.X, Coords.Y);
-        return Tiles[Index];
+    [[nodiscard]] STile *GetTileAtMutable(UVec2Int Coords) {
+        if (IsValidTile(Coords)) {
+            auto Index = CoordsToIndex(Coords.X, Coords.Y);
+            return &Tiles[Index];
+        }
+        return nullptr;
     }
 
     [[nodiscard]] UWallJoint *GetWallJointAtMutable(UVec2Int Coords) {
@@ -32,9 +35,12 @@ public:
     std::array<UWallJoint, (LevelGridWidth + 1) * (LevelGridHeight + 1)> WallJoints{};
     bool bUseWallJoints = false;
 
-    [[nodiscard]] STile const &GetTileAt(UVec2Int Coords) const {
-        auto Index = CoordsToIndex(Coords.X, Coords.Y);
-        return Tiles[Index];
+    [[nodiscard]] STile const *GetTileAt(UVec2Int Coords) const {
+        if (IsValidTile(Coords)) {
+            auto Index = CoordsToIndex(Coords.X, Coords.Y);
+            return &Tiles[Index];
+        }
+        return nullptr;
     };
 
     [[nodiscard]] bool IsValidTile(UVec2Int Coords) const {

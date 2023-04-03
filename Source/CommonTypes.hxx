@@ -35,20 +35,20 @@ enum class EDirection {
 };
 
 struct SDirection {
-    unsigned Direction: 2;
+    unsigned Index: 2;
 
-    explicit SDirection(unsigned InDirection) : Direction(InDirection) {}
+    explicit SDirection(unsigned InDirection) : Index(InDirection) {}
 
-    explicit SDirection(EDirection InDirection) : Direction(static_cast<unsigned>(InDirection)) {}
+    explicit SDirection(EDirection InDirection) : Index(static_cast<unsigned>(InDirection)) {}
 
-    [[nodiscard]] EDirection GetEnum() const { return static_cast<EDirection>(Direction); }
+    [[nodiscard]] EDirection GetEnum() const { return static_cast<EDirection>(Index); }
 
     void CycleCW() {
-        Direction++;
+        Index++;
     }
 
     void CycleCCW() {
-        Direction--;
+        Index--;
     }
 
     template<typename T>

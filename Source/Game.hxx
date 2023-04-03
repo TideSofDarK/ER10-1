@@ -30,4 +30,6 @@ public:
     SGame();
 
     void Run();
+
+    bool CheckIfPlayerCanMove();
 };

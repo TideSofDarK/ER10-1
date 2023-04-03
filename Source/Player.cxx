@@ -1,4 +1,3 @@
-#include <cstdio>
 #include "Player.hxx"
 #include "Utility.hxx"
 
@@ -20,18 +19,19 @@ void SPlayer::HandleInput(const SInputState InputState) {
         Direction.CycleCW();
         ApplyDirection(false);
     }
-    if (InputState.Up == EKeyState::Pressed) {
-        EyePositionTarget += EyeForwardTarget;
-        Coords += Direction.DirectionVectorFromDirection<int>();
-    }
 }
 
 void SPlayer::ApplyDirection(bool bImmediate) {
     EyeForwardTarget = {0.0f, 0.0f, 0.0f};
-    auto DirectionVector = Direction.DirectionVectorFromDirection<float>();
+    auto DirectionVector = -Direction.DirectionVectorFromDirection<float>();
     EyeForwardTarget.x += DirectionVector.X;
     EyeForwardTarget.z += DirectionVector.Y;
     if (bImmediate) {
         EyeForwardCurrent = EyeForwardTarget;
     }
+}
+
+void SPlayer::MoveForward() {
+    EyePositionTarget += EyeForwardTarget;
+    Coords += -Direction.DirectionVectorFromDirection<int>();
 }

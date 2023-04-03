@@ -125,27 +125,32 @@ void SGame::Run() {
         InputState.Right = UpdateKeyState(OldInputState.Right, KeyboardState, SDL_SCANCODE_D);
         InputState.Down = UpdateKeyState(OldInputState.Down, KeyboardState, SDL_SCANCODE_S);
         InputState.Left = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_A);
-
         InputState.L = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_Q);
         InputState.R = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_E);
-
         InputState.ZL = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_Z);
         InputState.ZR = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_C);
-
         InputState.Accept = UpdateKeyState(OldInputState.Accept, KeyboardState, SDL_SCANCODE_SPACE);
         InputState.Cancel = UpdateKeyState(OldInputState.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
         InputState.ToggleFullscreen = UpdateKeyState(OldInputState.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
 
+#pragma region InputHandling
         if (InputState.Cancel == EKeyState::Pressed) {
             Window.bQuit = true;
         }
 
-        /** Toggle borderless fullscreen */
         if (InputState.ToggleFullscreen == EKeyState::Pressed) {
             Window.ToggleBorderlessFullscreen();
         }
 
+        if (InputState.Up == EKeyState::Pressed) {
+            if (CheckIfPlayerCanMove()) {
+                Player.MoveForward();
+            }
+        }
+
         Player.HandleInput(InputState);
+#pragma endregion
+
         Player.Update(Window.DeltaTime);
 
         Camera.Position = Player.EyePositionCurrent;
@@ -168,9 +173,9 @@ void SGame::Run() {
 //        Renderer.Draw2DBackBlur({140 - 4, 50.0f, 0.0f}, AngelSprite, 4.0f, 2.9f, 0.08f);
 //        Renderer.Draw2DGlow({195 - 4, 50.0f, 0.0f}, AngelSprite, glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
 //        Renderer.Draw2DDisintegrate({250 - 4, 50.0f, 0.0f}, AngelSprite, NoiseSprite, Window.Seconds / 4.0f);
-        Renderer.Draw2D({0.0f, 0.0f, 0.0f}, FrameSprite);
-        Renderer.DrawHUD({32.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
-        Renderer.DrawHUD({128.0f, 150.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
+//        Renderer.Draw2D({0.0f, 0.0f, 0.0f}, FrameSprite);
+        Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
+        Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
         Renderer.Flush(Window);
 
         Window.SwapBuffers();
@@ -182,4 +187,24 @@ void SGame::Run() {
 
     Renderer.Cleanup();
     Window.Cleanup();
+}
+
+bool SGame::CheckIfPlayerCanMove() {
+    auto DirectionVector = -Player.Direction.DirectionVectorFromDirection<int>();
+
+    auto CurrentTile = Level.GetTileAt(Player.Coords);
+    if (CurrentTile == nullptr) {
+        return false;
+    }
+
+    if (!CurrentTile->IsTraversable(Player.Direction.Index)) {
+        return false;
+    }
+
+    auto NextTile = Level.GetTileAt(Player.Coords + DirectionVector);
+    if (NextTile == nullptr || !NextTile->IsWalkable()) {
+        return false;
+    }
+
+    return true;
 }
