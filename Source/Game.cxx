@@ -78,10 +78,10 @@ SGame::SGame() {
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
     bool bCurrentlyPressed = KeyboardState[Scancode] == 1;
-    bool bWasPressed = OldKeyState == EKeyState::Press || OldKeyState == EKeyState::Pressed;
+    bool bWasPressed = OldKeyState == EKeyState::Down || OldKeyState == EKeyState::Pressed;
     if (bCurrentlyPressed) {
         if (bWasPressed) {
-            return EKeyState::Press;
+            return EKeyState::Down;
         } else {
             return EKeyState::Pressed;
         }
@@ -142,13 +142,18 @@ void SGame::Run() {
             Window.ToggleBorderlessFullscreen();
         }
 
-        if (InputState.Up == EKeyState::Pressed) {
-            if (CheckIfPlayerCanMove()) {
-                Player.MoveForward();
+        if (!Player.IsMoving()) {
+            if (InputState.Up == EKeyState::Down) {
+                if (CheckIfPlayerCanMove()) {
+                    Player.MoveForward();
+                }
+            }
+            if (InputState.Left == EKeyState::Down) {
+                Player.Turn(false);
+            } else if (InputState.Right == EKeyState::Down) {
+                Player.Turn(true);
             }
         }
-
-        Player.HandleInput(InputState);
 #pragma endregion
 
         Player.Update(Window.DeltaTime);
@@ -190,7 +195,7 @@ void SGame::Run() {
 }
 
 bool SGame::CheckIfPlayerCanMove() {
-    auto DirectionVector = -Player.Direction.DirectionVectorFromDirection<int>();
+    auto DirectionVector = Player.Direction.DirectionVectorFromDirection<int>();
 
     auto CurrentTile = Level.GetTileAt(Player.Coords);
     if (CurrentTile == nullptr) {

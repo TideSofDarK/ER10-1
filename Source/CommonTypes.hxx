@@ -55,13 +55,13 @@ struct SDirection {
     SVec2<T> DirectionVectorFromDirection() const {
         switch (GetEnum()) {
             case EDirection::North:
-                return {0, 1};
-            case EDirection::East:
-                return {-1, 0};
-            case EDirection::South:
                 return {0, -1};
-            case EDirection::West:
+            case EDirection::East:
                 return {1, 0};
+            case EDirection::South:
+                return {0, 1};
+            case EDirection::West:
+                return {-1, 0};
             default:
                 return {};
         }
@@ -86,7 +86,7 @@ struct SDirection {
 enum class EKeyState : unsigned {
     None,
     Pressed,
-    Press,
+    Down,
     Released
 };
 

@@ -2,8 +2,25 @@
 #include "Utility.hxx"
 
 void SPlayer::Update(float DeltaTime) {
-    EyePositionCurrent = Utility::InterpolateToConstant(EyePositionCurrent, EyePositionTarget, DeltaTime, 3.1f);
-    EyeForwardCurrent = Utility::InterpolateToConstant(EyeForwardCurrent, EyeForwardTarget, DeltaTime, 3.5f);
+    AnimationAlpha += DeltaTime * 3.3f;
+    if (AnimationAlpha >= 1.0f) {
+        AnimationAlpha = 1.0f;
+    }
+    switch (AnimationType) {
+        case EPlayerAnimationType::Turn:
+            EyeForwardCurrent = glm::mix(EyeForwardFrom, EyeForwardTarget, AnimationAlpha);
+            break;
+        case EPlayerAnimationType::Walk:
+        case EPlayerAnimationType::Bump:
+            EyePositionCurrent = glm::mix(EyePositionFrom, EyePositionTarget, AnimationAlpha);
+            break;
+        case EPlayerAnimationType::Idle:
+        default:
+            break;
+    }
+    if (AnimationAlpha >= 1.0f) {
+        AnimationType = EPlayerAnimationType::Idle;
+    }
 }
 
 SPlayer::SPlayer() : Direction(EDirection::North) {
@@ -11,11 +28,11 @@ SPlayer::SPlayer() : Direction(EDirection::North) {
     ApplyDirection(true);
 }
 
-void SPlayer::HandleInput(const SInputState InputState) {
-    if (InputState.Left == EKeyState::Pressed) {
+void SPlayer::Turn(bool bRight) {
+    if (!bRight) {
         Direction.CycleCCW();
         ApplyDirection(false);
-    } else if (InputState.Right == EKeyState::Pressed) {
+    } else {
         Direction.CycleCW();
         ApplyDirection(false);
     }
@@ -23,15 +40,30 @@ void SPlayer::HandleInput(const SInputState InputState) {
 
 void SPlayer::ApplyDirection(bool bImmediate) {
     EyeForwardTarget = {0.0f, 0.0f, 0.0f};
-    auto DirectionVector = -Direction.DirectionVectorFromDirection<float>();
+    auto DirectionVector = Direction.DirectionVectorFromDirection<float>();
     EyeForwardTarget.x += DirectionVector.X;
     EyeForwardTarget.z += DirectionVector.Y;
+
     if (bImmediate) {
+        AnimationType = EPlayerAnimationType::Idle;
+        AnimationAlpha = 1.0f;
         EyeForwardCurrent = EyeForwardTarget;
+    } else {
+        AnimationType = EPlayerAnimationType::Turn;
+        AnimationAlpha = 0.0f;
+        EyeForwardFrom = EyeForwardCurrent;
     }
 }
 
 void SPlayer::MoveForward() {
-    EyePositionTarget += EyeForwardTarget;
-    Coords += -Direction.DirectionVectorFromDirection<int>();
+    AnimationType = EPlayerAnimationType::Walk;
+    AnimationAlpha = 0.0f;
+    EyePositionFrom = EyePositionCurrent;
+    EyePositionTarget += EyeForwardCurrent;
+    Coords += Direction.DirectionVectorFromDirection<int>();
+}
+
+void SPlayer::BumpIntoWall() {
+    AnimationType = EPlayerAnimationType::Bump;
+    AnimationAlpha = 0.0f;
 }
