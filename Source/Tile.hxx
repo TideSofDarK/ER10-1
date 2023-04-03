@@ -51,6 +51,10 @@ struct STile {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
 
+    static STile WallNS() {
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty}};
+    };
+
     static STile WallNW() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
     };
@@ -69,6 +73,10 @@ struct STile {
 
     static STile WallNWS() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
+    };
+
+    static STile WallSWE() {
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall}};
     };
 
     static STile WallNEW() {

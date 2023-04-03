@@ -66,11 +66,11 @@ SGame::SGame() {
             5,
             5,
             {
-                    STile::WallNWS(), STile::WallN(), STile::WallN(), STile::WallN(), STile::WallNE(),
-                    STile::WallNEW(), STile::WallW(), STile::WallS(), STile(), STile::WallE(),
+                    STile::WallNWS(), STile::WallN(), STile::WallN(), STile::WallNE(), STile::WallSW(),
+                    STile::WallNEW(), STile::WallW(), STile::WallS(), STile(), STile::WallNE(),
                     STile::WallWE(), STile::WallWE(), STile::WallsNF(), STile::WallW(), STile::WallE(),
-                    STile::WallWE(), STile::WallW(), STile::WallN(), STile(), STile::WallE(),
-                    STile::WallSW(), STile::WallS(), STile::WallS(), STile::WallS(), STile::WallSE(),
+                    STile::WallWE(), STile::WallSWE(), STile::WallNW(), STile(), STile::WallE(),
+                    STile::WallSW(), STile::WallNS(), STile::WallS(), STile::WallS(), STile::WallSE(),
             }
     };
     Level.InitWallJoints();
