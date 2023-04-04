@@ -1,4 +1,6 @@
 #include "Window.hxx"
+
+#include <iostream>
 #include "Constants.hxx"
 #include "glad/gl.h"
 
@@ -13,7 +15,6 @@
 #include <windows.h>
 #include <dwmapi.h>
 #include <VersionHelpers.h>
-#include <iostream>
 
 #endif
 
