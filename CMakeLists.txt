@@ -57,7 +57,6 @@ set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSE
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE
-        Vendor/incbin/
         Vendor/stb
         Vendor/glad/include
         Source/
