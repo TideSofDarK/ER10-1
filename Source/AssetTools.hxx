@@ -10,6 +10,11 @@ struct SAsset {
     const unsigned char *Data;
     size_t Length;
 
+    explicit SAsset(const char *InData, size_t InLength) : Data(reinterpret_cast<const unsigned char *>(InData)),
+                                                           Length(InLength) {
+
+    };
+
     [[nodiscard]] std::string ToString() const { return std::string(reinterpret_cast<const char *>(Data), Length); }
 };
 

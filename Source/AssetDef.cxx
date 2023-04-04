@@ -1,20 +1,61 @@
 #include "AssetTools.hxx"
 
-#define INCBIN_PREFIX _INCBIN_
+#define STR2(x) #x
+#define STR(x) STR2(x)
 
-#include "incbin.h"
-
-#if defined(__clang__)
-#define DEFINE_ASSET(NAME, PATH) \
-    INCBIN(NAME, PATH); \
-    extern const SAsset NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
+#ifdef _WIN32
+#define INCBIN_SECTION ".rdata, \"dr\""
+#elif defined(__APPLE__)
+//#define INCBIN_SECTION "__TEXT,__const"
+#define INCBIN_SECTION ".const_data"
 #else
-#define DEFINE_ASSET(NAME, PATH) \
-    INCBIN(NAME, PATH); \
-    inline const SAsset NAME{_INCBIN_ ## NAME ## Data, _INCBIN_ ## NAME ## Size};
+#define INCBIN_SECTION ".rodata"
 #endif
 
-DEFINE_ASSET(FrameBPNG, "../Asset/Texture/Frame.png")
+#ifdef __APPLE__
+#define INCBIN(name, file) \
+    __asm__(".section " INCBIN_SECTION "\n" \
+            ".global " "_incbin" "_" STR(name) "_start\n" \
+            ".balign 16\n" \
+            "_incbin" "_" STR(name) "_start:\n" \
+            ".incbin \"" file "\"\n" \
+            \
+            ".global " "_incbin" "_" STR(name) "_end\n" \
+            ".balign 1\n" \
+            "_incbin" "_" STR(name) "_end:\n" \
+            ".byte 0\n" \
+    ); \
+    extern "C" __attribute__((aligned(16))) const char incbin ## _ ## name ## _start[]; \
+    extern "C"                              const char incbin ## _ ## name ## _end[]; \
+    const size_t incbin_ ## name ## _length = incbin_ ## name ## _end - incbin_ ## name ## _start;
+#else
+#define INCBIN(name, file) \
+    __asm__(".section " INCBIN_SECTION "\n" \
+            ".global " STR(__USER_LABEL_PREFIX__) "incbin_" STR(name) "_start\n" \
+            ".balign 16\n" \
+            STR(__USER_LABEL_PREFIX__)"incbin_" STR(name) "_start:\n" \
+            ".incbin \"" file "\"\n" \
+            \
+            ".global " STR(__USER_LABEL_PREFIX__) "incbin_" STR(name) "_end\n" \
+            ".balign 1\n" \
+            STR(__USER_LABEL_PREFIX__)"incbin_" STR(name) "_end:\n" \
+            ".byte 0\n" \
+    ); \
+    extern "C" __attribute__((aligned(16))) const char incbin_ ## name ## _start[]; \
+    extern "C"                              const char incbin_ ## name ## _end[]; \
+    const size_t incbin_ ## name ## _length = incbin_ ## name ## _end - incbin_ ## name ## _start;
+#endif
+
+#ifdef __clang__
+#define EXTERN_OR_INLINE extern
+#else
+#define EXTERN_OR_INLINE inline
+#endif
+
+#define DEFINE_ASSET(NAME, PATH) \
+    INCBIN(NAME, PATH) \
+    EXTERN_OR_INLINE const SAsset NAME(&(incbin_ ## NAME ## _start[0]), incbin_ ## NAME ## _length);
+
 namespace Asset::Common {
     DEFINE_ASSET(FramePNG, "../Asset/Texture/Frame.png")
     DEFINE_ASSET(RefPNG, "../Asset/Texture/Ref.png")
