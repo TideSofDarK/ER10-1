@@ -6,8 +6,8 @@
 #ifdef _WIN32
 #define INCBIN_SECTION ".rdata, \"dr\""
 #elif defined(__APPLE__)
-//#define INCBIN_SECTION "__TEXT,__const"
-#define INCBIN_SECTION ".const_data"
+#define INCBIN_SECTION "__TEXT,__const"
+//#define INCBIN_SECTION ".const_data"
 #else
 #define INCBIN_SECTION ".rodata"
 #endif

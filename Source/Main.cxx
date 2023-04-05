@@ -1,8 +1,8 @@
 #include "Memory.hxx"
-#include <SDL.h>
+#include "SDL_main.h"
 #include "Game.hxx"
 
-int SDL_main([[maybe_unused]] int ArgCount, [[maybe_unused]] char *Arguments[]) {
+int main([[maybe_unused]] int ArgCount, [[maybe_unused]] char *Arguments[]) {
     Memory::Init();
 
     auto Game = std::make_unique<SGame>();

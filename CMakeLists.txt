@@ -61,9 +61,10 @@ target_include_directories(
         Vendor/glad/include
         Source/
 )
+
 if (WIN32)
     set(PLATFORM_LIBS Dwmapi.lib)
-endif (WIN32)
+endif ()
 target_link_libraries(
         ${PROJECT_NAME}
         SDL2::SDL2main
@@ -72,15 +73,8 @@ target_link_libraries(
         ${PLATFORM_LIBS}
 )
 
-if (MINGW)
-    set(CMAKE_EXE_LINKER_FLAGS "-static")
-endif ()
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 
 if (WIN32 AND CMAKE_BUILD_TYPE MATCHES Release)
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
-endif ()
-
-if (MSVC)
-    set_property(TARGET ${PROJECT_NAME} PROPERTY
-            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
