@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include "CommonTypes.hxx"
 #include "Math.hxx"
 
@@ -20,12 +19,12 @@ struct SPlayer {
 
     float EyeHeight = 0.22f;
 
-    glm::vec3 EyeForwardFrom{};
-    glm::vec3 EyeForwardCurrent{};
-    glm::vec3 EyeForwardTarget{};
-    glm::vec3 EyePositionFrom{};
-    glm::vec3 EyePositionCurrent{};
-    glm::vec3 EyePositionTarget{};
+    UVec3 EyeForwardFrom{};
+    UVec3 EyeForwardCurrent{};
+    UVec3 EyeForwardTarget{};
+    UVec3 EyePositionFrom{};
+    UVec3 EyePositionCurrent{};
+    UVec3 EyePositionTarget{};
 
     SPlayer();
 

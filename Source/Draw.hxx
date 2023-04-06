@@ -3,8 +3,6 @@
 #include <vector>
 #include <array>
 
-#include "glm/glm.hpp"
-#include "glm/mat4x4.hpp"
 #include "CommonTypes.hxx"
 #include "AssetTools.hxx"
 #include "ShaderConstants.hxx"
@@ -94,9 +92,9 @@ struct SFrameBuffer {
     unsigned FBO{};
     unsigned ColorID{};
     unsigned DepthID{};
-    glm::vec3 ClearColor;
+    UVec3 ClearColor{};
 
-    void Init(int TextureUnitID, int Width, int Height, glm::vec3 InClearColor);
+    void Init(int TextureUnitID, int Width, int Height, UVec3 InClearColor);
 
     void Cleanup();
 
@@ -147,10 +145,10 @@ struct STileSet : SGeometry {
 };
 
 struct SCamera {
-    glm::mat4x4 View;
-    glm::mat4x4 Projection;
-    glm::vec3 Position;
-    glm::vec3 Target;
+    UMat4x4 View{};
+    UMat4x4 Projection{};
+    UVec3 Position{};
+    UVec3 Target{};
 
     float Aspect = 2.4f;
     float FieldOfViewY = 77.7f;
@@ -185,9 +183,9 @@ struct SUniformBlock {
 
     void Bind() const;
 
-    void SetMatrix(int Position, const glm::mat4x4 &Value) const;
+    void SetMatrix(int Position, const UMat4x4 &Value) const;
 
-    void SetVector2(int Position, const glm::vec2 &Value) const;
+    void SetVector2(int Position, const UVec2 &Value) const;
 
     void SetFloat(int Position, float Value) const;
 };
@@ -199,8 +197,8 @@ enum class EProgram2DType {
 
 struct SEntryMode {
     int ID{};
-    glm::vec4 ControlA{};
-    glm::vec4 ControlB{};
+    UVec4 ControlA{};
+    UVec4 ControlB{};
 };
 
 struct SEntry {
@@ -209,14 +207,14 @@ struct SEntry {
 
 struct SEntry2D : SEntry {
     EProgram2DType Program2DType{};
-    glm::vec3 Position{};
-    glm::vec2 SizePixels{};
-    glm::vec4 UVRect{};
+    UVec3 Position{};
+    UVec2Int SizePixels{};
+    UVec4 UVRect{};
 };
 
 struct SInstancedDrawCall {
     SSubGeometry *SubGeometry{};
-    std::array<glm::mat4x4, UBER3D_MODEL_COUNT> Transform{};
+    std::array<UMat4x4, UBER3D_MODEL_COUNT> Transform{};
     int Count{};
 };
 
@@ -226,7 +224,7 @@ struct SInstancedDrawData {
 };
 
 struct SEntry3D : SEntry {
-    glm::mat4x4 Model{};
+    UMat4x4 Model{};
     SGeometry *Geometry{};
     SInstancedDrawCall *InstancedDrawCall{};
     int InstancedDrawCallCount{};
@@ -265,8 +263,8 @@ struct SSpriteHandle {
 };
 
 struct SSprite {
-    glm::vec4 UVRect{};
-    glm::vec<2, int> SizePixels{};
+    UVec4 UVRect{};
+    UVec2Int SizePixels{};
     const SAsset *Resource{};
 };
 
@@ -311,30 +309,30 @@ struct SRenderer {
 
 #pragma region Queue_2D_API
 
-    void DrawHUD(glm::vec3 Position, glm::vec2 Size, int Mode);
+    void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
-    void Draw2D(glm::vec3 Position, const SSpriteHandle &SpriteHandle);
+    void Draw2D(UVec3 Position, const SSpriteHandle &SpriteHandle);
 
-    void Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA);
+    void Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode, UVec4 ModeControlA);
 
-    void Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA,
-                  glm::vec4 ModeControlB);
+    void Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode, UVec4 ModeControlA,
+                  UVec4 ModeControlB);
 
     void
-    Draw2DHaze(glm::vec3 Position, const SSpriteHandle &SpriteHandle, float XIntensity, float YIntensity, float Speed);
+    Draw2DHaze(UVec3 Position, const SSpriteHandle &SpriteHandle, float XIntensity, float YIntensity, float Speed);
 
-    void Draw2DBackBlur(glm::vec3 Position, const SSpriteHandle &SpriteHandle, float Count, float Speed, float Step);
+    void Draw2DBackBlur(UVec3 Position, const SSpriteHandle &SpriteHandle, float Count, float Speed, float Step);
 
-    void Draw2DGlow(glm::vec3 Position, const SSpriteHandle &SpriteHandle, glm::vec3 Color, float Intensity);
+    void Draw2DGlow(UVec3 Position, const SSpriteHandle &SpriteHandle, UVec3 Color, float Intensity);
 
-    void Draw2DDisintegrate(glm::vec3 Position, const SSpriteHandle &SpriteHandle, const SSpriteHandle &NoiseHandle,
+    void Draw2DDisintegrate(UVec3 Position, const SSpriteHandle &SpriteHandle, const SSpriteHandle &NoiseHandle,
                             float Progress);
 
 #pragma endregion
 
 #pragma region Queue_3D_API
 
-    void Draw3D(glm::vec3 Position, SGeometry *Geometry);
+    void Draw3D(UVec3 Position, SGeometry *Geometry);
 
     void Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, const SDirection &POVDirection);
 

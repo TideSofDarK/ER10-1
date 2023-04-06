@@ -9,11 +9,6 @@ set(BUILD_SHARED_LIBS OFF)
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
-FetchContent_Declare(
-        glm
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
-        GIT_TAG 0.9.9.8
-)
 set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
 set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
 set(SDL_FILE OFF CACHE BOOL "" FORCE)
@@ -29,7 +24,7 @@ FetchContent_Declare(
         GIT_TAG eb0d214c17077ffe7cdb9c78ff0713a039aa07e1
         GIT_PROGRESS TRUE
 )
-FetchContent_MakeAvailable(glm SDL)
+FetchContent_MakeAvailable(SDL)
 
 add_executable(${PROJECT_NAME})
 target_sources(
@@ -73,9 +68,9 @@ if (WIN32)
 endif ()
 target_link_libraries(
         ${PROJECT_NAME}
+        PRIVATE
         SDL2::SDL2main
         SDL2::SDL2-static
-        glm::glm
         ${PLATFORM_LIBS}
 )
 

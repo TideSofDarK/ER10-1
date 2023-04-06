@@ -1,8 +1,7 @@
 #pragma once
 
-#include "glm/vec3.hpp"
-#include "glm/vec2.hpp"
 #include "Memory.hxx"
+#include "Math.hxx"
 
 #define EXTERN_ASSET(NAME) extern const SAsset NAME;
 
@@ -15,14 +14,14 @@ struct SAsset {
 
     };
 
-    [[nodiscard]] std::string ToString() const { return std::string(reinterpret_cast<const char *>(Data), Length); }
+    [[nodiscard]] std::string ToString() const { return {reinterpret_cast<const char *>(Data), Length}; }
 };
 
 class CRawMesh {
 public:
-    std::pmr::vector<glm::vec3> Positions;
-    std::pmr::vector<glm::vec2> TexCoords;
-    std::pmr::vector<glm::vec3> Normals;
+    std::pmr::vector<UVec3> Positions;
+    std::pmr::vector<UVec2> TexCoords;
+    std::pmr::vector<UVec3> Normals;
     std::pmr::vector<unsigned short> Indices;
 
     [[nodiscard]] int GetVertexCount() const { return static_cast<int>(Positions.size()); }

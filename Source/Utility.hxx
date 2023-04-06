@@ -1,6 +1,5 @@
 #pragma once
 
-#include "glm/geometric.hpp"
 #include "CommonTypes.hxx"
 #include "Math.hxx"
 
@@ -11,18 +10,18 @@ namespace Utility {
 
     float SmoothDamp(float Current, float Target, float SmoothTime, float MaxSpeed, float DeltaTime);
 
-    template<typename T>
-    constexpr auto InterpolateToConstant(T Current, T Target, float DeltaTime, float InterpSpeed) {
-        if (InterpSpeed <= 0.0f) {
-            return static_cast<T>(Target);
-        }
-        const auto Dist = glm::distance(Target, Current);
-        if (Dist * Dist < 0.00001f) {
-            return static_cast<T>(Target);
-        }
-        const auto Step = DeltaTime * InterpSpeed;
-        return Current + glm::clamp((Target - Current), -Step, Step);
-    }
+//    template<typename T>
+//    constexpr auto InterpolateToConstant(T Current, T Target, float DeltaTime, float InterpSpeed) {
+//        if (InterpSpeed <= 0.0f) {
+//            return static_cast<T>(Target);
+//        }
+//        const auto Dist = glm::distance(Target, Current);
+//        if (Dist * Dist < 0.00001f) {
+//            return static_cast<T>(Target);
+//        }
+//        const auto Step = DeltaTime * InterpSpeed;
+//        return Current + glm::clamp((Target - Current), -Step, Step);
+//    }
 
     inline bool IsNumChar(char Char) {
         return Char >= '0' && Char <= '9';

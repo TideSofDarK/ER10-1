@@ -8,11 +8,11 @@ void SPlayer::Update(float DeltaTime) {
     }
     switch (AnimationType) {
         case EPlayerAnimationType::Turn:
-            EyeForwardCurrent = glm::mix(EyeForwardFrom, EyeForwardTarget, AnimationAlpha);
+            EyeForwardCurrent = UVec3::Mix(EyeForwardFrom, EyeForwardTarget, AnimationAlpha);
             break;
         case EPlayerAnimationType::Walk:
         case EPlayerAnimationType::Bump:
-            EyePositionCurrent = glm::mix(EyePositionFrom, EyePositionTarget, AnimationAlpha);
+            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, AnimationAlpha);
             break;
         case EPlayerAnimationType::Idle:
         default:
@@ -41,8 +41,8 @@ void SPlayer::Turn(bool bRight) {
 void SPlayer::ApplyDirection(bool bImmediate) {
     EyeForwardTarget = {0.0f, 0.0f, 0.0f};
     auto DirectionVector = Direction.DirectionVectorFromDirection<float>();
-    EyeForwardTarget.x += DirectionVector.X;
-    EyeForwardTarget.z += DirectionVector.Y;
+    EyeForwardTarget.X += DirectionVector.X;
+    EyeForwardTarget.Z += DirectionVector.Y;
 
     if (bImmediate) {
         AnimationType = EPlayerAnimationType::Idle;

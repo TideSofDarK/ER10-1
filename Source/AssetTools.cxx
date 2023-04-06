@@ -39,14 +39,14 @@ void STBIFree(void *Pointer) {
 #include "stb/stb_image.h"
 
 CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
-        Positions(ScratchBuffer.GetVector<glm::vec3>()),
-        TexCoords(ScratchBuffer.GetVector<glm::vec2>()),
-        Normals(ScratchBuffer.GetVector<glm::vec3>()),
+        Positions(ScratchBuffer.GetVector<UVec3>()),
+        TexCoords(ScratchBuffer.GetVector<UVec2>()),
+        Normals(ScratchBuffer.GetVector<UVec3>()),
         Indices(ScratchBuffer.GetVector<unsigned short>()) {
-    auto ScratchPositions = ScratchBuffer.GetVector<glm::vec3>();
-    auto ScratchTexCoords = ScratchBuffer.GetVector<glm::vec2>();
-    auto ScratchNormals = ScratchBuffer.GetVector<glm::vec3>();
-    auto ScratchOBJIndices = ScratchBuffer.GetVector<glm::vec<3, int>>();
+    auto ScratchPositions = ScratchBuffer.GetVector<UVec3>();
+    auto ScratchTexCoords = ScratchBuffer.GetVector<UVec2>();
+    auto ScratchNormals = ScratchBuffer.GetVector<UVec3>();
+    auto ScratchOBJIndices = ScratchBuffer.GetVector<UVec3Int>();
 
     Positions.clear();
     Normals.clear();
@@ -65,30 +65,30 @@ CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
         std::string_view Data{&OBJContents[CurrentIndex + 1], DataEndIndex - CurrentIndex};
         CurrentIndex = DataEndIndex;
         if (Token == "v") {
-            glm::vec3 Position{};
-            Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 3);
+            UVec3 Position{};
+            Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position.X, 3);
             ScratchPositions.emplace_back(Position);
         } else if (Token == "vn") {
-            glm::vec3 Position{};
-            Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 3);
-            ScratchNormals.emplace_back(Position);
+            UVec3 Normal{};
+            Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Normal.X, 3);
+            ScratchNormals.emplace_back(Normal);
         } else if (Token == "vt") {
-            glm::vec2 Position{};
-            Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position[0], 2);
-            ScratchTexCoords.emplace_back(Position);
+            UVec2 TexCoord{};
+            Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &TexCoord.X, 2);
+            ScratchTexCoords.emplace_back(TexCoord);
         } else if (Token == "f") {
             std::array<int, 9> OBJIndices{};
             Utility::ParseInts(Data.data(), Data.data() + Data.size(), &OBJIndices[0], OBJIndices.size());
             for (int Index = 0; Index < OBJIndices.size(); Index += 3) {
-                glm::vec<3, int> OBJIndex{};
-                OBJIndex.x = OBJIndices[Index] - 1;
-                OBJIndex.y = OBJIndices[Index + 1] - 1;
-                OBJIndex.z = OBJIndices[Index + 2] - 1;
+                UVec3Int OBJIndex{};
+                OBJIndex.X = OBJIndices[Index] - 1;
+                OBJIndex.Y = OBJIndices[Index + 1] - 1;
+                OBJIndex.Z = OBJIndices[Index + 2] - 1;
                 auto ExistingOBJIndex = std::find(ScratchOBJIndices.begin(), ScratchOBJIndices.end(), OBJIndex);
                 if (ExistingOBJIndex == ScratchOBJIndices.end()) {
-                    Positions.emplace_back(ScratchPositions[OBJIndex.x]);
-                    TexCoords.emplace_back(ScratchTexCoords[OBJIndex.y]);
-                    Normals.emplace_back(ScratchNormals[OBJIndex.z]);
+                    Positions.emplace_back(ScratchPositions[OBJIndex.X]);
+                    TexCoords.emplace_back(ScratchTexCoords[OBJIndex.Y]);
+                    Normals.emplace_back(ScratchNormals[OBJIndex.Z]);
 
                     ScratchOBJIndices.emplace_back(OBJIndex);
 

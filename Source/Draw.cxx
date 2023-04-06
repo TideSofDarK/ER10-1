@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <numeric>
 #include "glad/gl.h"
-#include "glm/gtc/matrix_transform.hpp"
 #include "Level.hxx"
 #include "Constants.hxx"
 #include "Utility.hxx"
@@ -203,7 +202,7 @@ void SGeometry::Cleanup() {
 }
 
 void STileSet::InitPlaceholder() {
-    std::array<glm::vec3, 8> TempVertices{};
+    std::array<UVec3, 8> TempVertices{};
     std::array<unsigned short, 12> Indices{};
 
     /** Floor Quad */
@@ -243,7 +242,7 @@ void STileSet::InitPlaceholder() {
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(TempVertices.size() * sizeof(glm::vec3)), &TempVertices[0],
+    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(TempVertices.size() * sizeof(UVec3)), &TempVertices[0],
                  GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -261,8 +260,8 @@ void STileSet::InitPlaceholder() {
 void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint) {
     auto ScratchBuffer = Memory::GetScratchBuffer();
 
-    auto Positions = ScratchBuffer.GetVector<glm::vec3>();
-    auto TexCoords = ScratchBuffer.GetVector<glm::vec2>();
+    auto Positions = ScratchBuffer.GetVector<UVec3>();
+    auto TexCoords = ScratchBuffer.GetVector<UVec2>();
     auto Indices = ScratchBuffer.GetVector<unsigned short>();
 
     int LastElementOffset = 0;
@@ -298,7 +297,7 @@ void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &
     glEnableVertexAttribArray(0);
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(Positions.size() * sizeof(glm::vec3)), &Positions[0],
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(Positions.size() * sizeof(UVec3)), &Positions[0],
                  GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -330,19 +329,19 @@ void SCamera::RegenerateProjection() {
     float const FOVRadians = Math::Radians(FieldOfViewY);
     float const TanHalfFovY = std::tan(FOVRadians / 2.0f);
 
-    Projection = glm::zero<glm::mat4x4>();
-    Projection[0][0] = 1.0f / (Aspect * TanHalfFovY);
-    Projection[1][1] = 1.0f / (TanHalfFovY);
-    Projection[2][2] = -(ZFar + ZNear) / (ZFar - ZNear);
-    Projection[2][3] = -1.0f;
-    Projection[3][2] = -(2.0f * ZFar * ZNear) / (ZFar - ZNear);
+    Projection = UMat4x4();
+    Projection.X.X = 1.0f / (Aspect * TanHalfFovY);
+    Projection.Y.Y = 1.0f / (TanHalfFovY);
+    Projection.Z.Z = -(ZFar + ZNear) / (ZFar - ZNear);
+    Projection.Z.W = -1.0f;
+    Projection.W.Z = -(2.0f * ZFar * ZNear) / (ZFar - ZNear);
 }
 
 void SCamera::Update() {
-    View = glm::lookAtRH(Position, Target, glm::vec3{0.0f, 1.0f, 0.0f});
+    View = UMat4x4::LookAtRH(Position, Target, UVec3{0.0f, 1.0f, 0.0f});
 }
 
-void SFrameBuffer::Init(int TextureUnitID, int Width, int Height, glm::vec3 InClearColor) {
+void SFrameBuffer::Init(int TextureUnitID, int Width, int Height, UVec3 InClearColor) {
     ClearColor = InClearColor;
 
     glActiveTexture(GL_TEXTURE0 + TextureUnitID);
@@ -378,7 +377,7 @@ void SFrameBuffer::Cleanup() {
 
 void SFrameBuffer::BindForDrawing() const {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
-    glClearColor(ClearColor.x, ClearColor.y, ClearColor.z, 1.0f);
+    glClearColor(ClearColor.X, ClearColor.Y, ClearColor.Z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -402,15 +401,15 @@ void SUniformBlock::Bind() const {
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, UBO);
 }
 
-void SUniformBlock::SetMatrix(int Position, const glm::mat4x4 &Value) const {
+void SUniformBlock::SetMatrix(int Position, const UMat4x4 &Value) const {
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, Position, sizeof(Value), &Value[0]);
+    glBufferSubData(GL_UNIFORM_BUFFER, Position, sizeof(Value), &Value.X);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void SUniformBlock::SetVector2(int Position, const glm::vec2 &Value) const {
+void SUniformBlock::SetVector2(int Position, const UVec2 &Value) const {
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, Position, sizeof(Value), &Value[0]);
+    glBufferSubData(GL_UNIFORM_BUFFER, Position, sizeof(Value), &Value.X);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -479,7 +478,7 @@ void SRenderer::Init(int Width, int Height) {
     Queue2D.CommonUniformBlock.SetVector2(0, {static_cast<float>(Width), static_cast<float>(Height)});
     Queue2D.CommonUniformBlock.SetFloat(12, Utility::GetRandomFloat());
 
-    Queue3D.Init(sizeof(glm::mat4x4) * 2);
+    Queue3D.Init(sizeof(UMat4x4) * 2);
 
     /** Initialize framebuffers */
     MainFrameBuffer.Init(TEXTURE_UNIT_MAIN_FRAMEBUFFER, Width, Height, WINDOW_CLEAR_COLOR);
@@ -550,7 +549,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
                 auto &DrawCall = *(Entry.InstancedDrawCall + DrawCallIndex);
                 if (DrawCall.Count > 0) {
                     glUniformMatrix4fv(ProgramUber3D.UniformModelID, DrawCall.Count, GL_FALSE,
-                                       &DrawCall.Transform[0][0][0]);
+                                       &DrawCall.Transform[0].X.X);
                     glDrawElementsInstanced(GL_TRIANGLES,
                                             DrawCall.SubGeometry->ElementCount,
                                             GL_UNSIGNED_SHORT,
@@ -559,7 +558,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
                 }
             }
         } else {
-            glUniformMatrix4fv(ProgramUber3D.UniformModelID, 1, GL_FALSE, &Entry.Model[0][0]);
+            glUniformMatrix4fv(ProgramUber3D.UniformModelID, 1, GL_FALSE, &Entry.Model.X.X);
             glDrawElements(GL_TRIANGLES, Entry.Geometry->ElementCount, GL_UNSIGNED_SHORT, nullptr);
         }
     }
@@ -592,21 +591,21 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         }
         glUseProgram(Program->ID);
 
-        glUniform2f(Program->UniformPositionScreenSpaceID, Entry.Position.x, Entry.Position.y);
-        glUniform2f(Program->UniformSizeScreenSpaceID, Entry.SizePixels.x, Entry.SizePixels.y);
-        glUniform4fv(Program->UniformUVRectID, 1, &Entry.UVRect[0]);
+        glUniform2f(Program->UniformPositionScreenSpaceID, Entry.Position.X, Entry.Position.Y);
+        glUniform2f(Program->UniformSizeScreenSpaceID, Entry.SizePixels.X, Entry.SizePixels.Y);
+        glUniform4fv(Program->UniformUVRectID, 1, &Entry.UVRect.X);
 
         const SEntryMode &Mode = Entry.Mode;
         if (Mode.ID > UBER2D_MODE_TEXTURE) {
-            glUniform4fv(Program->UniformModeControlAID, 1, &Mode.ControlA[0]);
-            glUniform4fv(Program->UniformModeControlBID, 1, &Mode.ControlB[0]);
+            glUniform4fv(Program->UniformModeControlAID, 1, &Mode.ControlA.X);
+            glUniform4fv(Program->UniformModeControlBID, 1, &Mode.ControlB.X);
         }
         glUniform1i(Program->UniformModeID, Mode.ID);
 
         if (Entry.Program2DType == EProgram2DType::Uber2D) {
             if (Mode.ID == UBER2D_MODE_BACK_BLUR) {
                 glDrawElementsInstanced(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr,
-                                        static_cast<int>(Mode.ControlA[0]));
+                                        static_cast<int>(Mode.ControlA.X));
                 glUniform1i(Program->UniformModeID, 0);
             }
         }
@@ -638,10 +637,10 @@ void SRenderer::UploadProjectionAndViewFromCamera(const SCamera &Camera) const {
     auto ViewMatrix = Camera.View;
 
     Queue3D.CommonUniformBlock.SetMatrix(0, ProjectionMatrix);
-    Queue3D.CommonUniformBlock.SetMatrix(sizeof(glm::mat4x4), ViewMatrix);
+    Queue3D.CommonUniformBlock.SetMatrix(sizeof(UMat4x4), ViewMatrix);
 }
 
-void SRenderer::DrawHUD(glm::vec3 Position, glm::vec2 Size, int Mode) {
+void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::HUD;
     Entry.Position = Position;
@@ -652,7 +651,7 @@ void SRenderer::DrawHUD(glm::vec3 Position, glm::vec2 Size, int Mode) {
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2D(glm::vec3 Position, const SSpriteHandle &SpriteHandle) {
+void SRenderer::Draw2D(UVec3 Position, const SSpriteHandle &SpriteHandle) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
@@ -663,7 +662,7 @@ void SRenderer::Draw2D(glm::vec3 Position, const SSpriteHandle &SpriteHandle) {
 }
 
 void
-SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA) {
+SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode, UVec4 ModeControlA) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
@@ -676,8 +675,8 @@ SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int M
 }
 
 void
-SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int Mode, glm::vec4 ModeControlA,
-                    glm::vec4 ModeControlB) {
+SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode, UVec4 ModeControlA,
+                    UVec4 ModeControlB) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
@@ -689,7 +688,7 @@ SRenderer::Draw2DEx(glm::vec3 Position, const SSpriteHandle &SpriteHandle, int M
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DHaze(glm::vec3 Position, const SSpriteHandle &SpriteHandle, float XIntensity, float YIntensity,
+void SRenderer::Draw2DHaze(UVec3 Position, const SSpriteHandle &SpriteHandle, float XIntensity, float YIntensity,
                            float Speed) {
 
     SEntry2D Entry;
@@ -704,7 +703,7 @@ void SRenderer::Draw2DHaze(glm::vec3 Position, const SSpriteHandle &SpriteHandle
 }
 
 void
-SRenderer::Draw2DBackBlur(glm::vec3 Position, const SSpriteHandle &SpriteHandle, float Count, float Speed, float Step) {
+SRenderer::Draw2DBackBlur(UVec3 Position, const SSpriteHandle &SpriteHandle, float Count, float Speed, float Step) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
@@ -716,7 +715,7 @@ SRenderer::Draw2DBackBlur(glm::vec3 Position, const SSpriteHandle &SpriteHandle,
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DGlow(glm::vec3 Position, const SSpriteHandle &SpriteHandle, glm::vec3 Color, float Intensity) {
+void SRenderer::Draw2DGlow(UVec3 Position, const SSpriteHandle &SpriteHandle, UVec3 Color, float Intensity) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
     Entry.Position = Position;
@@ -729,7 +728,7 @@ void SRenderer::Draw2DGlow(glm::vec3 Position, const SSpriteHandle &SpriteHandle
 }
 
 void
-SRenderer::Draw2DDisintegrate(glm::vec3 Position, const SSpriteHandle &SpriteHandle, const SSpriteHandle &NoiseHandle,
+SRenderer::Draw2DDisintegrate(UVec3 Position, const SSpriteHandle &SpriteHandle, const SSpriteHandle &NoiseHandle,
                               float Progress) {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
@@ -748,11 +747,12 @@ SRenderer::Draw2DDisintegrate(glm::vec3 Position, const SSpriteHandle &SpriteHan
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3D(glm::vec3 Position, SGeometry *Geometry) {
+void SRenderer::Draw3D(UVec3 Position, SGeometry *Geometry) {
     SEntry3D Entry;
 
     Entry.Geometry = Geometry;
-    Entry.Model = glm::translate(glm::identity<glm::mat4x4>(), Position);
+    Entry.Model = UMat4x4::Identity();
+    Entry.Model.Translate(Position);
 
     Entry.Mode = SEntryMode{
             .ID = UBER3D_MODE_BASIC
@@ -798,8 +798,8 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
             if (Level.bUseWallJoints && Level.IsValidWallJoint({X, Y})) {
                 auto bWallJoint = Level.GetWallJointAt({X, Y});
                 if (bWallJoint) {
-                    auto Transform = glm::identity<glm::mat4x4>();
-                    Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
+                    auto Transform = UMat4x4::Identity();
+                    Transform.Translate(UVec3{XOffset, 0.0f, YOffset});
                     WallJointDrawCall.Transform[WallJointDrawCall.Count] = Transform;
                     WallJointDrawCall.Count++;
                 }
@@ -812,8 +812,9 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
             }
 
             if (Tile->Type == ETileType::Floor) {
-                FloorDrawCall.Transform[FloorDrawCall.Count] =
-                        glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(XOffset, 0.0f, YOffset));
+                auto Transform = UMat4x4::Identity();
+                Transform.Translate(UVec3{XOffset, 0.0f, YOffset});
+                FloorDrawCall.Transform[FloorDrawCall.Count] = Transform;
                 FloorDrawCall.Count++;
             }
 
@@ -821,10 +822,10 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
                 auto &TileEdge = Tile->Edges[Direction];
 
                 if (TileEdge != ETileEdgeType::Empty) {
-                    auto Transform = glm::identity<glm::mat4x4>();
-                    Transform = glm::translate(Transform, glm::vec3(XOffset, 0.0f, YOffset));
-                    Transform = glm::rotate(Transform, SDirection(Direction).RotationFromDirection(),
-                                            {0.0f, 1.0f, 0.0f});
+                    auto Transform = UMat4x4::Identity();
+                    Transform.Translate({XOffset, 0.0f, YOffset});
+                    Transform.Rotate(SDirection(Direction).RotationFromDirection(),
+                                     {0.0f, 1.0f, 0.0f});
 
                     if (TileEdge == ETileEdgeType::Wall) {
                         WallDrawCall.Transform[WallDrawCall.Count] = Transform;
@@ -838,7 +839,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
     SEntry3D Entry;
 
     Entry.Geometry = &TileSet;
-    Entry.Model = glm::translate(glm::identity<glm::mat4x4>(), glm::zero<glm::vec3>());
+    Entry.Model = UMat4x4::Identity();
     Entry.InstancedDrawCall = &LevelDrawData.DrawCalls[0];
     Entry.InstancedDrawCallCount = 3;
 
@@ -912,7 +913,7 @@ void SAtlas::Build() {
     BindToTextureUnit(TextureUnitID);
 
     std::sort(SortingIndices.begin(), SortingIndices.end(), [&](const int &IndexA, const int &IndexB) {
-        return Sprites[IndexA].SizePixels.y > Sprites[IndexB].SizePixels.y;
+        return Sprites[IndexA].SizePixels.Y > Sprites[IndexB].SizePixels.Y;
     });
 
     int CursorX{};
