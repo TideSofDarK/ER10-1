@@ -79,7 +79,7 @@ CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
         } else if (Token == "f") {
             std::array<int, 9> OBJIndices{};
             Utility::ParseInts(Data.data(), Data.data() + Data.size(), &OBJIndices[0], OBJIndices.size());
-            for (int Index = 0; Index < OBJIndices.size(); Index += 3) {
+            for (size_t Index = 0; Index < OBJIndices.size(); Index += 3) {
                 UVec3Int OBJIndex{};
                 OBJIndex.X = OBJIndices[Index] - 1;
                 OBJIndex.Y = OBJIndices[Index + 1] - 1;

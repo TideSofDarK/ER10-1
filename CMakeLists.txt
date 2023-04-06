@@ -74,8 +74,14 @@ target_link_libraries(
         ${PLATFORM_LIBS}
 )
 
-set(CMAKE_EXE_LINKER_FLAGS "-static")
+if (WIN32)
+    if (CMAKE_BUILD_TYPE MATCHES Release)
+        set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
+    endif ()
 
-if (WIN32 AND CMAKE_BUILD_TYPE MATCHES Release)
-    set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
+    set(CMAKE_EXE_LINKER_FLAGS "-static")
+endif ()
+
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 endif ()

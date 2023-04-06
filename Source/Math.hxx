@@ -17,12 +17,6 @@ struct SVec2 {
         return *this;
     }
 
-    SVec2<T> &operator=(const SVec2<T> &Other) {
-        X = Other.X;
-        Y = Other.Y;
-        return *this;
-    }
-
     SVec2<T> operator-() const {
         return {-X, -Y};
     }
@@ -54,13 +48,6 @@ struct SVec3 {
         X += Other.X;
         Y += Other.Y;
         Z += Other.Z;
-        return *this;
-    }
-
-    SVec3<T> &operator=(const SVec3<T> &Other) {
-        X = Other.X;
-        Y = Other.Y;
-        Z = Other.Z;
         return *this;
     }
 
@@ -127,14 +114,6 @@ struct SVec4 {
         Y += Other.Y;
         Z += Other.Z;
         W += Other.W;
-        return *this;
-    }
-
-    SVec4<T> &operator=(const SVec4<T> &Other) {
-        X = Other.X;
-        Y = Other.Y;
-        Z = Other.Z;
-        W = Other.W;
         return *this;
     }
 
