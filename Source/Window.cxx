@@ -12,7 +12,7 @@
 #define NOMINMAX
 #endif
 
-#include <windows.h>
+#include <Windows.h>
 #include <dwmapi.h>
 #include <VersionHelpers.h>
 
@@ -39,7 +39,7 @@ void SWindow::SwapBuffers() const {
             info.cbSize = sizeof(DWM_TIMING_INFO);
             double DwmRefreshRate = 0;
             if (SUCCEEDED(DwmGetCompositionTimingInfo(nullptr, &info)))
-                DwmRefreshRate = (double) info.rateRefresh.uiNumerator / (double) info.rateRefresh.uiDenominator;
+                DwmRefreshRate = static_cast<double>(info.rateRefresh.uiNumerator) / static_cast<double>(info.rateRefresh.uiDenominator);
 
             SDL_DisplayMode DisplayMode = {};
             int DisplayIndex = SDL_GetWindowDisplayIndex(Window);
@@ -102,7 +102,7 @@ void SWindow::Init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetSwapInterval(1);
 
-    gladLoadGL((GLADloadfunc) SDL_GL_GetProcAddress);
+    gladLoadGL(reinterpret_cast<GLADloadfunc>(SDL_GL_GetProcAddress));
 
     if (!Window) {
         std::cout << "Window could not be created!" << std::endl
@@ -134,7 +134,7 @@ void SWindow::Cleanup() const {
 }
 
 void SWindow::ToggleBorderlessFullscreen() const {
-    const auto Flags = (SDL_GetWindowFlags(Window) & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0 ? 0
+    unsigned const Flags = (SDL_GetWindowFlags(Window) & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0 ? 0
                                                                                          : SDL_WINDOW_FULLSCREEN_DESKTOP;
     SDL_SetWindowFullscreen(Window, Flags);
 }
