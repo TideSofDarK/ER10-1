@@ -46,7 +46,7 @@ CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
     auto ScratchPositions = ScratchBuffer.GetVector<UVec3>();
     auto ScratchTexCoords = ScratchBuffer.GetVector<UVec2>();
     auto ScratchNormals = ScratchBuffer.GetVector<UVec3>();
-    auto ScratchOBJIndices = ScratchBuffer.GetVector<UVec3Int>();
+    auto ScratchOBJIndices = ScratchBuffer.GetVector<UVec3Size>();
 
     Positions.clear();
     Normals.clear();
@@ -80,7 +80,7 @@ CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
             std::array<int, 9> OBJIndices{};
             Utility::ParseInts(Data.data(), Data.data() + Data.size(), &OBJIndices[0], OBJIndices.size());
             for (size_t Index = 0; Index < OBJIndices.size(); Index += 3) {
-                UVec3Int OBJIndex{};
+                UVec3Size OBJIndex{};
                 OBJIndex.X = OBJIndices[Index] - 1;
                 OBJIndex.Y = OBJIndices[Index + 1] - 1;
                 OBJIndex.Z = OBJIndices[Index + 2] - 1;

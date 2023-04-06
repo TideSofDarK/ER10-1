@@ -1,5 +1,4 @@
 #include "Player.hxx"
-#include "Utility.hxx"
 
 void SPlayer::Update(float DeltaTime) {
     AnimationAlpha += DeltaTime * 3.3f;

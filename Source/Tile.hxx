@@ -32,12 +32,12 @@ struct STile {
         STile Tile;
         Tile.Type = ETileType::Empty;
         return Tile;
-    };
+    }
 
     static STile WallsNF() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall},
                      ETileType::Empty};
-    };
+    }
 
     static STile WallN() { return STile{{ETileEdgeType::Wall}}; };
 
@@ -47,41 +47,41 @@ struct STile {
 
     static STile WallW() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
-    };
+    }
 
     static STile WallWE() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
-    };
+    }
 
     static STile WallNS() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty}};
-    };
+    }
 
     static STile WallNW() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
-    };
+    }
 
     static STile WallNE() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty}};
-    };
+    }
 
     static STile WallSW() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
-    };
+    }
 
     static STile WallSE() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty}};
-    };
+    }
 
     static STile WallNWS() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
-    };
+    }
 
     static STile WallSWE() {
         return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall}};
-    };
+    }
 
     static STile WallNEW() {
         return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
-    };
+    }
 };

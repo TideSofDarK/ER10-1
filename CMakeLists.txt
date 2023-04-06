@@ -75,7 +75,7 @@ target_link_libraries(
 )
 
 if (WIN32)
-    if (CMAKE_BUILD_TYPE MATCHES Release)
+    if (CMAKE_BUILD_TYPE MATCHES Rel)
         set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
     endif ()
 
@@ -83,5 +83,5 @@ if (WIN32)
 endif ()
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wall -Wextra -Wpedantic)
 endif ()

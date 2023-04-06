@@ -76,12 +76,12 @@ struct SVec3 {
         Result.Y = Z * Other.X - X * Other.Z;
         Result.Z = X * Other.Y - Y * Other.X;
         return Result;
-    };
+    }
 
     [[nodiscard]] static inline SVec3<T> Mix(const SVec3<T> &A, const SVec3<T> &B, const T Alpha) {
         SVec3<T> Result = (B - A) * Alpha;
         return A + Result;
-    };
+    }
 };
 
 template<typename T>
@@ -126,6 +126,7 @@ using UVec2 = SVec2<float>;
 using UVec2Int = SVec2<int>;
 using UVec3 = SVec3<float>;
 using UVec3Int = SVec3<int>;
+using UVec3Size = SVec3<size_t>;
 using UVec4 = SVec4<float>;
 
 template<typename T>
