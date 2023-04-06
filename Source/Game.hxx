@@ -31,5 +31,5 @@ public:
 
     void Run();
 
-    bool CheckIfPlayerCanMove();
+    bool CheckIfPlayerCanMove() const;
 };

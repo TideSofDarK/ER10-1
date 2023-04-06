@@ -194,7 +194,7 @@ void SGame::Run() {
     Window.Cleanup();
 }
 
-bool SGame::CheckIfPlayerCanMove() {
+bool SGame::CheckIfPlayerCanMove() const {
     auto DirectionVector = Player.Direction.DirectionVectorFromDirection<int>();
 
     auto CurrentTile = Level.GetTileAt(Player.Coords);
