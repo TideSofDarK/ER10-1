@@ -198,7 +198,7 @@ void SGeometry::Cleanup() {
     glDeleteBuffers(1, &CBO);
     glDeleteVertexArrays(1, &VAO);
 
-    std::cout << "Deleting SGeometry with ElementCount == " + std::to_string(ElementCount) << std::endl;
+    std::cout << "Deleting SGeometry with ElementCount == " << ElementCount << std::endl;
 }
 
 void STileSet::InitPlaceholder() {
@@ -646,7 +646,7 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode) {
     Entry.Position = Position;
     Entry.SizePixels = Size;
 
-    Entry.Mode = SEntryMode{.ID = Mode};
+    Entry.Mode = SEntryMode{Mode};
 
     Queue2D.Enqueue(Entry);
 }
@@ -669,7 +669,7 @@ SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode,
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = Mode, .ControlA = ModeControlA};
+    Entry.Mode = SEntryMode{Mode, ModeControlA};
 
     Queue2D.Enqueue(Entry);
 }
@@ -683,7 +683,7 @@ SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode,
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = Mode, .ControlA = ModeControlA, .ControlB = ModeControlB};
+    Entry.Mode = SEntryMode{Mode, ModeControlA, ModeControlB};
 
     Queue2D.Enqueue(Entry);
 }
@@ -697,7 +697,7 @@ void SRenderer::Draw2DHaze(UVec3 Position, const SSpriteHandle &SpriteHandle, fl
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = UBER2D_MODE_HAZE, .ControlA = {XIntensity, YIntensity, Speed, 0.0f}};
+    Entry.Mode = SEntryMode{UBER2D_MODE_HAZE, {XIntensity, YIntensity, Speed, 0.0f}};
 
     Queue2D.Enqueue(Entry);
 }
@@ -710,7 +710,7 @@ SRenderer::Draw2DBackBlur(UVec3 Position, const SSpriteHandle &SpriteHandle, flo
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = UBER2D_MODE_BACK_BLUR, .ControlA = {Count, Speed, Step, 0.0f}};
+    Entry.Mode = SEntryMode{UBER2D_MODE_BACK_BLUR, {Count, Speed, Step, 0.0f}};
 
     Queue2D.Enqueue(Entry);
 }
@@ -722,7 +722,7 @@ void SRenderer::Draw2DGlow(UVec3 Position, const SSpriteHandle &SpriteHandle, UV
     Entry.SizePixels = SpriteHandle.Sprite->SizePixels;
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
-    Entry.Mode = SEntryMode{.ID = UBER2D_MODE_GLOW, .ControlA = {Color, Intensity}};
+    Entry.Mode = SEntryMode{UBER2D_MODE_GLOW, {Color, Intensity}};
 
     Queue2D.Enqueue(Entry);
 }
@@ -737,9 +737,9 @@ SRenderer::Draw2DDisintegrate(UVec3 Position, const SSpriteHandle &SpriteHandle,
     Entry.UVRect = SpriteHandle.Sprite->UVRect;
 
     Entry.Mode = SEntryMode{
-            .ID = UBER2D_MODE_DISINTEGRATE,
-            .ControlA = {Progress, 0.0f, 0.0f, 0.0f},
-            .ControlB = {
+            UBER2D_MODE_DISINTEGRATE,
+            {Progress, 0.0f, 0.0f, 0.0f},
+            {
                     NoiseHandle.Sprite->UVRect
             }
     };
@@ -755,7 +755,7 @@ void SRenderer::Draw3D(UVec3 Position, SGeometry *Geometry) {
     Entry.Model.Translate(Position);
 
     Entry.Mode = SEntryMode{
-            .ID = UBER3D_MODE_BASIC
+            UBER3D_MODE_BASIC
     };
 
     Queue3D.Enqueue(Entry);
@@ -844,7 +844,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
     Entry.InstancedDrawCallCount = 3;
 
     Entry.Mode = SEntryMode{
-            .ID = UBER3D_MODE_LEVEL
+            UBER3D_MODE_LEVEL
     };
 
     Queue3D.Enqueue(Entry);

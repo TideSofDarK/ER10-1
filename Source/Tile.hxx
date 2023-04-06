@@ -29,7 +29,9 @@ struct STile {
     }
 
     static STile Empty() {
-        return STile{.Type = ETileType::Empty};
+        STile Tile;
+        Tile.Type = ETileType::Empty;
+        return Tile;
     };
 
     static STile WallsNF() {
