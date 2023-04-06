@@ -1,7 +1,6 @@
 #include "AssetTools.hxx"
 
 #include <string>
-#include <algorithm>
 #include <array>
 #include "Utility.hxx"
 #include "Memory.hxx"
@@ -36,7 +35,7 @@ void STBIFree(void *Pointer) {
 //    STBIScratchBuffer->GetAllocator()->release();
 }
 
-#include "stb/stb_image.h"
+#include "stb_image.h"
 
 CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
         Positions(ScratchBuffer.GetVector<UVec3>()),

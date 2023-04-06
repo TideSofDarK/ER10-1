@@ -4,7 +4,12 @@
 #include "Constants.hxx"
 #include "glad/gl.h"
 
-#include <SDL.h>
+#ifdef EQUINOX_REACH_DEVELOPMENT
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_opengl3.h"
+#endif
+#include "SDL.h"
 
 #ifdef __WINDOWS__
 
@@ -112,6 +117,10 @@ void SWindow::Init() {
 
     SDL_GetWindowSizeInPixels(Window, &Width, &Height);
     OnWindowResized(Width, Height);
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+
+#endif
 }
 
 void SWindow::OnWindowResized(int InWidth, int InHeight) {

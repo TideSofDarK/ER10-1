@@ -9,7 +9,6 @@
 #include "Utility.hxx"
 #include "Math.hxx"
 
-static std::string const GLSLVersion = "#version 410 core\n";
 static std::string const ShaderConstants{
 #define SHADER_CONSTANTS_LITERAL
 

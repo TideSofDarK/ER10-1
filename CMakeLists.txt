@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_CXX_STANDARD 17)
 
-project(EquinoxReach LANGUAGES C CXX)
-
 set(BUILD_SHARED_LIBS OFF)
 
 include(FetchContent)
@@ -18,6 +16,7 @@ set(SDL_DIRECTX OFF CACHE BOOL "" FORCE)
 set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
 set(SDL_VULKAN OFF CACHE BOOL "" FORCE)
 set(SDL_3DNOW OFF CACHE BOOL "" FORCE)
+set(SDL_TEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         SDL
         GIT_REPOSITORY https://github.com/libsdl-org/SDL
@@ -26,23 +25,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SDL)
 
-add_executable(${PROJECT_NAME})
-target_sources(
-        ${PROJECT_NAME}
-        PRIVATE
-        Vendor/glad/gl.c
-        Source/AssetDef.cxx
-        Source/Memory.cxx
-        Source/Utility.cxx
-        Source/Main.cxx
-        Source/Window.cxx
-        Source/Game.cxx
-        Source/Draw.cxx
-        Source/Level.cxx
-        Source/Player.cxx
-        Source/Tile.cxx
-        Source/AssetTools.cxx
-)
+project(EquinoxReach LANGUAGES C CXX)
 
 # Make sure AssetDef gets recompiled whenever an asset is added or modified
 file(GLOB_RECURSE ASSET_FILES
@@ -56,32 +39,90 @@ file(GLOB_RECURSE ASSET_FILES
 list(JOIN ASSET_FILES "\;" ASSET_FILES)
 set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSET_FILES})
 
-target_include_directories(
-        ${PROJECT_NAME}
-        PRIVATE
-        Vendor/
-        Source/
-)
+macro(add_equinox_reach_target)
+    set(ONE_VALUE_ARGS NAME)
+    set(MULTI_VALUE_ARGS DEF SOURCES INCLUDE_DIRS LIBS)
+    cmake_parse_arguments(TARGET "" "${ONE_VALUE_ARGS}"
+            "${MULTI_VALUE_ARGS}" ${ARGN})
 
-if (WIN32)
-    set(PLATFORM_LIBS Dwmapi.lib)
-endif ()
-target_link_libraries(
-        ${PROJECT_NAME}
-        PRIVATE
-        SDL2::SDL2main
-        SDL2::SDL2-static
-        ${PLATFORM_LIBS}
-)
+    add_executable(${TARGET_NAME})
 
-if (WIN32)
-    if (CMAKE_BUILD_TYPE MATCHES Rel)
-        set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE On)
+    target_compile_definitions(${TARGET_NAME} PRIVATE ${TARGET_DEF})
+
+    target_sources(
+            ${TARGET_NAME}
+            PRIVATE
+            Vendor/glad/glad/gl.c
+            Source/AssetDef.cxx
+            Source/Memory.cxx
+            Source/Utility.cxx
+            Source/Main.cxx
+            Source/Window.cxx
+            Source/Draw.cxx
+            Source/Level.cxx
+            Source/Player.cxx
+            Source/Tile.cxx
+            Source/AssetTools.cxx
+            Source/Game.cxx
+            ${TARGET_SOURCES}
+    )
+
+    target_include_directories(
+            ${TARGET_NAME}
+            PRIVATE
+            Vendor/glad/
+            Vendor/stb/
+            Source/
+            ${TARGET_INCLUDE_DIRS}
+    )
+
+    if (WIN32)
+        set(PLATFORM_LIBS Dwmapi.lib)
+    endif ()
+    target_link_libraries(
+            ${TARGET_NAME}
+            PRIVATE
+            SDL2::SDL2main
+            SDL2::SDL2-static
+            ${TARGET_LIBS}
+            ${PLATFORM_LIBS}
+    )
+
+    if (WIN32)
+        if (CMAKE_BUILD_TYPE MATCHES Rel)
+            set_target_properties(${TARGET_NAME} PROPERTIES WIN32_EXECUTABLE On)
+        endif ()
+
+        if (MINGW)
+            set(CMAKE_EXE_LINKER_FLAGS "-static")
+        endif ()
     endif ()
 
-    set(CMAKE_EXE_LINKER_FLAGS "-static")
-endif ()
+    if (CMAKE_BUILD_TYPE MATCHES Debug)
+        #        target_compile_options(${NAME} PRIVATE -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wall -Wextra -Wpedantic)
+    endif ()
+endmacro()
 
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wall -Wextra -Wpedantic)
-endif ()
+add_equinox_reach_target(
+        NAME
+        EquinoxReach
+        DEF
+        EQUINOX_REACH_GAME
+)
+
+add_equinox_reach_target(
+        NAME
+        EquinoxReachDevelopment
+        DEF
+        EQUINOX_REACH_DEVELOPMENT
+        SOURCES
+        Source/Editor.cxx
+        Vendor/imgui/imgui.cpp
+        Vendor/imgui/imgui_draw.cpp
+        Vendor/imgui/imgui_tables.cpp
+        Vendor/imgui/imgui_widgets.cpp
+        Vendor/imgui/imgui_impl_sdl2.cpp
+        Vendor/imgui/imgui_impl_opengl3.cpp
+        INCLUDE_DIRS
+        Vendor/imgui
+)

@@ -24,6 +24,10 @@ namespace Asset::TileSet::Hotel {
 SGame::SGame() {
     Window.Init();
 
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    Editor.Init(Window.Window, Window.Context);
+#endif
+
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     auto &CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
@@ -104,6 +108,9 @@ void SGame::Run() {
 
         SDL_Event Event;
         while (SDL_PollEvent(&Event)) {
+#ifdef EQUINOX_REACH_DEVELOPMENT
+            Editor.ProcessEvent(&Event);
+#endif
             switch (Event.type) {
                 case SDL_WINDOWEVENT:
                     if (Event.window.event == SDL_WINDOWEVENT_RESIZED) {
@@ -117,6 +124,10 @@ void SGame::Run() {
                     break;
             }
         }
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+        Editor.Update();
+#endif
 
         /** Input processing */
         OldInputState = InputState;
@@ -183,13 +194,16 @@ void SGame::Run() {
         Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
         Renderer.Flush(Window);
 
+#ifdef EQUINOX_REACH_DEVELOPMENT
+        Editor.Draw();
+#endif
+
         Window.SwapBuffers();
     }
 
-    std::printf("EyeHeight: %f\n", Player.EyeHeight);
-    std::printf("FieldOfViewY: %f\n", Camera.FieldOfViewY);
-    std::printf("Aspect: %f\n", Camera.Aspect);
-
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    Editor.Cleanup();
+#endif
     Renderer.Cleanup();
     Window.Cleanup();
 }

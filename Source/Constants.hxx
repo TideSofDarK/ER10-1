@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #define GAME_NAME "Equinox Reach"
 
 #define WINDOW_WIDTH    960
@@ -15,3 +17,5 @@
 #define SCENE_HEIGHT 120
 #define SCENE_OFFSET ((SCREEN_WIDTH - SCENE_WIDTH) / 2)
 #define SCENE_ASPECT (static_cast<float>(SCENE_WIDTH) / static_cast<float>(SCENE_HEIGHT))
+
+inline std::string GLSLVersion = "#version 410\n";

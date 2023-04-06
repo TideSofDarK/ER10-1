@@ -1,11 +1,16 @@
 #pragma once
 
-#include <memory>
 #include "CommonTypes.hxx"
 #include "Draw.hxx"
 #include "Player.hxx"
 #include "Window.hxx"
 #include "Level.hxx"
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+
+#include "Editor.hxx"
+
+#endif
 
 struct SGame {
 private:
@@ -13,6 +18,10 @@ private:
 
 public:
     SWindow Window{};
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    SEditor Editor;
+#endif
 
     SRenderer Renderer;
     SInputState OldInputState{}, InputState{};
@@ -31,5 +40,5 @@ public:
 
     void Run();
 
-    bool CheckIfPlayerCanMove() const;
+    [[nodiscard]] bool CheckIfPlayerCanMove() const;
 };

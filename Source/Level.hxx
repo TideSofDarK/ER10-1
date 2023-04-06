@@ -41,7 +41,7 @@ public:
             return &Tiles[Index];
         }
         return nullptr;
-    };
+    }
 
     [[nodiscard]] bool IsValidTile(UVec2Int Coords) const {
         return IsValidTileX(Coords.X) && IsValidTileY(Coords.Y);
@@ -55,12 +55,12 @@ public:
         return Coord >= 0 && Coord < Height;
     }
 
-    [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; };
+    [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
 
     [[nodiscard]] UWallJoint GetWallJointAt(UVec2Int Coords) const {
         auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
         return WallJoints[Index];
-    };
+    }
 
     [[nodiscard]] bool IsValidWallJoint(UVec2Int Coords) const {
         return IsValidWallJointX(Coords.X) && IsValidWallJointY(Coords.Y);
@@ -74,7 +74,7 @@ public:
         return Coord >= 0 && Coord < Height + 1;
     }
 
-    [[nodiscard]] inline int WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; };
+    [[nodiscard]] inline int WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; }
 
     void InitWallJoints();
 };
