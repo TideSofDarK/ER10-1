@@ -5,8 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 project(EquinoxReach LANGUAGES C CXX)
 
 set(BUILD_SHARED_LIBS OFF)
-set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
-set(SDL_STATIC_ENABLED_BY_DEFAULT ON)
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
@@ -16,6 +14,15 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/g-truc/glm.git
         GIT_TAG 0.9.9.8
 )
+set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
+set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
+set(SDL_FILE OFF CACHE BOOL "" FORCE)
+set(SDL_FILESYSTEM OFF CACHE BOOL "" FORCE)
+set(SDL_MISC OFF CACHE BOOL "" FORCE)
+set(SDL_DIRECTX OFF CACHE BOOL "" FORCE)
+set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
+set(SDL_VULKAN OFF CACHE BOOL "" FORCE)
+set(SDL_3DNOW OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         SDL
         GIT_REPOSITORY https://github.com/libsdl-org/SDL
@@ -28,7 +35,7 @@ add_executable(${PROJECT_NAME})
 target_sources(
         ${PROJECT_NAME}
         PRIVATE
-        Vendor/glad/src/gl.c
+        Vendor/glad/gl.c
         Source/AssetDef.cxx
         Source/Memory.cxx
         Source/Utility.cxx
@@ -57,8 +64,7 @@ set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSE
 target_include_directories(
         ${PROJECT_NAME}
         PRIVATE
-        Vendor/stb
-        Vendor/glad/include
+        Vendor/
         Source/
 )
 

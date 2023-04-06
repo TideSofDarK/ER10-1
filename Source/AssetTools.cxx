@@ -36,7 +36,7 @@ void STBIFree(void *Pointer) {
 //    STBIScratchBuffer->GetAllocator()->release();
 }
 
-#include "stb_image.h"
+#include "stb/stb_image.h"
 
 CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
         Positions(ScratchBuffer.GetVector<glm::vec3>()),
