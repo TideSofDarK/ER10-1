@@ -141,10 +141,6 @@ struct SVec4 {
     SVec4<T> operator-() const {
         return {-X, -Y, -Z, -W};
     }
-
-    SVec4<T> Swapped() {
-        return {W, Z, Y, X};
-    }
 };
 
 using UVec2 = SVec2<float>;
@@ -153,36 +149,36 @@ using UVec3 = SVec3<float>;
 using UVec3Int = SVec3<int>;
 using UVec4 = SVec4<float>;
 
-struct UMat4x4 {
+template<typename T>
+struct SMat4x4 {
     UVec4 X{};
     UVec4 Y{};
     UVec4 Z{};
     UVec4 W{};
 
-    void Translate(const UVec3 &Vector) {
+    void Translate(const SVec3<T> &Vector) {
         W = X * Vector.X + Y * Vector.Y + Z * Vector.Z + W;
     }
 
-    void Rotate(const float Angle, UVec3 Axis) {
-        float const a = Angle;
-        float const c = std::cos(a);
-        float const s = std::sin(a);
+    void Rotate(const float Angle, SVec3<T> Axis) {
+        T const Cos = std::cos(Angle);
+        T const Sin = std::sin(Angle);
 
         Axis = Axis.Normalized();
-        auto Temp = Axis * (1.0f - c);
+        auto Temp = Axis * (T(1) - Cos);
 
-        UMat4x4 Rotate;
-        Rotate.X.X = c + Temp.X * Axis.X;
-        Rotate.X.Y = Temp.X * Axis.Y + s * Axis.Z;
-        Rotate.X.Z = Temp.X * Axis.Z - s * Axis.Y;
+        SMat4x4<T> Rotate;
+        Rotate.X.X = Cos + Temp.X * Axis.X;
+        Rotate.X.Y = Temp.X * Axis.Y + Sin * Axis.Z;
+        Rotate.X.Z = Temp.X * Axis.Z - Sin * Axis.Y;
 
-        Rotate.Y.X = Temp.Y * Axis.X - s * Axis.Z;
-        Rotate.Y.Y = c + Temp.Y * Axis.Y;
-        Rotate.Y.Z = Temp.Y * Axis.Z + s * Axis.X;
+        Rotate.Y.X = Temp.Y * Axis.X - Sin * Axis.Z;
+        Rotate.Y.Y = Cos + Temp.Y * Axis.Y;
+        Rotate.Y.Z = Temp.Y * Axis.Z + Sin * Axis.X;
 
-        Rotate.Z.X = Temp.Z * Axis.X + s * Axis.Y;
-        Rotate.Z.Y = Temp.Z * Axis.Y - s * Axis.X;
-        Rotate.Z.Z = c + Temp.Z * Axis.Z;
+        Rotate.Z.X = Temp.Z * Axis.X + Sin * Axis.Y;
+        Rotate.Z.Y = Temp.Z * Axis.Y - Sin * Axis.X;
+        Rotate.Z.Z = Cos + Temp.Z * Axis.Z;
 
         auto Current = *this;
         X = Current.X * Rotate.X.X + Current.Y * Rotate.X.Y + Current.Z * Rotate.X.Z;
@@ -190,41 +186,43 @@ struct UMat4x4 {
         Z = Current.X * Rotate.Z.X + Current.Y * Rotate.Z.Y + Current.Z * Rotate.Z.Z;
     }
 
-    static inline UMat4x4 One() {
-        return {{1.0f, 1.0f, 1.0f, 1.0f},
-                {1.0f, 1.0f, 1.0f, 1.0f},
-                {1.0f, 1.0f, 1.0f, 1.0f},
-                {1.0f, 1.0f, 1.0f, 1.0f}};
+    static inline SMat4x4<T> One() {
+        return {{T(1), T(1), T(1), T(1)},
+                {T(1), T(1), T(1), T(1)},
+                {T(1), T(1), T(1), T(1)},
+                {T(1), T(1), T(1), T(1)}};
     }
 
-    static inline UMat4x4 Identity() {
-        return {{1.0f, 0.0f, 0.0f, 0.0f},
-                {0.0f, 1.0f, 0.0f, 0.0f},
-                {0.0f, 0.0f, 1.0f, 0.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f}};
+    static inline SMat4x4<T> Identity() {
+        return {{T(1), T(0), T(0), T(0)},
+                {T(0), T(1), T(0), T(0)},
+                {T(0), T(0), T(1), T(0)},
+                {T(0), T(0), T(0), T(1)}};
     }
 
-    static inline UMat4x4 LookAtRH(const UVec3 &Eye, const UVec3 &Center, const UVec3 &Up) {
-        UVec3 const f((Center - Eye).Normalized());
-        UVec3 const s = f.Cross(Up).Normalized();
-        UVec3 const u(s.Cross(f));
+    static inline SMat4x4<T> LookAtRH(const SVec3<T> &Eye, const SVec3<T> &Center, const SVec3<T> &Up) {
+        SVec3<T> const F((Center - Eye).Normalized());
+        SVec3<T> const S = F.Cross(Up).Normalized();
+        SVec3<T> const U(S.Cross(F));
 
-        UMat4x4 Result = Identity();
-        Result.X.X = s.X;
-        Result.Y.X = s.Y;
-        Result.Z.X = s.Z;
-        Result.X.Y = u.X;
-        Result.Y.Y = u.Y;
-        Result.Z.Y = u.Z;
-        Result.X.Z = -f.X;
-        Result.Y.Z = -f.Y;
-        Result.Z.Z = -f.Z;
-        Result.W.X = -s.Dot(Eye);
-        Result.W.Y = -u.Dot(Eye);
-        Result.W.Z = f.Dot(Eye);
+        SMat4x4<T> Result = Identity();
+        Result.X.X = S.X;
+        Result.Y.X = S.Y;
+        Result.Z.X = S.Z;
+        Result.X.Y = U.X;
+        Result.Y.Y = U.Y;
+        Result.Z.Y = U.Z;
+        Result.X.Z = -F.X;
+        Result.Y.Z = -F.Y;
+        Result.Z.Z = -F.Z;
+        Result.W.X = -S.Dot(Eye);
+        Result.W.Y = -U.Dot(Eye);
+        Result.W.Z = F.Dot(Eye);
         return Result;
     }
 };
+
+using UMat4x4 = SMat4x4<float>;
 
 namespace Math {
     constexpr float PI = 3.141592653589793f;
