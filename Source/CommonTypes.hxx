@@ -103,4 +103,8 @@ struct SInputState {
     EKeyState ZR: 2;
 
     EKeyState ToggleFullscreen: 2;
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    EKeyState ToggleLevelEditor: 2;
+#endif
 };

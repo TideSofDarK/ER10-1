@@ -16,6 +16,8 @@ struct SGame {
 private:
     static EKeyState UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, uint8_t Scancode);
 
+    int SpriteDemoState;
+
 public:
     SWindow Window{};
 
@@ -41,4 +43,6 @@ public:
     void Run();
 
     [[nodiscard]] bool CheckIfPlayerCanMove() const;
+
+    [[nodiscard]] bool IsGameRunning() const;
 };

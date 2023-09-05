@@ -78,6 +78,8 @@ SGame::SGame() {
             }
     };
     Level.InitWallJoints();
+
+    SpriteDemoState = 5;
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
@@ -129,22 +131,24 @@ void SGame::Run() {
         Editor.Update();
 #endif
 
-        /** Input processing */
+#pragma region InputHandling
+
         OldInputState = InputState;
         const Uint8 *KeyboardState = SDL_GetKeyboardState(nullptr);
         InputState.Up = UpdateKeyState(OldInputState.Up, KeyboardState, SDL_SCANCODE_W);
         InputState.Right = UpdateKeyState(OldInputState.Right, KeyboardState, SDL_SCANCODE_D);
         InputState.Down = UpdateKeyState(OldInputState.Down, KeyboardState, SDL_SCANCODE_S);
         InputState.Left = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_A);
-        InputState.L = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_Q);
-        InputState.R = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_E);
-        InputState.ZL = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_Z);
-        InputState.ZR = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_C);
+        InputState.L = UpdateKeyState(OldInputState.L, KeyboardState, SDL_SCANCODE_Q);
+        InputState.R = UpdateKeyState(OldInputState.R, KeyboardState, SDL_SCANCODE_E);
+        InputState.ZL = UpdateKeyState(OldInputState.ZL, KeyboardState, SDL_SCANCODE_Z);
+        InputState.ZR = UpdateKeyState(OldInputState.ZR, KeyboardState, SDL_SCANCODE_C);
         InputState.Accept = UpdateKeyState(OldInputState.Accept, KeyboardState, SDL_SCANCODE_SPACE);
         InputState.Cancel = UpdateKeyState(OldInputState.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
         InputState.ToggleFullscreen = UpdateKeyState(OldInputState.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
+        InputState.ToggleLevelEditor = UpdateKeyState(OldInputState.ToggleLevelEditor, KeyboardState, SDL_SCANCODE_F10);
+#pragma endregion
 
-#pragma region InputHandling
         if (InputState.Cancel == EKeyState::Pressed) {
             Window.bQuit = true;
         }
@@ -153,46 +157,77 @@ void SGame::Run() {
             Window.ToggleBorderlessFullscreen();
         }
 
-        if (!Player.IsMoving()) {
-            if (InputState.Up == EKeyState::Down) {
-                if (CheckIfPlayerCanMove()) {
-                    Player.MoveForward();
+#ifdef EQUINOX_REACH_DEVELOPMENT
+        if (InputState.ToggleLevelEditor == EKeyState::Pressed) {
+            Editor.bLevelEditorActive = !Editor.bLevelEditorActive;
+        }
+#endif
+
+#pragma region GameLoop
+        if (IsGameRunning()) {
+            if (!Player.IsMoving()) {
+                if (InputState.Up == EKeyState::Down) {
+                    if (CheckIfPlayerCanMove()) {
+                        Player.MoveForward();
+                    }
+                }
+                if (InputState.Left == EKeyState::Down) {
+                    Player.Turn(false);
+                } else if (InputState.Right == EKeyState::Down) {
+                    Player.Turn(true);
                 }
             }
-            if (InputState.Left == EKeyState::Down) {
-                Player.Turn(false);
-            } else if (InputState.Right == EKeyState::Down) {
-                Player.Turn(true);
+
+            if (InputState.L == EKeyState::Pressed) {
+                SpriteDemoState = std::max(0, SpriteDemoState - 1);
             }
-        }
-#pragma endregion
 
-        Player.Update(Window.DeltaTime);
+            if (InputState.R == EKeyState::Pressed) {
+                SpriteDemoState = std::min(5, SpriteDemoState + 1);
+            }
 
-        Camera.Position = Player.EyePositionCurrent;
-        Camera.Target = Camera.Position + Player.EyeForwardCurrent;
-        Camera.Update();
+            Player.Update(Window.DeltaTime);
 
-        Renderer.UploadProjectionAndViewFromCamera(Camera);
+            Camera.Position = Player.EyePositionCurrent;
+            Camera.Target = Camera.Position + Player.EyeForwardCurrent;
+            Camera.Update();
+
+            Renderer.UploadProjectionAndViewFromCamera(Camera);
 //        Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
 //        Renderer.Draw3D({4.0f, 0.0f, -2.0f}, &Renderer.Tileset);
-        Renderer.Draw3D({-3.0f, 0.0f, -3.0f}, &TestGeometry);
-        Renderer.Draw3D({-4.0f, 0.0f, -4.0f}, &Floor);
-        Renderer.Draw3D({-5.0f, 0.0f, -4.0f}, &Floor);
-        Renderer.Draw3D({-6.0f, 0.0f, -4.0f}, &Floor);
-        Renderer.Draw3D({-7.0f, 0.0f, -4.0f}, &Floor);
-        Renderer.Draw3DLevel(Level, Player.Coords, Player.Direction);
-        Renderer.Draw2DEx({30.0f - 4, 50.0f, 0.0f}, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
-                          {Window.Seconds / 2.0f, 0.9f, 0.2f, 0.1f},
-                          NoiseSprite.Sprite->UVRect);
-//        Renderer.Draw2DHaze({85 - 4, 50.0f, 0.0f}, AngelSprite, 0.07f, 4.0f, 4.0f);
-//        Renderer.Draw2DBackBlur({140 - 4, 50.0f, 0.0f}, AngelSprite, 4.0f, 2.9f, 0.08f);
-//        Renderer.Draw2DGlow({195 - 4, 50.0f, 0.0f}, AngelSprite, glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
-//        Renderer.Draw2DDisintegrate({250 - 4, 50.0f, 0.0f}, AngelSprite, NoiseSprite, Window.Seconds / 4.0f);
+            Renderer.Draw3D({-3.0f, 0.0f, -3.0f}, &TestGeometry);
+            Renderer.Draw3D({-4.0f, 0.0f, -4.0f}, &Floor);
+            Renderer.Draw3D({-5.0f, 0.0f, -4.0f}, &Floor);
+            Renderer.Draw3D({-6.0f, 0.0f, -4.0f}, &Floor);
+            Renderer.Draw3D({-7.0f, 0.0f, -4.0f}, &Floor);
+            Renderer.Draw3DLevel(Level, Player.Coords, Player.Direction);
+            switch (SpriteDemoState) {
+                case 0:
+                    Renderer.Draw2DEx({220, 80.0f, 0.0f}, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
+                                      {Window.Seconds / 2.0f, 0.9f, 0.2f, 0.1f},
+                                      NoiseSprite.Sprite->UVRect);
+                    break;
+                case 1:
+                    Renderer.Draw2DHaze({220, 80.0f, 0.0f}, AngelSprite, 0.07f, 4.0f, 4.0f);
+                    break;
+                case 2:
+                    Renderer.Draw2DBackBlur({220, 80.0f, 0.0f}, AngelSprite, 4.0f, 2.9f, 0.08f);
+                    break;
+                case 3:
+                    Renderer.Draw2DGlow({220, 80.0f, 0.0f}, AngelSprite, {1.0f, 1.0f, 1.0f}, 2.0f);
+                    break;
+                case 4:
+                    Renderer.Draw2DDisintegrate({220, 80.0f, 0.0f}, AngelSprite, NoiseSprite, Window.Seconds / 4.0f);
+                    break;
+                default:
+                    break;
+            }
 //        Renderer.Draw2D({0.0f, 0.0f, 0.0f}, FrameSprite);
-        Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
-        Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
-        Renderer.Flush(Window);
+            Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
+            Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
+            Renderer.Flush(Window);
+        }
+#pragma endregion
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
         Editor.Draw();
@@ -225,5 +260,12 @@ bool SGame::CheckIfPlayerCanMove() const {
         return false;
     }
 
+    return true;
+}
+
+bool SGame::IsGameRunning() const {
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    return !Editor.bLevelEditorActive;
+#endif
     return true;
 }

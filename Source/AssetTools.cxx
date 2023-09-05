@@ -2,6 +2,7 @@
 
 #include <string>
 #include <array>
+#include <algorithm>
 #include "Utility.hxx"
 #include "Memory.hxx"
 
