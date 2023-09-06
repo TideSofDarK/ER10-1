@@ -4,9 +4,9 @@
 #include <optional>
 #include "Tile.hxx"
 
-int constexpr LevelGridWidth = 16;
-int constexpr LevelGridHeight = 16;
-int constexpr LevelGridSize = LevelGridWidth * LevelGridHeight;
+#define MAX_LEVEL_WIDTH 32
+#define MAX_LEVEL_HEIGHT 32
+#define MAX_LEVEL_TILE_COUNT (MAX_LEVEL_WIDTH * MAX_LEVEL_HEIGHT)
 
 struct SLevel {
     using UWallJoint = bool;
@@ -31,8 +31,8 @@ private:
 public:
     int Width{};
     int Height{};
-    std::array<STile, LevelGridSize> Tiles{};
-    std::array<UWallJoint, (LevelGridWidth + 1) * (LevelGridHeight + 1)> WallJoints{};
+    std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
+    std::array<UWallJoint, (MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
     bool bUseWallJoints = false;
 
     [[nodiscard]] STile const *GetTileAt(UVec2Int Coords) const {

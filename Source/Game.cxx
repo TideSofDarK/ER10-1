@@ -70,14 +70,18 @@ SGame::SGame() {
             5,
             5,
             {
-                    STile::WallNWS(), STile::WallN(), STile::WallN(), STile::WallNE(), STile::WallSW(),
-                    STile::WallNEW(), STile::WallW(), STile::WallS(), STile(), STile::WallNE(),
+                    STile::WallNWS(), STile::WallN(), STile::WallN(), STile::WallNE(), STile::WallSW(false),
+                    STile::WallNEW(), STile::WallW(), STile::WallS(), STile::Floor(), STile::WallNE(),
                     STile::WallWE(), STile::WallWE(), STile::WallsNF(), STile::WallW(), STile::WallE(),
-                    STile::WallWE(), STile::WallSWE(), STile::WallNW(), STile(), STile::WallE(),
+                    STile::WallWE(), STile::WallSWE(), STile::WallNW(), STile::Floor(), STile::WallE(),
                     STile::WallSW(), STile::WallNS(), STile::WallS(), STile::WallS(), STile::WallSE(),
             }
     };
     Level.InitWallJoints();
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    Editor.Level = std::make_shared<SLevel>(Level);
+#endif
 
     SpriteDemoState = 5;
 }
@@ -169,6 +173,8 @@ void SGame::Run() {
                 if (InputState.Up == EKeyState::Down) {
                     if (CheckIfPlayerCanMove()) {
                         Player.MoveForward();
+                    } else {
+                        Player.BumpIntoWall();
                     }
                 }
                 if (InputState.Left == EKeyState::Down) {

@@ -40,8 +40,12 @@ struct SVec3 {
         return {X - Other.X, Y - Other.Y, Z - Other.Z};
     }
 
-    SVec3<T> operator*(const float A) const {
+    SVec3<T> operator*(const T A) const {
         return {X * A, Y * A, Z * A};
+    }
+
+    SVec3<T> operator/(const T A) const {
+        return {X / A, Y / A, Z / A};
     }
 
     SVec3<T> &operator+=(const SVec3<T> &Other) {

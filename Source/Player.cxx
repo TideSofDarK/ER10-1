@@ -10,8 +10,11 @@ void SPlayer::Update(float DeltaTime) {
             EyeForwardCurrent = UVec3::Mix(EyeForwardFrom, EyeForwardTarget, AnimationAlpha);
             break;
         case EPlayerAnimationType::Walk:
-        case EPlayerAnimationType::Bump:
             EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, AnimationAlpha);
+            break;
+        case EPlayerAnimationType::Bump:
+            EyePositionCurrent = UVec3::Mix(EyePositionTarget, EyePositionFrom,
+                                            std::sin(AnimationAlpha * M_PI) * 0.25f);
             break;
         case EPlayerAnimationType::Idle:
         default:
@@ -28,6 +31,8 @@ SPlayer::SPlayer() : Direction(EDirection::North) {
 }
 
 void SPlayer::Turn(bool bRight) {
+    if (AnimationType != EPlayerAnimationType::Idle)
+        return;
     if (!bRight) {
         Direction.CycleCCW();
         ApplyDirection(false);
@@ -55,6 +60,8 @@ void SPlayer::ApplyDirection(bool bImmediate) {
 }
 
 void SPlayer::MoveForward() {
+    if (AnimationType != EPlayerAnimationType::Idle)
+        return;
     AnimationType = EPlayerAnimationType::Walk;
     AnimationAlpha = 0.0f;
     EyePositionFrom = EyePositionCurrent;
@@ -63,6 +70,10 @@ void SPlayer::MoveForward() {
 }
 
 void SPlayer::BumpIntoWall() {
+    if (AnimationType != EPlayerAnimationType::Idle)
+        return;
     AnimationType = EPlayerAnimationType::Bump;
     AnimationAlpha = 0.0f;
+
+    EyePositionFrom = EyePositionCurrent + (EyeForwardCurrent / 2.0f);
 }

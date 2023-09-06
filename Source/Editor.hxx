@@ -5,14 +5,21 @@
 
 struct SEditor {
     bool bLevelEditorActive;
-    int NewLevelWidth;
-    int NewLevelHeight;
+    UVec2Int NewLevelSize;
+    int LevelEditorCellSize;
+    bool bDrawWallJoints;
+    bool bDrawEdges;
+    bool bDrawGridLines;
+    std::optional<UVec2Int> SelectedTileCoords;
     std::shared_ptr<SLevel> Level;
 
     SEditor() {
         bLevelEditorActive = false;
-        NewLevelWidth = 8;
-        NewLevelHeight = 8;
+        NewLevelSize = UVec2Int{8, 8};
+        LevelEditorCellSize = 32;
+        bDrawWallJoints = true;
+        bDrawEdges = true;
+        bDrawGridLines = false;
         Level = nullptr;
     }
 
@@ -29,4 +36,7 @@ struct SEditor {
     [[nodiscard]] bool IsLevelLoaded() const {
         return Level != nullptr;
     }
+
+private:
+    void DrawLevel();
 };

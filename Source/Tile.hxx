@@ -18,7 +18,7 @@ enum class ETileType {
 struct STile {
     std::array<ETileEdgeType, DIRECTION_COUNT> Edges{};
 
-    ETileType Type{ETileType::Floor};
+    ETileType Type{ETileType::Empty};
 
     [[nodiscard]] bool IsWalkable() const {
         return Type != ETileType::Empty;
@@ -28,9 +28,9 @@ struct STile {
         return Edges[Direction] != ETileEdgeType::Wall;
     }
 
-    static STile Empty() {
+    static STile Floor() {
         STile Tile;
-        Tile.Type = ETileType::Empty;
+        Tile.Type = ETileType::Floor;
         return Tile;
     }
 
@@ -39,49 +39,49 @@ struct STile {
                      ETileType::Empty};
     }
 
-    static STile WallN() { return STile{{ETileEdgeType::Wall}}; };
+    static STile WallN() { return STile{{ETileEdgeType::Wall}, ETileType::Floor}; };
 
-    static STile WallE() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
+    static STile WallE() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall}, ETileType::Floor}; };
 
-    static STile WallS() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}}; };
+    static STile WallS() { return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}, ETileType::Floor}; };
 
     static STile WallW() {
-        return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}, ETileType::Floor};
     }
 
     static STile WallWE() {
-        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}, ETileType::Floor};
     }
 
     static STile WallNS() {
-        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty}};
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty}, ETileType::Floor};
     }
 
     static STile WallNW() {
-        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}};
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall}, ETileType::Floor};
     }
 
     static STile WallNE() {
-        return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty}};
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty}, ETileType::Floor};
     }
 
-    static STile WallSW() {
-        return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
+    static STile WallSW(bool bHasFloor = true) {
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}, bHasFloor ? ETileType::Floor : ETileType::Empty};
     }
 
     static STile WallSE() {
-        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty}};
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty}, ETileType::Floor};
     }
 
     static STile WallNWS() {
-        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}};
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall}, ETileType::Floor};
     }
 
     static STile WallSWE() {
-        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall}};
+        return STile{{ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall}, ETileType::Floor};
     }
 
     static STile WallNEW() {
-        return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}};
+        return STile{{ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall}, ETileType::Floor};
     }
 };
