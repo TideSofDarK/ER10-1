@@ -38,7 +38,6 @@ void SEditor::Update() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-#pragma region LevelEditor
     if (bLevelEditorActive) {
         bool bNewLevel = false;
         bool bLoadLevel = false;
@@ -91,7 +90,14 @@ void SEditor::Update() {
             DrawLevel();
         }
     }
-#pragma endregion
+}
+
+void SEditor::DebugTools(bool *bImportLevel) {
+    if (ImGui::Begin("Debug Tools", nullptr)) {
+        if (ImGui::Button("Import Level From Editor")) {
+            *bImportLevel = true;
+        }
+    }
 }
 
 void SEditor::Draw() const {
@@ -125,10 +131,10 @@ void SEditor::DrawLevel() {
         ImVec2 PosMin = ImGui::GetCursorScreenPos();
         ImVec2 PosMax = ImVec2(PosMin.x + GridSize.x,
                                PosMin.y + GridSize.y);
-        /* Draw grid background */
+
+        /* Draw background */
         DrawList->AddRectFilled(PosMin, PosMax,
                                 BG_COLOR);
-
 
         if (ImGui::IsWindowHovered()) {
             LevelEditorCellSize += static_cast<int>(IO.MouseWheel * 5.0f);
@@ -192,6 +198,7 @@ void SEditor::DrawLevel() {
             }
         }
 
+        /* Draw edges` */
         if (bDrawEdges) {
             for (int Y = 0; Y <= Level->Height; Y += 1) {
                 ImVec2 NorthPosMin;
@@ -303,17 +310,20 @@ void SEditor::DrawLevel() {
 
         if (SelectedTileCoords.has_value()) {
             if (ImGui::IsWindowFocused()) {
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W))) {
+                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {
                     SelectedTileCoords->Y = std::max(0, SelectedTileCoords->Y - 1);
                 }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A))) {
+                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) {
                     SelectedTileCoords->X = std::max(0, SelectedTileCoords->X - 1);
                 }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S))) {
+                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) {
                     SelectedTileCoords->Y = std::min(Level->Height - 1, SelectedTileCoords->Y + 1);
                 }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D))) {
+                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) {
                     SelectedTileCoords->X = std::min(Level->Width - 1, SelectedTileCoords->X + 1);
+                }
+                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) {
+                    Level->Excavate(*SelectedTileCoords);
                 }
             }
 

@@ -31,6 +31,8 @@ struct SEditor {
 
     void Update();
 
+    void DebugTools(bool *bImportLevel);
+
     void Draw() const;
 
     [[nodiscard]] bool IsLevelLoaded() const {

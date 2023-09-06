@@ -169,6 +169,16 @@ void SGame::Run() {
 
 #pragma region GameLoop
         if (IsGameRunning()) {
+#ifdef EQUINOX_REACH_DEVELOPMENT
+            bool bImportLevel{};
+            Editor.DebugTools(&bImportLevel);
+
+            if (bImportLevel) {
+                Level = *Editor.Level;
+                Level.InitWallJoints();
+            }
+#endif
+
             if (!Player.IsMoving()) {
                 if (InputState.Up == EKeyState::Down) {
                     if (CheckIfPlayerCanMove()) {
@@ -228,9 +238,10 @@ void SGame::Run() {
                 default:
                     break;
             }
-//        Renderer.Draw2D({0.0f, 0.0f, 0.0f}, FrameSprite);
-            Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
-            Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
+
+//            Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
+//            Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
+
             Renderer.Flush(Window);
         }
 #pragma endregion

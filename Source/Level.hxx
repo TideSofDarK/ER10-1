@@ -77,6 +77,8 @@ public:
     [[nodiscard]] inline int WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; }
 
     void InitWallJoints();
+
+    void Excavate(UVec2Int Coords);
 };
 
 

@@ -1,5 +1,7 @@
 #include "Level.hxx"
 
+#include "Utility.hxx"
+
 void SLevel::InitWallJoints() {
     bUseWallJoints = true;
     UVec2Int Coords{};
@@ -33,6 +35,36 @@ void SLevel::InitWallJoints() {
                     *WallJoint = true;
                 }
             }
+        }
+    }
+}
+
+void SLevel::Excavate(UVec2Int Coords) {
+    if (!IsValidTile(Coords))
+        return;
+    auto Tile = GetTileAtMutable(Coords);
+    Tile->Type = ETileType::Floor;
+
+    for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
+        auto &TileEdge = Tile->Edges[Direction];
+
+        auto NeighborTile = GetTileAtMutable(Coords + SDirection(Direction).DirectionVectorFromDirection<int>());
+        if (NeighborTile != nullptr) {
+            auto NeighborDirection = SDirection(Direction);
+            NeighborDirection.CycleCW();
+            NeighborDirection.CycleCW();
+
+            if (NeighborTile->Type == ETileType::Floor) {
+                TileEdge = ETileEdgeType::Empty;
+
+                NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Empty;
+            } else {
+                TileEdge = ETileEdgeType::Wall;
+
+                NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Wall;
+            }
+        } else {
+            TileEdge = ETileEdgeType::Wall;
         }
     }
 }
