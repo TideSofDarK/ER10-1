@@ -18,6 +18,7 @@ namespace Asset::TileSet::Hotel {
     EXTERN_ASSET(FloorOBJ)
     EXTERN_ASSET(WallOBJ)
     EXTERN_ASSET(WallJointOBJ)
+    EXTERN_ASSET(DoorOBJ)
     EXTERN_ASSET(AtlasPNG)
 }
 
@@ -60,7 +61,7 @@ SGame::SGame() {
 
     Renderer.TileSet.InitBasic(
             Asset::TileSet::Hotel::FloorOBJ, Asset::TileSet::Hotel::WallOBJ,
-            Asset::TileSet::Hotel::WallJointOBJ);
+            Asset::TileSet::Hotel::WallJointOBJ, Asset::TileSet::Hotel::DoorOBJ);
 
     Player.ApplyDirection(true);
 

@@ -58,4 +58,6 @@ private:
             ImGui::EndCombo();
         }
     }
+
+    [[nodiscard]] static bool ShouldDrawEdge(ETileEdgeType TileEdgeType) ;
 };

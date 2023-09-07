@@ -256,7 +256,7 @@ void STileSet::InitPlaceholder() {
     glBindVertexArray(0);
 }
 
-void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint) {
+void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint, const SAsset &Door) {
     auto ScratchBuffer = Memory::GetScratchBuffer();
 
     auto Positions = ScratchBuffer.GetVector<UVec3>();
@@ -289,6 +289,7 @@ void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &
     InitGeometry(Floor, ETileGeometryType::Floor);
     InitGeometry(Wall, ETileGeometryType::Wall);
     InitGeometry(WallJoint, ETileGeometryType::WallJoint);
+    InitGeometry(Door, ETileGeometryType::Door);
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
@@ -774,6 +775,9 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
     auto &WallJointDrawCall = LevelDrawData.DrawCalls[2];
     WallJointDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::WallJoint];
 
+    auto &DoorDrawCall = LevelDrawData.DrawCalls[3];
+    DoorDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::Door];
+
     if (!Level.IsValidTile(POVOrigin)) {
         return;
     }
@@ -830,6 +834,11 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
                         WallDrawCall.Transform[WallDrawCall.Count] = Transform;
                         WallDrawCall.Count++;
                     }
+
+                    if (TileEdge == ETileEdgeType::Door) {
+                        DoorDrawCall.Transform[DoorDrawCall.Count] = Transform;
+                        DoorDrawCall.Count++;
+                    }
                 }
             }
         }
@@ -840,7 +849,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
     Entry.Geometry = &TileSet;
     Entry.Model = UMat4x4::Identity();
     Entry.InstancedDrawCall = &LevelDrawData.DrawCalls[0];
-    Entry.InstancedDrawCallCount = 3;
+    Entry.InstancedDrawCallCount = 4;
 
     Entry.Mode = SEntryMode{
             UBER3D_MODE_LEVEL

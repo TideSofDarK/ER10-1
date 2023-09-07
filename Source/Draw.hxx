@@ -141,7 +141,7 @@ struct STileSet : SGeometry {
 
     void InitPlaceholder();
 
-    void InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint);
+    void InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint, const SAsset &Door);
 };
 
 struct SCamera {

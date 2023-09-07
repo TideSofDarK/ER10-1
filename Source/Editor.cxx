@@ -241,7 +241,10 @@ void SEditor::DrawLevel() {
         }
 
         /* Draw edges */
+        const float EdgeThickness = 2.5f;
         const float EdgeOffset = std::min(5.f, static_cast<float>(LevelEditorCellSize) / 25.0f);
+        const float DoorOffsetX = (float) LevelEditorCellSize * 0.15f;
+        const float DoorOffsetY = (float) LevelEditorCellSize * 0.10f;
         if (bDrawEdges) {
             for (int Y = 0; Y <= Level->Height; Y += 1) {
                 ImVec2 NorthPosMin;
@@ -261,7 +264,7 @@ void SEditor::DrawLevel() {
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
-                    auto bNorthWall = CurrentTile->Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall;
+                    auto bNorthWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::North]);
                     if (bNorthWall) {
                         if (!bNorthEdge) {
                             bNorthEdge = true;
@@ -274,11 +277,17 @@ void SEditor::DrawLevel() {
                         NorthPosMax.y += EdgeOffset;
                         NorthPosMin.x += EdgeOffset;
                         NorthPosMax.x -= EdgeOffset;
-                        DrawList->AddLine(NorthPosMin, NorthPosMax, WALL_COLOR, 2.5f);
+                        DrawList->AddLine(NorthPosMin, NorthPosMax, WALL_COLOR, EdgeThickness);
                         bNorthEdge = false;
                     }
 
-                    auto bSouthWall = CurrentTile->Edges[static_cast<int>(EDirection::South)] == ETileEdgeType::Wall;
+                    if (CurrentTile->Edges[(int) EDirection::North] == ETileEdgeType::Door) {
+                        auto DoorPosMin = ImVec2(TilePosMin.x + DoorOffsetX, TilePosMin.y + (EdgeThickness * 1.5f));
+                        auto DoorPosMax = ImVec2(TilePosMax.x - DoorOffsetX, TilePosMin.y + DoorOffsetY);
+                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
+                    }
+
+                    auto bSouthWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::South]);
                     if (bSouthWall) {
                         if (!bSouthEdge) {
                             bSouthEdge = true;
@@ -292,8 +301,14 @@ void SEditor::DrawLevel() {
                         SouthPosMax.y -= EdgeOffset;
                         SouthPosMin.x += EdgeOffset;
                         SouthPosMax.x -= EdgeOffset;
-                        DrawList->AddLine(SouthPosMin, SouthPosMax, WALL_COLOR, 2.5f);
+                        DrawList->AddLine(SouthPosMin, SouthPosMax, WALL_COLOR, EdgeThickness);
                         bSouthEdge = false;
+                    }
+
+                    if (CurrentTile->Edges[(int) EDirection::South] == ETileEdgeType::Door) {
+                        auto DoorPosMin = ImVec2(TilePosMin.x + DoorOffsetX, TilePosMax.y - DoorOffsetY);
+                        auto DoorPosMax = ImVec2(TilePosMax.x - DoorOffsetX, TilePosMax.y - (EdgeThickness * 1.5f));
+                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
                     }
                 }
             }
@@ -316,7 +331,7 @@ void SEditor::DrawLevel() {
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
-                    auto bWestWall = CurrentTile->Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall;
+                    auto bWestWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::West]);
                     if (bWestWall) {
                         if (!bWestEdge) {
                             bWestEdge = true;
@@ -329,11 +344,17 @@ void SEditor::DrawLevel() {
                         WestPosMax.x += EdgeOffset;
                         WestPosMin.y += EdgeOffset;
                         WestPosMax.y -= EdgeOffset;
-                        DrawList->AddLine(WestPosMin, WestPosMax, WALL_COLOR, 2.5f);
+                        DrawList->AddLine(WestPosMin, WestPosMax, WALL_COLOR, EdgeThickness);
                         bWestEdge = false;
                     }
 
-                    auto bEastWall = CurrentTile->Edges[static_cast<int>(EDirection::East)] == ETileEdgeType::Wall;
+                    if (CurrentTile->Edges[(int) EDirection::West] == ETileEdgeType::Door) {
+                        auto DoorPosMin = ImVec2(TilePosMin.x + (EdgeThickness * 1.5f), TilePosMin.y + DoorOffsetX);
+                        auto DoorPosMax = ImVec2(TilePosMin.x + DoorOffsetY, TilePosMax.y - DoorOffsetX);
+                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
+                    }
+
+                    auto bEastWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::East]);
                     if (bEastWall) {
                         if (!bEastEdge) {
                             bEastEdge = true;
@@ -347,8 +368,14 @@ void SEditor::DrawLevel() {
                         EastPosMax.x -= EdgeOffset;
                         EastPosMin.y += EdgeOffset;
                         EastPosMax.y -= EdgeOffset;
-                        DrawList->AddLine(EastPosMin, EastPosMax, WALL_COLOR, 2.5f);
+                        DrawList->AddLine(EastPosMin, EastPosMax, WALL_COLOR, EdgeThickness);
                         bEastEdge = false;
+                    }
+
+                    if (CurrentTile->Edges[(int) EDirection::East] == ETileEdgeType::Door) {
+                        auto DoorPosMin = ImVec2(TilePosMax.x - DoorOffsetY, TilePosMin.y + DoorOffsetX);
+                        auto DoorPosMax = ImVec2(TilePosMax.x - (EdgeThickness * 1.5f), TilePosMax.y - DoorOffsetX);
+                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
                     }
                 }
             }
@@ -406,18 +433,7 @@ void SEditor::DrawLevel() {
         ImGui::End();
     }
 }
-//
-//void SEditor::EnumCombo(const char * Label, const char *Types[], int *SelectedType) {
-//    if (ImGui::BeginCombo(Label, Types[(int) SelectedTile->Type])) {
-//        for (int I = 0; I < IM_ARRAYSIZE(TileTypes); I++) {
-//            bool bIsSelected = I ==
-//                               *SelectedType;
-//            if (ImGui::Selectable(TileTypes[I], bIsSelected)) {
-//                *SelectedType = static_cast<ETileType>(I);
-//            }
-//            if (bIsSelected)
-//                ImGui::SetItemDefaultFocus();
-//        }
-//        ImGui::EndCombo();
-//    }
-//}
+
+bool SEditor::ShouldDrawEdge(ETileEdgeType TileEdgeType) {
+    return TileEdgeType == ETileEdgeType::Wall || TileEdgeType == ETileEdgeType::Door;
+}

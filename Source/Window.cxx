@@ -98,7 +98,7 @@ void SWindow::Init() {
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
                               WINDOW_WIDTH, WINDOW_HEIGHT,
-                              SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP);
     Context = SDL_GL_CreateContext(Window);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
