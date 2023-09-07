@@ -11,7 +11,12 @@
 struct SLevel {
     using UWallJoint = bool;
 
-private:
+    int Width{};
+    int Height{};
+    std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
+    std::array<UWallJoint, (MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
+    bool bUseWallJoints = false;
+
     [[nodiscard]] STile *GetTileAtMutable(UVec2Int Coords) {
         if (IsValidTile(Coords)) {
             auto Index = CoordsToIndex(Coords.X, Coords.Y);
@@ -27,13 +32,6 @@ private:
         }
         return nullptr;
     }
-
-public:
-    int Width{};
-    int Height{};
-    std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
-    std::array<UWallJoint, (MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
-    bool bUseWallJoints = false;
 
     [[nodiscard]] STile const *GetTileAt(UVec2Int Coords) const {
         if (IsValidTile(Coords)) {

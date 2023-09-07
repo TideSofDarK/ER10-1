@@ -79,11 +79,52 @@ void SEditor::Update() {
         }
 
         if (IsLevelLoaded()) {
-            /* Validate selected tile */
+            /* Validate Selected Tile */
             if (SelectedTileCoords.has_value()) {
-                if (SelectedTileCoords->X > Level->Width - 1 || SelectedTileCoords->X < 0 ||
-                    SelectedTileCoords->Y > Level->Height - 1 || SelectedTileCoords->Y < 0) {
+                if (!Level->IsValidTile(*SelectedTileCoords)) {
                     SelectedTileCoords.reset();
+                } else {
+                    /* Tile Settings Window */
+                    auto SelectedTile = Level->GetTileAtMutable(*SelectedTileCoords);
+                    if (ImGui::Begin("Tile Settings", nullptr,
+                                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+                        ImGui::Text("X=%d, Y=%d", SelectedTileCoords->X, SelectedTileCoords->Y);
+                        ImGui::Separator();
+                        const char *TileTypes[] = {"Empty", "Floor", "Hole"};
+                        const char *EdgeTypes[] = {"Empty", "Wall", "Door"};
+                        ImGui::BeginGroup();
+                        {
+                            ImGui::PushItemWidth(70.0f);
+
+                            ImGui::BeginGroup();
+                            ImGui::Dummy(ImVec2(70.0f, 0.0f));
+                            ImGui::SameLine();
+                            EnumCombo("##N", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                      &SelectedTile->Edges[(int) EDirection::North]);
+                            ImGui::EndGroup();
+
+                            ImGui::BeginGroup();
+                            EnumCombo("##W", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                      &SelectedTile->Edges[(int) EDirection::West]);
+                            ImGui::SameLine();
+                            EnumCombo("##T", TileTypes, IM_ARRAYSIZE(TileTypes), &SelectedTile->Type);
+                            ImGui::SameLine();
+                            EnumCombo("##E", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                      &SelectedTile->Edges[(int) EDirection::East]);
+                            ImGui::EndGroup();
+
+                            ImGui::BeginGroup();
+                            ImGui::Dummy(ImVec2(70.0f, 0.0f));
+                            ImGui::SameLine();
+                            EnumCombo("##S", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                      &SelectedTile->Edges[(int) EDirection::South]);
+                            ImGui::EndGroup();
+
+                            ImGui::PopItemWidth();
+
+                            ImGui::EndGroup();
+                        }
+                    }
                 }
             }
 
@@ -199,7 +240,8 @@ void SEditor::DrawLevel() {
             }
         }
 
-        /* Draw edges` */
+        /* Draw edges */
+        const float EdgeOffset = std::min(5.f, static_cast<float>(LevelEditorCellSize) / 25.0f);
         if (bDrawEdges) {
             for (int Y = 0; Y <= Level->Height; Y += 1) {
                 ImVec2 NorthPosMin;
@@ -228,6 +270,10 @@ void SEditor::DrawLevel() {
                         NorthPosMax = ImVec2(TilePosMax.x, TilePosMin.y);
                     }
                     if ((!bNorthWall || X + 1 == Level->Width) && bNorthEdge) {
+                        NorthPosMin.y += EdgeOffset;
+                        NorthPosMax.y += EdgeOffset;
+                        NorthPosMin.x += EdgeOffset;
+                        NorthPosMax.x -= EdgeOffset;
                         DrawList->AddLine(NorthPosMin, NorthPosMax, WALL_COLOR, 2.5f);
                         bNorthEdge = false;
                     }
@@ -242,6 +288,10 @@ void SEditor::DrawLevel() {
                         SouthPosMax = TilePosMax;
                     }
                     if ((!bSouthWall || X + 1 == Level->Width) && bSouthEdge) {
+                        SouthPosMin.y -= EdgeOffset;
+                        SouthPosMax.y -= EdgeOffset;
+                        SouthPosMin.x += EdgeOffset;
+                        SouthPosMax.x -= EdgeOffset;
                         DrawList->AddLine(SouthPosMin, SouthPosMax, WALL_COLOR, 2.5f);
                         bSouthEdge = false;
                     }
@@ -275,6 +325,10 @@ void SEditor::DrawLevel() {
                         WestPosMax = ImVec2(TilePosMin.x, TilePosMax.y);
                     }
                     if ((!bWestWall || Y + 1 == Level->Height) && bWestEdge) {
+                        WestPosMin.x += EdgeOffset;
+                        WestPosMax.x += EdgeOffset;
+                        WestPosMin.y += EdgeOffset;
+                        WestPosMax.y -= EdgeOffset;
                         DrawList->AddLine(WestPosMin, WestPosMax, WALL_COLOR, 2.5f);
                         bWestEdge = false;
                     }
@@ -289,6 +343,10 @@ void SEditor::DrawLevel() {
                         EastPosMax = TilePosMax;
                     }
                     if ((!bEastWall || Y + 1 == Level->Height) && bEastEdge) {
+                        EastPosMin.x -= EdgeOffset;
+                        EastPosMax.x -= EdgeOffset;
+                        EastPosMin.y += EdgeOffset;
+                        EastPosMax.y -= EdgeOffset;
                         DrawList->AddLine(EastPosMin, EastPosMax, WALL_COLOR, 2.5f);
                         bEastEdge = false;
                     }
@@ -339,12 +397,27 @@ void SEditor::DrawLevel() {
         ImGui::Dummy(ImVec2(1 + GridSize.x,
                             1 + GridSize.y));
 
-        if (!ImGui::IsWindowFocused()) {
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                SelectedTileCoords.reset();
-            }
-        }
+//        if (!ImGui::IsWindowFocused()) {
+//            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+//                SelectedTileCoords.reset();
+//            }
+//        }
 
         ImGui::End();
     }
 }
+//
+//void SEditor::EnumCombo(const char * Label, const char *Types[], int *SelectedType) {
+//    if (ImGui::BeginCombo(Label, Types[(int) SelectedTile->Type])) {
+//        for (int I = 0; I < IM_ARRAYSIZE(TileTypes); I++) {
+//            bool bIsSelected = I ==
+//                               *SelectedType;
+//            if (ImGui::Selectable(TileTypes[I], bIsSelected)) {
+//                *SelectedType = static_cast<ETileType>(I);
+//            }
+//            if (bIsSelected)
+//                ImGui::SetItemDefaultFocus();
+//        }
+//        ImGui::EndCombo();
+//    }
+//}
