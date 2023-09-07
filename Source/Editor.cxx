@@ -127,7 +127,8 @@ void SEditor::DrawLevel() {
                      ImGuiWindowFlags_NoTitleBar |
                      ImGuiWindowFlags_NoMove)) {
         auto *DrawList = ImGui::GetWindowDrawList();
-        ImVec2 GridSize = ImVec2(LevelEditorCellSize * Level->Width, LevelEditorCellSize * Level->Height);
+        ImVec2 GridSize = ImVec2((float) (LevelEditorCellSize * Level->Width),
+                                 (float) (LevelEditorCellSize * Level->Height));
         ImVec2 PosMin = ImGui::GetCursorScreenPos();
         ImVec2 PosMax = ImVec2(PosMin.x + GridSize.x,
                                PosMin.y + GridSize.y);
@@ -157,10 +158,10 @@ void SEditor::DrawLevel() {
                 auto CurrentTile = Level->GetTileAt({X, Y});
                 if (CurrentTile == nullptr)
                     continue;
-                auto TilePosMin = ImVec2(PosMin.x + (X * LevelEditorCellSize),
-                                         PosMin.y + (Y * LevelEditorCellSize));
-                auto TilePosMax = ImVec2(TilePosMin.x + LevelEditorCellSize,
-                                         TilePosMin.y + LevelEditorCellSize);
+                auto TilePosMin = ImVec2(PosMin.x + (float) (X * LevelEditorCellSize),
+                                         PosMin.y + (float) (Y * LevelEditorCellSize));
+                auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
+                                         TilePosMin.y + (float) LevelEditorCellSize);
 
                 auto TileOffset = std::max(1.f, static_cast<float>(LevelEditorCellSize) / 35.0f);
                 if (CurrentTile->Type == ETileType::Floor) {
@@ -213,10 +214,10 @@ void SEditor::DrawLevel() {
                     auto CurrentTile = Level->GetTileAt({X, Y});
                     if (CurrentTile == nullptr)
                         continue;
-                    auto TilePosMin = ImVec2(PosMin.x + (X * LevelEditorCellSize),
-                                             PosMin.y + (Y * LevelEditorCellSize));
-                    auto TilePosMax = ImVec2(TilePosMin.x + LevelEditorCellSize,
-                                             TilePosMin.y + LevelEditorCellSize);
+                    auto TilePosMin = ImVec2(PosMin.x + (float) (X * LevelEditorCellSize),
+                                             PosMin.y + (float) (Y * LevelEditorCellSize));
+                    auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
+                                             TilePosMin.y + (float) LevelEditorCellSize);
 
                     auto bNorthWall = CurrentTile->Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall;
                     if (bNorthWall) {
@@ -260,10 +261,10 @@ void SEditor::DrawLevel() {
                     auto CurrentTile = Level->GetTileAt({X, Y});
                     if (CurrentTile == nullptr)
                         continue;
-                    auto TilePosMin = ImVec2(PosMin.x + (X * LevelEditorCellSize),
-                                             PosMin.y + (Y * LevelEditorCellSize));
-                    auto TilePosMax = ImVec2(TilePosMin.x + LevelEditorCellSize,
-                                             TilePosMin.y + LevelEditorCellSize);
+                    auto TilePosMin = ImVec2(PosMin.x + (float) (X * LevelEditorCellSize),
+                                             PosMin.y + (float) (Y * LevelEditorCellSize));
+                    auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
+                                             TilePosMin.y + (float) LevelEditorCellSize);
 
                     auto bWestWall = CurrentTile->Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall;
                     if (bWestWall) {
@@ -297,13 +298,13 @@ void SEditor::DrawLevel() {
 
         /* Draw grid lines */
         if (bDrawGridLines) {
-            for (int X = 0; X <= GridSize.x; X += LevelEditorCellSize) {
-                DrawList->AddLine(ImVec2(PosMin.x + X, PosMin.y), ImVec2(PosMin.x + X, PosMax.y - 1),
+            for (int X = 0; X <= (int) GridSize.x; X += LevelEditorCellSize) {
+                DrawList->AddLine(ImVec2(PosMin.x + (float) X, PosMin.y), ImVec2(PosMin.x + (float) X, PosMax.y - 1),
                                   GRID_LINE_COLOR);
             }
 
-            for (int Y = 0; Y <= GridSize.y; Y += LevelEditorCellSize) {
-                DrawList->AddLine(ImVec2(PosMin.x, PosMin.y + Y), ImVec2(PosMax.x + 1, PosMin.y + Y),
+            for (int Y = 0; Y <= (int) GridSize.y; Y += LevelEditorCellSize) {
+                DrawList->AddLine(ImVec2(PosMin.x, PosMin.y + (float) Y), ImVec2(PosMax.x + 1, PosMin.y + (float) Y),
                                   GRID_LINE_COLOR);
             }
         }
@@ -327,10 +328,10 @@ void SEditor::DrawLevel() {
                 }
             }
 
-            auto SelectedTilePosMin = ImVec2(PosMin.x + (SelectedTileCoords->X * LevelEditorCellSize),
-                                             PosMin.y + (SelectedTileCoords->Y * LevelEditorCellSize));
-            auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + LevelEditorCellSize + 1,
-                                             SelectedTilePosMin.y + LevelEditorCellSize + 1);
+            auto SelectedTilePosMin = ImVec2(PosMin.x + (float) (SelectedTileCoords->X * LevelEditorCellSize),
+                                             PosMin.y + (float) (SelectedTileCoords->Y * LevelEditorCellSize));
+            auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + (float) LevelEditorCellSize + 1,
+                                             SelectedTilePosMin.y + (float) LevelEditorCellSize + 1);
             DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
                               ImGui::GetColorU32(IM_COL32(255, 105, 98, 255)), 0.0f, 0, 2.0f);
         }

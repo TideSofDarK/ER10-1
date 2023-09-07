@@ -39,7 +39,7 @@ struct SDirection {
 
     explicit SDirection(unsigned InDirection) : Index(InDirection) {}
 
-    explicit SDirection(EDirection InDirection) : Index(static_cast<unsigned>(InDirection)) {}
+    explicit SDirection(EDirection InDirection) : Index((unsigned) InDirection) {}
 
     [[nodiscard]] EDirection GetEnum() const { return static_cast<EDirection>(Index); }
 
@@ -81,7 +81,7 @@ struct SDirection {
     }
 };
 
-#define DIRECTION_COUNT static_cast<unsigned>(EDirection::Count)
+#define DIRECTION_COUNT ((unsigned) EDirection::Count)
 
 enum class EKeyState : unsigned {
     None,

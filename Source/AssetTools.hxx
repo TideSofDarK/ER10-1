@@ -24,9 +24,9 @@ public:
     std::pmr::vector<UVec3> Normals;
     std::pmr::vector<unsigned short> Indices;
 
-    [[nodiscard]] int GetVertexCount() const { return static_cast<int>(Positions.size()); }
+    [[nodiscard]] int GetVertexCount() const { return (int) Positions.size(); }
 
-    [[nodiscard]] int GetElementCount() const { return static_cast<int>(Indices.size()); }
+    [[nodiscard]] int GetElementCount() const { return (int) Indices.size(); }
 
     CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
 };

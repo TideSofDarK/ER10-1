@@ -17,7 +17,7 @@ struct SEditor {
         bLevelEditorActive = false;
         NewLevelSize = UVec2Int{8, 8};
         LevelEditorCellSize = 32;
-        bDrawWallJoints = true;
+        bDrawWallJoints = false;
         bDrawEdges = true;
         bDrawGridLines = false;
         Level = nullptr;

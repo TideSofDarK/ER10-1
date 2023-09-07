@@ -65,10 +65,10 @@ unsigned int SProgram::CreateVertexShader(const SAsset &Resource) {
             reinterpret_cast<const char *>(Resource.Data)
     };
     int const Lengths[4] = {
-            static_cast<int>(GLSLVersion.length()),
-            static_cast<int>(Asset::Shader::SharedGLSL.Length),
-            static_cast<int>(ShaderConstants.length()),
-            static_cast<int>(Resource.Length)
+            (int) GLSLVersion.length(),
+            (int) Asset::Shader::SharedGLSL.Length,
+            (int) ShaderConstants.length(),
+            (int) Resource.Length
     };
     glShaderSource(VertexShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(VertexShaderID);
@@ -85,10 +85,10 @@ unsigned int SProgram::CreateFragmentShader(const SAsset &Resource) {
             reinterpret_cast<const char *>(Resource.Data)
     };
     int const Lengths[4] = {
-            static_cast<int>(GLSLVersion.length()),
-            static_cast<int>(Asset::Shader::SharedGLSL.Length),
-            static_cast<int>(ShaderConstants.length()),
-            static_cast<int>(Resource.Length)
+            (int) GLSLVersion.length(),
+            (int) Asset::Shader::SharedGLSL.Length,
+            (int) ShaderConstants.length(),
+            (int) Resource.Length
     };
     glShaderSource(FragmentShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(FragmentShaderID);
@@ -181,7 +181,7 @@ void SGeometry::InitFromRawMesh(const CRawMesh &RawMesh) {
             nullptr
     );
 
-    ElementCount = static_cast<int>(RawMesh.Indices.size());
+    ElementCount = (int) RawMesh.Indices.size();
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
@@ -241,13 +241,13 @@ void STileSet::InitPlaceholder() {
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<long long>(TempVertices.size() * sizeof(UVec3)), &TempVertices[0],
+    glBufferData(GL_ARRAY_BUFFER, (long long) (TempVertices.size() * sizeof(UVec3)), &TempVertices[0],
                  GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-    ElementCount = static_cast<int>(Indices.size());
+    ElementCount = (int) Indices.size();
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(ElementCount * sizeof(unsigned short)), &Indices[0],
@@ -283,7 +283,7 @@ void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &
         }
 
         LastVertexOffset += Mesh.GetVertexCount();
-        LastElementOffset += static_cast<int>((Geometry.ElementCount) * sizeof(unsigned short));
+        LastElementOffset += (int) ((Geometry.ElementCount) * sizeof(unsigned short));
     };
 
     InitGeometry(Floor, ETileGeometryType::Floor);
@@ -315,7 +315,7 @@ void STileSet::InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &
             nullptr
     );
 
-    ElementCount = static_cast<int>(Indices.size());
+    ElementCount = (int) Indices.size();
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(ElementCount * sizeof(unsigned short)), &Indices[0],
@@ -474,7 +474,7 @@ void SRenderer::Init(int Width, int Height) {
 
     /** Initialize queues */
     Queue2D.Init(32);
-    Queue2D.CommonUniformBlock.SetVector2(0, {static_cast<float>(Width), static_cast<float>(Height)});
+    Queue2D.CommonUniformBlock.SetVector2(0, {(float) Width, (float) Height});
     Queue2D.CommonUniformBlock.SetFloat(12, Utility::GetRandomFloat());
 
     Queue3D.Init(sizeof(UMat4x4) * 2);
@@ -591,7 +591,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         glUseProgram(Program->ID);
 
         glUniform2f(Program->UniformPositionScreenSpaceID, Entry.Position.X, Entry.Position.Y);
-        glUniform2f(Program->UniformSizeScreenSpaceID, Entry.SizePixels.X, Entry.SizePixels.Y);
+        glUniform2f(Program->UniformSizeScreenSpaceID, (float) Entry.SizePixels.X, (float) Entry.SizePixels.Y);
         glUniform4fv(Program->UniformUVRectID, 1, &Entry.UVRect.X);
 
         const SEntryMode &Mode = Entry.Mode;
@@ -604,7 +604,7 @@ void SRenderer::Flush(const SWindowData &WindowData) {
         if (Entry.Program2DType == EProgram2DType::Uber2D) {
             if (Mode.ID == UBER2D_MODE_BACK_BLUR) {
                 glDrawElementsInstanced(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr,
-                                        static_cast<int>(Mode.ControlA.X));
+                                        (int) Mode.ControlA.X);
                 glUniform1i(Program->UniformModeID, 0);
             }
         }
@@ -791,8 +791,8 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
             auto Y = POVOrigin.Y + (POVDirectionVectorForward.Y * ForwardCounter) +
                      (POVDirectionVectorSide.Y * SideCounter);
 
-            auto XOffset = static_cast<float>(X);
-            auto YOffset = static_cast<float>(Y);
+            auto XOffset = (float) X;
+            auto YOffset = (float) Y;
 
             if (Level.bUseWallJoints && Level.IsValidWallJoint({X, Y})) {
                 auto bWallJoint = Level.GetWallJointAt({X, Y});
@@ -933,10 +933,10 @@ void SAtlas::Build() {
             break;
         }
 
-        float MinU = static_cast<float>(CursorX) / static_cast<float>(WidthAndHeight);
-        float MinV = static_cast<float>(CursorY) / static_cast<float>(WidthAndHeight);
-        float MaxU = MinU + (static_cast<float>(Image.Width) / static_cast<float>(WidthAndHeight));
-        float MaxV = MinV + (static_cast<float>(Image.Height) / static_cast<float>(WidthAndHeight));
+        float MinU = (float) (CursorX) / (float) (WidthAndHeight);
+        float MinV = (float) (CursorY) / (float) (WidthAndHeight);
+        float MaxU = MinU + ((float) (Image.Width) / (float) WidthAndHeight);
+        float MaxV = MinV + ((float) (Image.Height) / (float) WidthAndHeight);
         Sprite.UVRect = {MinU, MinV, MaxU, MaxV};
 
         glTexSubImage2D(GL_TEXTURE_2D, 0,

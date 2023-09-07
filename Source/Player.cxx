@@ -28,7 +28,7 @@ void SPlayer::Update(float DeltaTime) {
 }
 
 SPlayer::SPlayer() : Direction(EDirection::North) {
-    EyePositionCurrent = EyePositionTarget = {static_cast<float>(Coords.X), EyeHeight, static_cast<float>(Coords.Y)};
+    EyePositionCurrent = EyePositionTarget = {(float) Coords.X, EyeHeight, (float) Coords.Y};
     ApplyDirection(true);
 }
 

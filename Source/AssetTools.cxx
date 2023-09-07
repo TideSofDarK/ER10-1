@@ -52,7 +52,7 @@ CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
     Normals.clear();
     TexCoords.clear();
 
-    auto OBJLength = static_cast<size_t>(Resource.Length);
+    auto OBJLength = (size_t) Resource.Length;
     std::string_view OBJContents{reinterpret_cast<const char *>(Resource.Data), OBJLength};
 
     size_t CurrentIndex{};
@@ -114,7 +114,7 @@ CRawMesh::CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer) :
 CRawImage::CRawImage(const SAsset &Resource, CScratchBuffer &ScratchBuffer) {
     STBIScratchBuffer = &ScratchBuffer;
 
-    Data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data), static_cast<int>(Resource.Length),
+    Data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data), (int) Resource.Length,
                                  &Width,
                                  &Height, &Channels,
                                  4);
@@ -124,7 +124,7 @@ CRawImageInfo::CRawImageInfo(const SAsset &Resource, CScratchBuffer &ScratchBuff
     STBIScratchBuffer = &ScratchBuffer;
 
     auto Result = stbi_info_from_memory(reinterpret_cast<const stbi_uc *>(Resource.Data),
-                                        static_cast<int>(Resource.Length), &Width, &Height, &Channels);
+                                        (int) Resource.Length, &Width, &Height, &Channels);
     if (!Result) {
         abort();
     }
