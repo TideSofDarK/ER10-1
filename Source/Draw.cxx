@@ -762,9 +762,7 @@ void SRenderer::Draw3D(UVec3 Position, SGeometry *Geometry) {
 }
 
 void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, const SDirection &POVDirection) {
-    for (auto &DrawCall: LevelDrawData.DrawCalls) {
-        DrawCall.Count = 0;
-    }
+    LevelDrawData.Clear();
 
     auto &FloorDrawCall = LevelDrawData.DrawCalls[0];
     FloorDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::Floor];

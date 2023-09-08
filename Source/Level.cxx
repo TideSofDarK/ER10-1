@@ -3,6 +3,7 @@
 #include "Utility.hxx"
 
 void SLevel::InitWallJoints() {
+    WallJoints.fill(false);
     bUseWallJoints = true;
     UVec2Int Coords{};
     for (; Coords.X < Width; ++Coords.X) {
@@ -11,6 +12,7 @@ void SLevel::InitWallJoints() {
             if (CurrentTile == nullptr) {
                 continue;
             }
+            /* @TODO: Treat doors as walls */
             if (CurrentTile->Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall &&
                 CurrentTile->Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall) {
                 if (auto WallJoint = GetWallJointAtMutable(Coords)) {

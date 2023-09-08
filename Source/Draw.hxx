@@ -221,6 +221,12 @@ struct SInstancedDrawCall {
 template<int Size>
 struct SInstancedDrawData {
     std::array<SInstancedDrawCall, Size> DrawCalls;
+
+    void Clear() {
+        for (auto &DrawCall: DrawCalls) {
+            DrawCall.Count = 0;
+        }
+    }
 };
 
 struct SEntry3D : SEntry {

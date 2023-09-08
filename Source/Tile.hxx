@@ -28,6 +28,10 @@ struct STile {
         return Edges[Direction] != ETileEdgeType::Wall;
     }
 
+    [[nodiscard]] bool IsWallBasedEdge(EDirection Direction) const {
+        return Edges[(int) Direction] == ETileEdgeType::Wall || Edges[(int) Direction] == ETileEdgeType::Door;
+    }
+
     static STile Floor() {
         STile Tile;
         Tile.Type = ETileType::Floor;

@@ -13,6 +13,8 @@
 #define WALL_COLOR (ImGui::GetColorU32(IM_COL32(198, 205, 250, 255)))
 #define WALL_JOINT_COLOR (ImGui::GetColorU32(IM_COL32(65, 205, 25, 255)))
 #define FLOOR_COLOR (ImGui::GetColorU32(IM_COL32(5, 105, 205, 255)))
+#define SELECTION_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 98, 255)))
+#define SELECTION_MODIFY_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 200, 255)))
 
 #define IMVEC2(SVEC) (ImVec2{SVEC.X, SVEC.Y})
 
@@ -61,6 +63,11 @@ void SEditor::Update() {
                 ImGui::EndMenu();
             }
 
+            ImGui::Separator();
+
+            const char *EditorModes[] = {"Normal", "Toggle Door"};
+            ImGui::Text("Current Mode: %s", EditorModes[(int) LevelEditorMode]);
+
             ImGui::EndMainMenuBar();
         }
 
@@ -87,7 +94,8 @@ void SEditor::Update() {
                     /* Tile Settings Window */
                     auto SelectedTile = Level->GetTileAtMutable(*SelectedTileCoords);
                     if (ImGui::Begin("Tile Settings", nullptr,
-                                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+                                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize |
+                                     ImGuiWindowFlags_NoFocusOnAppearing)) {
                         ImGui::Text("X=%d, Y=%d", SelectedTileCoords->X, SelectedTileCoords->Y);
                         ImGui::Separator();
                         const char *TileTypes[] = {"Empty", "Floor", "Hole"};
@@ -158,15 +166,14 @@ void SEditor::ProcessEvent(const SDL_Event *Event) {
 
 void SEditor::DrawLevel() {
     ImGuiIO &IO = ImGui::GetIO();
-    ImGui::SetNextWindowPos(ImVec2(IO.DisplaySize.x * 0.5f, IO.DisplaySize.y * 0.5f), ImGuiCond_Always,
+    ImGui::SetNextWindowPos(ImVec2(IO.DisplaySize.x * 0.5f, IO.DisplaySize.y * 0.5f), ImGuiCond_Once,
                             ImVec2(0.5f, 0.5f));
     if (ImGui::Begin("Grid", nullptr,
                      ImGuiWindowFlags_AlwaysAutoResize |
                      ImGuiWindowFlags_NoCollapse |
                      ImGuiWindowFlags_NoScrollbar |
                      ImGuiWindowFlags_NoSavedSettings |
-                     ImGuiWindowFlags_NoTitleBar |
-                     ImGuiWindowFlags_NoMove)) {
+                     ImGuiWindowFlags_NoTitleBar)) {
         auto *DrawList = ImGui::GetWindowDrawList();
         ImVec2 GridSize = ImVec2((float) (LevelEditorCellSize * Level->Width),
                                  (float) (LevelEditorCellSize * Level->Height));
@@ -179,14 +186,14 @@ void SEditor::DrawLevel() {
                                 BG_COLOR);
 
         if (ImGui::IsWindowHovered()) {
-            LevelEditorCellSize += static_cast<int>(IO.MouseWheel * 5.0f);
+            LevelEditorCellSize += (int) (IO.MouseWheel * 5.0f);
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 auto MousePos = ImGui::GetMousePos();
                 MousePos = ImVec2(MousePos.x - PosMin.x, MousePos.y - PosMin.y);
 
-                int SelectedX = static_cast<int>(MousePos.x) / LevelEditorCellSize;
-                int SelectedY = static_cast<int>(MousePos.y) / LevelEditorCellSize;
+                int SelectedX = (int) (MousePos.x) / LevelEditorCellSize;
+                int SelectedY = (int) (MousePos.y) / LevelEditorCellSize;
                 SelectedTileCoords = UVec2Int{SelectedX, SelectedY};
 
                 std::cout << SelectedX << " " << SelectedY << std::endl;
@@ -264,15 +271,15 @@ void SEditor::DrawLevel() {
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
-                    auto bNorthWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::North]);
-                    if (bNorthWall) {
+                    auto bShouldDrawNorthEdge = CurrentTile->IsWallBasedEdge(EDirection::North);
+                    if (bShouldDrawNorthEdge) {
                         if (!bNorthEdge) {
                             bNorthEdge = true;
                             NorthPosMin = TilePosMin;
                         }
                         NorthPosMax = ImVec2(TilePosMax.x, TilePosMin.y);
                     }
-                    if ((!bNorthWall || X + 1 == Level->Width) && bNorthEdge) {
+                    if ((!bShouldDrawNorthEdge || X + 1 == Level->Width) && bNorthEdge) {
                         NorthPosMin.y += EdgeOffset;
                         NorthPosMax.y += EdgeOffset;
                         NorthPosMin.x += EdgeOffset;
@@ -287,8 +294,8 @@ void SEditor::DrawLevel() {
                         DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
                     }
 
-                    auto bSouthWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::South]);
-                    if (bSouthWall) {
+                    auto bShouldDrawSouthEdge = CurrentTile->IsWallBasedEdge(EDirection::South);
+                    if (bShouldDrawSouthEdge) {
                         if (!bSouthEdge) {
                             bSouthEdge = true;
                             SouthPosMin = TilePosMin;
@@ -296,7 +303,7 @@ void SEditor::DrawLevel() {
                         }
                         SouthPosMax = TilePosMax;
                     }
-                    if ((!bSouthWall || X + 1 == Level->Width) && bSouthEdge) {
+                    if ((!bShouldDrawSouthEdge || X + 1 == Level->Width) && bSouthEdge) {
                         SouthPosMin.y -= EdgeOffset;
                         SouthPosMax.y -= EdgeOffset;
                         SouthPosMin.x += EdgeOffset;
@@ -331,15 +338,15 @@ void SEditor::DrawLevel() {
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
-                    auto bWestWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::West]);
-                    if (bWestWall) {
+                    auto bShouldDrawWestEdge = CurrentTile->IsWallBasedEdge(EDirection::West);
+                    if (bShouldDrawWestEdge) {
                         if (!bWestEdge) {
                             bWestEdge = true;
                             WestPosMin = TilePosMin;
                         }
                         WestPosMax = ImVec2(TilePosMin.x, TilePosMax.y);
                     }
-                    if ((!bWestWall || Y + 1 == Level->Height) && bWestEdge) {
+                    if ((!bShouldDrawWestEdge || Y + 1 == Level->Height) && bWestEdge) {
                         WestPosMin.x += EdgeOffset;
                         WestPosMax.x += EdgeOffset;
                         WestPosMin.y += EdgeOffset;
@@ -354,8 +361,8 @@ void SEditor::DrawLevel() {
                         DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
                     }
 
-                    auto bEastWall = ShouldDrawEdge(CurrentTile->Edges[(int) EDirection::East]);
-                    if (bEastWall) {
+                    auto bShouldDrawEastEdge = CurrentTile->IsWallBasedEdge(EDirection::East);
+                    if (bShouldDrawEastEdge) {
                         if (!bEastEdge) {
                             bEastEdge = true;
                             EastPosMin = TilePosMin;
@@ -363,7 +370,7 @@ void SEditor::DrawLevel() {
                         }
                         EastPosMax = TilePosMax;
                     }
-                    if ((!bEastWall || Y + 1 == Level->Height) && bEastEdge) {
+                    if ((!bShouldDrawEastEdge || Y + 1 == Level->Height) && bEastEdge) {
                         EastPosMin.x -= EdgeOffset;
                         EastPosMax.x -= EdgeOffset;
                         EastPosMin.y += EdgeOffset;
@@ -396,29 +403,62 @@ void SEditor::DrawLevel() {
 
         if (SelectedTileCoords.has_value()) {
             if (ImGui::IsWindowFocused()) {
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {
-                    SelectedTileCoords->Y = std::max(0, SelectedTileCoords->Y - 1);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) {
-                    SelectedTileCoords->X = std::max(0, SelectedTileCoords->X - 1);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) {
-                    SelectedTileCoords->Y = std::min(Level->Height - 1, SelectedTileCoords->Y + 1);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) {
-                    SelectedTileCoords->X = std::min(Level->Width - 1, SelectedTileCoords->X + 1);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) {
-                    Level->Excavate(*SelectedTileCoords);
+                if (LevelEditorMode == ELevelEditorMode::Normal) {
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {
+                        SelectedTileCoords->Y = std::max(0, SelectedTileCoords->Y - 1);
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) {
+                        SelectedTileCoords->X = std::max(0, SelectedTileCoords->X - 1);
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) {
+                        SelectedTileCoords->Y = std::min(Level->Height - 1, SelectedTileCoords->Y + 1);
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) {
+                        SelectedTileCoords->X = std::min(Level->Width - 1, SelectedTileCoords->X + 1);
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) {
+                        Level->Excavate(*SelectedTileCoords);
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D))) {
+                        LevelEditorMode = ELevelEditorMode::ToggleDoor;
+                    }
+                } else if (LevelEditorMode == ELevelEditorMode::ToggleDoor) {
+                    auto SelectedTile = Level->GetTileAtMutable(*SelectedTileCoords);
+                    auto ToggleDoor = [this](ETileEdgeType *TileEdgeType) {
+                        if (*TileEdgeType == ETileEdgeType::Door) {
+                            *TileEdgeType = ETileEdgeType::Wall;
+                        } else {
+                            *TileEdgeType = ETileEdgeType::Door;
+                        }
+                        LevelEditorMode = ELevelEditorMode::Normal;
+                    };
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {
+                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::North]);
+                    } else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) {
+                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::West]);
+                    } else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) {
+                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::South]);
+                    } else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) {
+                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::East]);
+                    }
                 }
             }
 
-            auto SelectedTilePosMin = ImVec2(PosMin.x + (float) (SelectedTileCoords->X * LevelEditorCellSize),
-                                             PosMin.y + (float) (SelectedTileCoords->Y * LevelEditorCellSize));
-            auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + (float) LevelEditorCellSize + 1,
-                                             SelectedTilePosMin.y + (float) LevelEditorCellSize + 1);
-            DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                              ImGui::GetColorU32(IM_COL32(255, 105, 98, 255)), 0.0f, 0, 2.0f);
+            /* Outline Selected Tile */
+            {
+                auto SelectedTilePosMin = ImVec2(PosMin.x + (float) (SelectedTileCoords->X * LevelEditorCellSize),
+                                                 PosMin.y + (float) (SelectedTileCoords->Y * LevelEditorCellSize));
+                auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + (float) LevelEditorCellSize + 1,
+                                                 SelectedTilePosMin.y + (float) LevelEditorCellSize + 1);
+                if (LevelEditorMode == ELevelEditorMode::Normal) {
+                    DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
+                                      SELECTION_COLOR, 0.0f, 0, 2.0f);
+                } else {
+                    auto Thickness = 2.0f + std::abs(2.0f * std::sin((float) ImGui::GetTime() * 10.0f));
+                    DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
+                                      SELECTION_MODIFY_COLOR, 0.0f, 0, Thickness);
+                }
+            }
         }
 
         ImGui::Dummy(ImVec2(1 + GridSize.x,
@@ -432,8 +472,4 @@ void SEditor::DrawLevel() {
 
         ImGui::End();
     }
-}
-
-bool SEditor::ShouldDrawEdge(ETileEdgeType TileEdgeType) {
-    return TileEdgeType == ETileEdgeType::Wall || TileEdgeType == ETileEdgeType::Door;
 }

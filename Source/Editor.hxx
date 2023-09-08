@@ -4,8 +4,14 @@
 #include "imgui.h"
 #include "Level.hxx"
 
+enum class ELevelEditorMode {
+    Normal,
+    ToggleDoor
+};
+
 struct SEditor {
     bool bLevelEditorActive;
+    ELevelEditorMode LevelEditorMode;
     UVec2Int NewLevelSize;
     int LevelEditorCellSize;
     bool bDrawWallJoints;
@@ -16,6 +22,7 @@ struct SEditor {
 
     SEditor() {
         bLevelEditorActive = false;
+        LevelEditorMode = ELevelEditorMode::Normal;
         NewLevelSize = UVec2Int{8, 8};
         LevelEditorCellSize = 32;
         bDrawWallJoints = false;
@@ -58,6 +65,4 @@ private:
             ImGui::EndCombo();
         }
     }
-
-    [[nodiscard]] static bool ShouldDrawEdge(ETileEdgeType TileEdgeType) ;
 };
