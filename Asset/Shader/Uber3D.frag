@@ -4,10 +4,10 @@ uniform sampler2D u_commonAtlas;
 uniform sampler2D u_primaryAtlas;
 
 in vec2 f_texCoord;
+in vec4 f_positionViewSpace;
 in vec3 f_positionWorldSpace;
 in vec4 f_vertexColor;
 in vec3 f_eyeDirectionCameraSpace;
-in float f_distanceToCamera;
 
 out vec4 color;
 
@@ -21,6 +21,7 @@ void main()
         color = texture(u_primaryAtlas, f_texCoord);
     }
 
-    color = mix(color, vec4(0.0), getFogFactor(f_distanceToCamera));
-    //    color = vec4(0.0);
+    float dist = (f_positionViewSpace.x * f_positionViewSpace.x) + (f_positionViewSpace.y * f_positionViewSpace.y) + (f_positionViewSpace.z * f_positionViewSpace.z);
+
+    color = mix(vec4(0.0), color, getFogFactor(dist));
 }

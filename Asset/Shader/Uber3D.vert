@@ -12,10 +12,10 @@ uniform vec4 u_modeControlA;
 uniform mat4 u_model[UBER3D_MODEL_COUNT];
 
 out vec2 f_texCoord;
+out vec4 f_positionViewSpace;
 out vec3 f_positionWorldSpace;
 out vec4 f_vertexColor;
 out vec3 f_eyeDirectionCameraSpace;
-out float f_distanceToCamera;
 
 void main()
 {
@@ -25,12 +25,13 @@ void main()
 
     f_positionWorldSpace = (model * vec4(a_vertexPositionModelSpace, 1)).xyz;
 
-    vec3 vertexPositionCameraSpace = (u_view * model * vec4(a_vertexPositionModelSpace, 1)).xyz;
+    f_positionViewSpace = u_view * model * vec4(a_vertexPositionModelSpace, 1);
+    vec3 vertexPositionCameraSpace = f_positionViewSpace.xyz;
     f_eyeDirectionCameraSpace = vec3(0, 0, 0) - vertexPositionCameraSpace;
 
     //    f_distanceToCamera = length(vertexPositionCameraSpace);
     //    f_distanceToCamera = length(f_positionWorldSpace);
-    f_distanceToCamera = -vertexPositionCameraSpace.z;
+//    f_distanceToCamera = -vertexPositionCameraSpace.z;
 
     //    f_vertexColor = vec4(1.0, 0.0, 0.0, 1.0);
     f_vertexColor = vec4(a_texCoord.x, a_texCoord.y, 0.0, 1.0);

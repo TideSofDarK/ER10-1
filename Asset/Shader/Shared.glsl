@@ -36,8 +36,7 @@ float getFogFactor(float d)
     const float FogMax = 2.5;
     const float FogMin = 0.5;
 
-    //    if (d>=FogMax) return 1;
-    //    if (d<=FogMin) return 0;
+    float fogAmount = (FogMax - sqrt(d)) / (FogMax * FogMin);
 
-    return clamp(1 - (FogMax - d) / (FogMax - FogMin), 0, 1);
+    return clamp(fogAmount, 0.0, 1.0);
 }
