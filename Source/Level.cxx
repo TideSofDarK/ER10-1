@@ -12,27 +12,26 @@ void SLevel::InitWallJoints() {
             if (CurrentTile == nullptr) {
                 continue;
             }
-            /* @TODO: Treat doors as walls */
-            if (CurrentTile->Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall &&
-                CurrentTile->Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall) {
+            if (CurrentTile->IsWallBasedEdge(EDirection::North) &&
+                CurrentTile->IsWallBasedEdge(EDirection::West)) {
                 if (auto WallJoint = GetWallJointAtMutable(Coords)) {
                     *WallJoint = true;
                 }
             }
-            if (CurrentTile->Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall &&
-                CurrentTile->Edges[static_cast<int>(EDirection::East)] == ETileEdgeType::Wall) {
+            if (CurrentTile->IsWallBasedEdge(EDirection::North) &&
+                CurrentTile->IsWallBasedEdge(EDirection::East)) {
                 if (auto WallJoint = GetWallJointAtMutable({Coords.X + 1, Coords.Y})) {
                     *WallJoint = true;
                 }
             }
-            if (CurrentTile->Edges[static_cast<int>(EDirection::South)] == ETileEdgeType::Wall &&
-                CurrentTile->Edges[static_cast<int>(EDirection::East)] == ETileEdgeType::Wall) {
+            if (CurrentTile->IsWallBasedEdge(EDirection::South) &&
+                CurrentTile->IsWallBasedEdge(EDirection::East)) {
                 if (auto WallJoint = GetWallJointAtMutable({Coords.X + 1, Coords.Y + 1})) {
                     *WallJoint = true;
                 }
             }
-            if (CurrentTile->Edges[static_cast<int>(EDirection::South)] == ETileEdgeType::Wall &&
-                CurrentTile->Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall) {
+            if (CurrentTile->IsWallBasedEdge(EDirection::South) &&
+                CurrentTile->IsWallBasedEdge(EDirection::West)) {
                 if (auto WallJoint = GetWallJointAtMutable({Coords.X, Coords.Y + 1})) {
                     *WallJoint = true;
                 }
