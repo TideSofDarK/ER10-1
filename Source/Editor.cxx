@@ -27,6 +27,15 @@ void SEditor::Init(SDL_Window *Window, void *Context) {
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForOpenGL(Window, Context);
     ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
+
+    bLevelEditorActive = false;
+    LevelEditorMode = ELevelEditorMode::Normal;
+    NewLevelSize = UVec2Int{8, 8};
+    LevelEditorCellSize = 32.0f;
+    bDrawWallJoints = false;
+    bDrawEdges = true;
+    bDrawGridLines = false;
+    Level = nullptr;
 }
 
 void SEditor::Cleanup() {
@@ -141,11 +150,16 @@ void SEditor::Update() {
     }
 }
 
-void SEditor::DebugTools(bool *bImportLevel) {
-    if (ImGui::Begin("Debug Tools", nullptr)) {
+void SEditor::DebugTools(SDebugToolsData &Data) {
+    if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Frames Per Second: %.6f", Data.FPS);
+        ImGui::Text("Player Direction: %s", DirectionNames[Data.PlayerDirection.Index]);
+        ImGui::Text("Player Coords: X=%d, Y=%d", Data.PlayerCoords.X, Data.PlayerCoords.Y);
+        ImGui::Separator();
         if (ImGui::Button("Import Level From Editor")) {
-            *bImportLevel = true;
+            Data.bImportLevel = true;
         }
+        ImGui::End();
     }
 }
 
@@ -168,6 +182,8 @@ void SEditor::DrawLevel() {
     ImGuiIO &IO = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(IO.DisplaySize.x * 0.5f, IO.DisplaySize.y * 0.5f), ImGuiCond_Once,
                             ImVec2(0.5f, 0.5f));
+    const float WindowPadding = (float) LevelEditorCellSize * 0.1f;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
     if (ImGui::Begin("Grid", nullptr,
                      ImGuiWindowFlags_AlwaysAutoResize |
                      ImGuiWindowFlags_NoCollapse |
@@ -175,8 +191,8 @@ void SEditor::DrawLevel() {
                      ImGuiWindowFlags_NoSavedSettings |
                      ImGuiWindowFlags_NoTitleBar)) {
         auto *DrawList = ImGui::GetWindowDrawList();
-        ImVec2 GridSize = ImVec2((float) (LevelEditorCellSize * Level->Width),
-                                 (float) (LevelEditorCellSize * Level->Height));
+        ImVec2 GridSize = ImVec2((LevelEditorCellSize * (float) Level->Width),
+                                 (LevelEditorCellSize * (float) Level->Height));
         ImVec2 PosMin = ImGui::GetCursorScreenPos();
         ImVec2 PosMax = ImVec2(PosMin.x + GridSize.x,
                                PosMin.y + GridSize.y);
@@ -186,14 +202,14 @@ void SEditor::DrawLevel() {
                                 BG_COLOR);
 
         if (ImGui::IsWindowHovered()) {
-            LevelEditorCellSize += (int) (IO.MouseWheel * 5.0f);
+            LevelEditorCellSize += IO.MouseWheel * 2.0f;
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 auto MousePos = ImGui::GetMousePos();
                 MousePos = ImVec2(MousePos.x - PosMin.x, MousePos.y - PosMin.y);
 
-                int SelectedX = (int) (MousePos.x) / LevelEditorCellSize;
-                int SelectedY = (int) (MousePos.y) / LevelEditorCellSize;
+                auto SelectedX = (int) (MousePos.x / LevelEditorCellSize);
+                auto SelectedY = (int) (MousePos.y / LevelEditorCellSize);
                 SelectedTileCoords = UVec2Int{SelectedX, SelectedY};
 
                 std::cout << SelectedX << " " << SelectedY << std::endl;
@@ -206,12 +222,12 @@ void SEditor::DrawLevel() {
                 auto CurrentTile = Level->GetTileAt({X, Y});
                 if (CurrentTile == nullptr)
                     continue;
-                auto TilePosMin = ImVec2(PosMin.x + (float) (X * LevelEditorCellSize),
-                                         PosMin.y + (float) (Y * LevelEditorCellSize));
+                auto TilePosMin = ImVec2(PosMin.x + ((float) X * LevelEditorCellSize),
+                                         PosMin.y + ((float) Y * LevelEditorCellSize));
                 auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                          TilePosMin.y + (float) LevelEditorCellSize);
 
-                auto TileOffset = std::max(1.f, static_cast<float>(LevelEditorCellSize) / 35.0f);
+                auto TileOffset = (float) LevelEditorCellSize * 0.045f;
                 if (CurrentTile->Type == ETileType::Floor) {
                     auto EdgePosMin = TilePosMin;
                     EdgePosMin.x += TileOffset;
@@ -248,10 +264,10 @@ void SEditor::DrawLevel() {
         }
 
         /* Draw edges */
-        const float EdgeThickness = 2.5f;
-        const float EdgeOffset = std::min(5.f, static_cast<float>(LevelEditorCellSize) / 25.0f);
+        const float EdgeThickness = (float) LevelEditorCellSize * 0.03f;
+        const float EdgeOffset = (float) LevelEditorCellSize * 0.049f;
         const float DoorOffsetX = (float) LevelEditorCellSize * 0.15f;
-        const float DoorOffsetY = (float) LevelEditorCellSize * 0.10f;
+        const float DoorOffsetY = (float) LevelEditorCellSize * 0.12f;
         if (bDrawEdges) {
             for (int Y = 0; Y <= Level->Height; Y += 1) {
                 ImVec2 NorthPosMin;
@@ -266,8 +282,8 @@ void SEditor::DrawLevel() {
                     auto CurrentTile = Level->GetTileAt({X, Y});
                     if (CurrentTile == nullptr)
                         continue;
-                    auto TilePosMin = ImVec2(PosMin.x + (float) (X * LevelEditorCellSize),
-                                             PosMin.y + (float) (Y * LevelEditorCellSize));
+                    auto TilePosMin = ImVec2(PosMin.x + ((float) X * LevelEditorCellSize),
+                                             PosMin.y + ((float) Y * LevelEditorCellSize));
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
@@ -333,8 +349,8 @@ void SEditor::DrawLevel() {
                     auto CurrentTile = Level->GetTileAt({X, Y});
                     if (CurrentTile == nullptr)
                         continue;
-                    auto TilePosMin = ImVec2(PosMin.x + (float) (X * LevelEditorCellSize),
-                                             PosMin.y + (float) (Y * LevelEditorCellSize));
+                    auto TilePosMin = ImVec2(PosMin.x + ((float) X * LevelEditorCellSize),
+                                             PosMin.y + ((float) Y * LevelEditorCellSize));
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
@@ -390,12 +406,12 @@ void SEditor::DrawLevel() {
 
         /* Draw grid lines */
         if (bDrawGridLines) {
-            for (int X = 0; X <= (int) GridSize.x; X += LevelEditorCellSize) {
+            for (int X = 0; X <= (int) GridSize.x; X += (int) LevelEditorCellSize) {
                 DrawList->AddLine(ImVec2(PosMin.x + (float) X, PosMin.y), ImVec2(PosMin.x + (float) X, PosMax.y - 1),
                                   GRID_LINE_COLOR);
             }
 
-            for (int Y = 0; Y <= (int) GridSize.y; Y += LevelEditorCellSize) {
+            for (int Y = 0; Y <= (int) GridSize.y; Y += (int) LevelEditorCellSize) {
                 DrawList->AddLine(ImVec2(PosMin.x, PosMin.y + (float) Y), ImVec2(PosMax.x + 1, PosMin.y + (float) Y),
                                   GRID_LINE_COLOR);
             }
@@ -446,15 +462,16 @@ void SEditor::DrawLevel() {
 
             /* Outline Selected Tile */
             {
-                auto SelectedTilePosMin = ImVec2(PosMin.x + (float) (SelectedTileCoords->X * LevelEditorCellSize),
-                                                 PosMin.y + (float) (SelectedTileCoords->Y * LevelEditorCellSize));
+                auto SelectedTilePosMin = ImVec2(PosMin.x + ((float) SelectedTileCoords->X * LevelEditorCellSize),
+                                                 PosMin.y + ((float) SelectedTileCoords->Y * LevelEditorCellSize));
                 auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + (float) LevelEditorCellSize + 1,
                                                  SelectedTilePosMin.y + (float) LevelEditorCellSize + 1);
+                auto Thickness = (float) LevelEditorCellSize * 0.04f;
                 if (LevelEditorMode == ELevelEditorMode::Normal) {
                     DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                                      SELECTION_COLOR, 0.0f, 0, 2.0f);
+                                      SELECTION_COLOR, 0.0f, 0, Thickness);
                 } else {
-                    auto Thickness = 2.0f + std::abs(2.0f * std::sin((float) ImGui::GetTime() * 10.0f));
+                    Thickness += std::abs(1.0f * std::sin((float) ImGui::GetTime() * 10.0f));
                     DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
                                       SELECTION_MODIFY_COLOR, 0.0f, 0, Thickness);
                 }
@@ -472,4 +489,5 @@ void SEditor::DrawLevel() {
 
         ImGui::End();
     }
+    ImGui::PopStyleVar();
 }

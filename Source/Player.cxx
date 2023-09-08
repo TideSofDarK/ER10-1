@@ -46,7 +46,7 @@ void SPlayer::Turn(bool bRight) {
 
 void SPlayer::ApplyDirection(bool bImmediate) {
     EyeForwardTarget = {0.0f, 0.0f, 0.0f};
-    auto DirectionVector = Direction.DirectionVectorFromDirection<float>();
+    auto DirectionVector = Direction.GetVector<float>();
     EyeForwardTarget.X += DirectionVector.X;
     EyeForwardTarget.Z += DirectionVector.Y;
 
@@ -61,14 +61,14 @@ void SPlayer::ApplyDirection(bool bImmediate) {
     }
 }
 
-void SPlayer::MoveForward() {
+void SPlayer::Step(UVec2Int DirectionVector) {
     if (AnimationType != EPlayerAnimationType::Idle)
         return;
     AnimationType = EPlayerAnimationType::Walk;
     AnimationAlpha = 0.0f;
     EyePositionFrom = EyePositionCurrent;
-    EyePositionTarget += EyeForwardCurrent;
-    Coords += Direction.DirectionVectorFromDirection<int>();
+    EyePositionTarget += UVec3{(float) DirectionVector.X, 0.0f, (float) DirectionVector.Y};
+    Coords += DirectionVector;
 }
 
 void SPlayer::BumpIntoWall() {
@@ -79,3 +79,4 @@ void SPlayer::BumpIntoWall() {
 
     EyePositionFrom = EyePositionCurrent + (EyeForwardCurrent / 2.0f);
 }
+

@@ -783,7 +783,7 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
     auto const DrawDistanceForward = 3;
     auto const DrawDistanceSide = 2;
 
-    auto POVDirectionVectorForward = POVDirection.DirectionVectorFromDirection<int>();
+    auto POVDirectionVectorForward = POVDirection.GetVector<int>();
     auto POVDirectionVectorSide = POVDirectionVectorForward.Swapped();
 
     for (int ForwardCounter = -1; ForwardCounter < DrawDistanceForward; ++ForwardCounter) {

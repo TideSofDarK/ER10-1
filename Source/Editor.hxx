@@ -9,29 +9,25 @@ enum class ELevelEditorMode {
     ToggleDoor
 };
 
+struct SDebugToolsData {
+    float FPS{};
+    UVec2Int PlayerCoords{};
+    SDirection PlayerDirection{0};
+    bool bImportLevel{};
+};
+
 struct SEditor {
-    bool bLevelEditorActive;
-    ELevelEditorMode LevelEditorMode;
-    UVec2Int NewLevelSize;
-    int LevelEditorCellSize;
-    bool bDrawWallJoints;
-    bool bDrawEdges;
-    bool bDrawGridLines;
-    std::optional<UVec2Int> SelectedTileCoords;
-    std::shared_ptr<SLevel> Level;
+    bool bLevelEditorActive{};
+    ELevelEditorMode LevelEditorMode{};
+    UVec2Int NewLevelSize{};
+    float LevelEditorCellSize{};
+    bool bDrawWallJoints{};
+    bool bDrawEdges{};
+    bool bDrawGridLines{};
+    std::optional<UVec2Int> SelectedTileCoords{};
+    std::shared_ptr<SLevel> Level{};
 
-    SEditor() {
-        bLevelEditorActive = false;
-        LevelEditorMode = ELevelEditorMode::Normal;
-        NewLevelSize = UVec2Int{8, 8};
-        LevelEditorCellSize = 32;
-        bDrawWallJoints = false;
-        bDrawEdges = true;
-        bDrawGridLines = false;
-        Level = nullptr;
-    }
-
-    static void Init(struct SDL_Window *Window, void *Context);
+    void Init(struct SDL_Window *Window, void *Context);
 
     static void Cleanup();
 
@@ -39,7 +35,7 @@ struct SEditor {
 
     void Update();
 
-    void DebugTools(bool *bImportLevel);
+    static void DebugTools(SDebugToolsData &Data);
 
     void Draw() const;
 

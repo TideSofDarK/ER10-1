@@ -89,10 +89,10 @@ SGame::SGame() {
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
     bool bCurrentlyPressed = KeyboardState[Scancode] == 1;
-    bool bWasPressed = OldKeyState == EKeyState::Down || OldKeyState == EKeyState::Pressed;
+    bool bWasPressed = OldKeyState == EKeyState::Held || OldKeyState == EKeyState::Pressed;
     if (bCurrentlyPressed) {
         if (bWasPressed) {
-            return EKeyState::Down;
+            return EKeyState::Held;
         } else {
             return EKeyState::Pressed;
         }
@@ -110,7 +110,7 @@ void SGame::Run() {
     while (!Window.bQuit) {
         Window.Last = Window.Now;
         Window.Now = SDL_GetTicks64();
-        Window.DeltaTime = static_cast<float>( Window.Now - Window.Last) / 1000.0f;
+        Window.DeltaTime = (float) (Window.Now - Window.Last) / 1000.0f;
         Window.Seconds += Window.DeltaTime;
 
         SDL_Event Event;
@@ -151,7 +151,9 @@ void SGame::Run() {
         InputState.Accept = UpdateKeyState(OldInputState.Accept, KeyboardState, SDL_SCANCODE_SPACE);
         InputState.Cancel = UpdateKeyState(OldInputState.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
         InputState.ToggleFullscreen = UpdateKeyState(OldInputState.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
+#ifdef EQUINOX_REACH_DEVELOPMENT
         InputState.ToggleLevelEditor = UpdateKeyState(OldInputState.ToggleLevelEditor, KeyboardState, SDL_SCANCODE_F10);
+#endif
 #pragma endregion
 
         if (InputState.Cancel == EKeyState::Pressed) {
@@ -171,35 +173,49 @@ void SGame::Run() {
 #pragma region GameLoop
         if (IsGameRunning()) {
 #ifdef EQUINOX_REACH_DEVELOPMENT
-            bool bImportLevel{};
-            Editor.DebugTools(&bImportLevel);
+            {
+                SDebugToolsData Data = {Window.DeltaTime, Player.Coords, Player.Direction, false};
+                SEditor::DebugTools(Data);
 
-            if (bImportLevel) {
-                Level = *Editor.Level;
-                Level.InitWallJoints();
+                if (Data.bImportLevel) {
+                    Level = *Editor.Level;
+                    Level.InitWallJoints();
+                }
             }
 #endif
 
             if (!Player.IsMoving()) {
-                if (InputState.Up == EKeyState::Down) {
-                    if (CheckIfPlayerCanMove()) {
-                        Player.MoveForward();
-                    } else {
+                /* Moving */
+                if (InputState.L == EKeyState::Held) {
+                    auto PlayerDirection = Player.Direction;
+                    PlayerDirection.CycleCCW();
+                    AttemptPlayerStep(PlayerDirection);
+                }
+                if (InputState.R == EKeyState::Held) {
+                    auto PlayerDirection = Player.Direction;
+                    PlayerDirection.CycleCW();
+                    AttemptPlayerStep(PlayerDirection);
+                }
+                if (InputState.Up == EKeyState::Held) {
+                    auto PlayerDirection = Player.Direction;
+                    if (!AttemptPlayerStep(PlayerDirection)) {
                         Player.BumpIntoWall();
                     }
                 }
-                if (InputState.Left == EKeyState::Down) {
+
+                /* Turning */
+                if (InputState.Left == EKeyState::Held) {
                     Player.Turn(false);
-                } else if (InputState.Right == EKeyState::Down) {
+                } else if (InputState.Right == EKeyState::Held) {
                     Player.Turn(true);
                 }
             }
 
-            if (InputState.L == EKeyState::Pressed) {
+            if (InputState.ZL == EKeyState::Pressed) {
                 SpriteDemoState = std::max(0, SpriteDemoState - 1);
             }
 
-            if (InputState.R == EKeyState::Pressed) {
+            if (InputState.ZR == EKeyState::Pressed) {
                 SpriteDemoState = std::min(5, SpriteDemoState + 1);
             }
 
@@ -261,29 +277,30 @@ void SGame::Run() {
     Window.Cleanup();
 }
 
-bool SGame::CheckIfPlayerCanMove() const {
-    auto DirectionVector = Player.Direction.DirectionVectorFromDirection<int>();
-
+bool SGame::AttemptPlayerStep(SDirection Direction) {
     auto CurrentTile = Level.GetTileAt(Player.Coords);
     if (CurrentTile == nullptr) {
         return false;
     }
 
-    if (!CurrentTile->IsTraversable(Player.Direction.Index)) {
+    if (!CurrentTile->IsTraversable(Direction.Index)) {
         return false;
     }
 
+    auto DirectionVector = Direction.GetVector<int>();
     auto NextTile = Level.GetTileAt(Player.Coords + DirectionVector);
     if (NextTile == nullptr || !NextTile->IsWalkable()) {
         return false;
     }
 
+    Player.Step(DirectionVector);
     return true;
 }
 
 bool SGame::IsGameRunning() const {
 #ifdef EQUINOX_REACH_DEVELOPMENT
     return !Editor.bLevelEditorActive;
-#endif
+#else
     return true;
+#endif
 }

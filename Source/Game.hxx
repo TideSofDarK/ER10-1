@@ -42,7 +42,7 @@ public:
 
     void Run();
 
-    [[nodiscard]] bool CheckIfPlayerCanMove() const;
+    bool AttemptPlayerStep(SDirection Direction);
 
     [[nodiscard]] bool IsGameRunning() const;
 };

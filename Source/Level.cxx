@@ -49,7 +49,7 @@ void SLevel::Excavate(UVec2Int Coords) {
     for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
         auto &TileEdge = Tile->Edges[Direction];
 
-        auto NeighborTile = GetTileAtMutable(Coords + SDirection(Direction).DirectionVectorFromDirection<int>());
+        auto NeighborTile = GetTileAtMutable(Coords + SDirection(Direction).GetVector<int>());
         if (NeighborTile != nullptr) {
             auto NeighborDirection = SDirection(Direction);
             NeighborDirection.CycleCW();

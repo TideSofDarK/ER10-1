@@ -34,7 +34,7 @@ struct SPlayer {
 
     void ApplyDirection(bool bImmediate);
 
-    void MoveForward();
+    void Step(UVec2Int DirectionVector);
 
     void BumpIntoWall();
 

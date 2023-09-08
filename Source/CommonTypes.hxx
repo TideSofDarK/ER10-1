@@ -34,6 +34,8 @@ enum class EDirection {
     Count
 };
 
+constexpr const char *DirectionNames[] = {"North", "East", "South", "West"};
+
 struct SDirection {
     unsigned Index: 2;
 
@@ -52,7 +54,7 @@ struct SDirection {
     }
 
     template<typename T>
-    SVec2<T> DirectionVectorFromDirection() const {
+    SVec2<T> GetVector() const {
         switch (GetEnum()) {
             case EDirection::North:
                 return {0, -1};
@@ -86,7 +88,7 @@ struct SDirection {
 enum class EKeyState : unsigned {
     None,
     Pressed,
-    Down,
+    Held,
     Released
 };
 
