@@ -819,13 +819,13 @@ void SRenderer::Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, cons
                 FloorDrawCall.Count++;
             }
 
-            for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
+            for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction) {
                 auto &TileEdge = Tile->Edges[Direction];
 
                 if (TileEdge != ETileEdgeType::Empty) {
                     auto Transform = UMat4x4::Identity();
                     Transform.Translate({XOffset, 0.0f, YOffset});
-                    Transform.Rotate(SDirection(Direction).RotationFromDirection(),
+                    Transform.Rotate(SDirection{Direction}.RotationFromDirection(),
                                      {0.0f, 1.0f, 0.0f});
 
                     if (TileEdge == ETileEdgeType::Wall) {

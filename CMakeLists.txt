@@ -61,7 +61,6 @@ macro(add_equinox_reach_target)
             Source/Draw.cxx
             Source/Level.cxx
             Source/Player.cxx
-            Source/Tile.cxx
             Source/AssetTools.cxx
             Source/Game.cxx
             ${TARGET_SOURCES}

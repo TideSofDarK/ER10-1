@@ -1,7 +1,5 @@
 #include "Player.hxx"
 
-constexpr float PI = 3.14159265358979323846f;
-
 void SPlayer::Update(float DeltaTime) {
     AnimationAlpha += DeltaTime * 3.3f;
     if (AnimationAlpha >= 1.0f) {
@@ -16,7 +14,7 @@ void SPlayer::Update(float DeltaTime) {
             break;
         case EPlayerAnimationType::Bump:
             EyePositionCurrent = UVec3::Mix(EyePositionTarget, EyePositionFrom,
-                                            std::sin(AnimationAlpha * PI) * 0.25f);
+                                            std::sin(AnimationAlpha * Math::PI) * 0.25f);
             break;
         case EPlayerAnimationType::Idle:
         default:
@@ -27,7 +25,7 @@ void SPlayer::Update(float DeltaTime) {
     }
 }
 
-SPlayer::SPlayer() : Direction(EDirection::North) {
+SPlayer::SPlayer() : Direction() {
     EyePositionCurrent = EyePositionTarget = {(float) Coords.X, EyeHeight, (float) Coords.Y};
     ApplyDirection(true);
 }

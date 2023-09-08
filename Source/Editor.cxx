@@ -16,8 +16,6 @@
 #define SELECTION_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 98, 255)))
 #define SELECTION_MODIFY_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 200, 255)))
 
-#define IMVEC2(SVEC) (ImVec2{SVEC.X, SVEC.Y})
-
 void SEditor::Init(SDL_Window *Window, void *Context) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -117,30 +115,31 @@ void SEditor::Update() {
                             ImGui::Dummy(ImVec2(70.0f, 0.0f));
                             ImGui::SameLine();
                             EnumCombo("##N", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[(int) EDirection::North]);
+                                      &SelectedTile->Edges[SDirection::North().Index]);
                             ImGui::EndGroup();
 
                             ImGui::BeginGroup();
                             EnumCombo("##W", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[(int) EDirection::West]);
+                                      &SelectedTile->Edges[SDirection::West().Index]);
                             ImGui::SameLine();
                             EnumCombo("##T", TileTypes, IM_ARRAYSIZE(TileTypes), &SelectedTile->Type);
                             ImGui::SameLine();
                             EnumCombo("##E", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[(int) EDirection::East]);
+                                      &SelectedTile->Edges[SDirection::East().Index]);
                             ImGui::EndGroup();
 
                             ImGui::BeginGroup();
                             ImGui::Dummy(ImVec2(70.0f, 0.0f));
                             ImGui::SameLine();
                             EnumCombo("##S", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[(int) EDirection::South]);
+                                      &SelectedTile->Edges[SDirection::South().Index]);
                             ImGui::EndGroup();
 
                             ImGui::PopItemWidth();
 
                             ImGui::EndGroup();
                         }
+                        ImGui::End();
                     }
                 }
             }
@@ -153,7 +152,7 @@ void SEditor::Update() {
 void SEditor::DebugTools(SDebugToolsData &Data) {
     if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("Frames Per Second: %.6f", Data.FPS);
-        ImGui::Text("Player Direction: %s", DirectionNames[Data.PlayerDirection.Index]);
+        ImGui::Text("Player Direction: %s", SDirection::Names[Data.PlayerDirection.Index]);
         ImGui::Text("Player Coords: X=%d, Y=%d", Data.PlayerCoords.X, Data.PlayerCoords.Y);
         ImGui::Separator();
         if (ImGui::Button("Import Level From Editor")) {
@@ -211,8 +210,6 @@ void SEditor::DrawLevel() {
                 auto SelectedX = (int) (MousePos.x / LevelEditorCellSize);
                 auto SelectedY = (int) (MousePos.y / LevelEditorCellSize);
                 SelectedTileCoords = UVec2Int{SelectedX, SelectedY};
-
-                std::cout << SelectedX << " " << SelectedY << std::endl;
             }
         }
 
@@ -241,21 +238,21 @@ void SEditor::DrawLevel() {
 
                 if (bDrawWallJoints) {
                     auto WallJointRadius = TileOffset;
-                    if (CurrentTile->Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall &&
-                        CurrentTile->Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall) {
+                    if (CurrentTile->Edges[SDirection::North().Index] == ETileEdgeType::Wall &&
+                        CurrentTile->Edges[SDirection::West().Index] == ETileEdgeType::Wall) {
                         DrawList->AddCircleFilled(TilePosMin, WallJointRadius, WALL_JOINT_COLOR);
                     }
-                    if (CurrentTile->Edges[static_cast<int>(EDirection::North)] == ETileEdgeType::Wall &&
-                        CurrentTile->Edges[static_cast<int>(EDirection::East)] == ETileEdgeType::Wall) {
+                    if (CurrentTile->Edges[SDirection::North().Index] == ETileEdgeType::Wall &&
+                        CurrentTile->Edges[SDirection::East().Index] == ETileEdgeType::Wall) {
                         DrawList->AddCircleFilled(ImVec2(TilePosMax.x, TilePosMin.y), WallJointRadius,
                                                   WALL_JOINT_COLOR);
                     }
-                    if (CurrentTile->Edges[static_cast<int>(EDirection::South)] == ETileEdgeType::Wall &&
-                        CurrentTile->Edges[static_cast<int>(EDirection::East)] == ETileEdgeType::Wall) {
+                    if (CurrentTile->Edges[SDirection::South().Index] == ETileEdgeType::Wall &&
+                        CurrentTile->Edges[SDirection::East().Index] == ETileEdgeType::Wall) {
                         DrawList->AddCircleFilled(TilePosMax, WallJointRadius, WALL_JOINT_COLOR);
                     }
-                    if (CurrentTile->Edges[static_cast<int>(EDirection::South)] == ETileEdgeType::Wall &&
-                        CurrentTile->Edges[static_cast<int>(EDirection::West)] == ETileEdgeType::Wall) {
+                    if (CurrentTile->Edges[SDirection::South().Index] == ETileEdgeType::Wall &&
+                        CurrentTile->Edges[SDirection::West().Index] == ETileEdgeType::Wall) {
                         DrawList->AddCircleFilled(ImVec2(TilePosMin.x, TilePosMax.y), WallJointRadius,
                                                   WALL_JOINT_COLOR);
                     }
@@ -287,7 +284,7 @@ void SEditor::DrawLevel() {
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
-                    auto bShouldDrawNorthEdge = CurrentTile->IsWallBasedEdge(EDirection::North);
+                    auto bShouldDrawNorthEdge = CurrentTile->IsWallBasedEdge(SDirection::North());
                     if (bShouldDrawNorthEdge) {
                         if (!bNorthEdge) {
                             bNorthEdge = true;
@@ -304,13 +301,13 @@ void SEditor::DrawLevel() {
                         bNorthEdge = false;
                     }
 
-                    if (CurrentTile->Edges[(int) EDirection::North] == ETileEdgeType::Door) {
+                    if (CurrentTile->Edges[SDirection::North().Index] == ETileEdgeType::Door) {
                         auto DoorPosMin = ImVec2(TilePosMin.x + DoorOffsetX, TilePosMin.y + (EdgeThickness * 1.5f));
                         auto DoorPosMax = ImVec2(TilePosMax.x - DoorOffsetX, TilePosMin.y + DoorOffsetY);
                         DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
                     }
 
-                    auto bShouldDrawSouthEdge = CurrentTile->IsWallBasedEdge(EDirection::South);
+                    auto bShouldDrawSouthEdge = CurrentTile->IsWallBasedEdge(SDirection::South());
                     if (bShouldDrawSouthEdge) {
                         if (!bSouthEdge) {
                             bSouthEdge = true;
@@ -328,7 +325,7 @@ void SEditor::DrawLevel() {
                         bSouthEdge = false;
                     }
 
-                    if (CurrentTile->Edges[(int) EDirection::South] == ETileEdgeType::Door) {
+                    if (CurrentTile->Edges[SDirection::South().Index] == ETileEdgeType::Door) {
                         auto DoorPosMin = ImVec2(TilePosMin.x + DoorOffsetX, TilePosMax.y - DoorOffsetY);
                         auto DoorPosMax = ImVec2(TilePosMax.x - DoorOffsetX, TilePosMax.y - (EdgeThickness * 1.5f));
                         DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
@@ -354,7 +351,7 @@ void SEditor::DrawLevel() {
                     auto TilePosMax = ImVec2(TilePosMin.x + (float) LevelEditorCellSize,
                                              TilePosMin.y + (float) LevelEditorCellSize);
 
-                    auto bShouldDrawWestEdge = CurrentTile->IsWallBasedEdge(EDirection::West);
+                    auto bShouldDrawWestEdge = CurrentTile->IsWallBasedEdge(SDirection::West());
                     if (bShouldDrawWestEdge) {
                         if (!bWestEdge) {
                             bWestEdge = true;
@@ -371,13 +368,13 @@ void SEditor::DrawLevel() {
                         bWestEdge = false;
                     }
 
-                    if (CurrentTile->Edges[(int) EDirection::West] == ETileEdgeType::Door) {
+                    if (CurrentTile->Edges[SDirection::West().Index] == ETileEdgeType::Door) {
                         auto DoorPosMin = ImVec2(TilePosMin.x + (EdgeThickness * 1.5f), TilePosMin.y + DoorOffsetX);
                         auto DoorPosMax = ImVec2(TilePosMin.x + DoorOffsetY, TilePosMax.y - DoorOffsetX);
                         DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
                     }
 
-                    auto bShouldDrawEastEdge = CurrentTile->IsWallBasedEdge(EDirection::East);
+                    auto bShouldDrawEastEdge = CurrentTile->IsWallBasedEdge(SDirection::East());
                     if (bShouldDrawEastEdge) {
                         if (!bEastEdge) {
                             bEastEdge = true;
@@ -395,7 +392,7 @@ void SEditor::DrawLevel() {
                         bEastEdge = false;
                     }
 
-                    if (CurrentTile->Edges[(int) EDirection::East] == ETileEdgeType::Door) {
+                    if (CurrentTile->Edges[SDirection::East().Index] == ETileEdgeType::Door) {
                         auto DoorPosMin = ImVec2(TilePosMax.x - DoorOffsetY, TilePosMin.y + DoorOffsetX);
                         auto DoorPosMax = ImVec2(TilePosMax.x - (EdgeThickness * 1.5f), TilePosMax.y - DoorOffsetX);
                         DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
@@ -449,13 +446,13 @@ void SEditor::DrawLevel() {
                         LevelEditorMode = ELevelEditorMode::Normal;
                     };
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {
-                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::North]);
+                        ToggleDoor(&SelectedTile->Edges[SDirection::North().Index]);
                     } else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) {
-                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::West]);
+                        ToggleDoor(&SelectedTile->Edges[SDirection::West().Index]);
                     } else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) {
-                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::South]);
+                        ToggleDoor(&SelectedTile->Edges[SDirection::South().Index]);
                     } else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) {
-                        ToggleDoor(&SelectedTile->Edges[(int) EDirection::East]);
+                        ToggleDoor(&SelectedTile->Edges[SDirection::East().Index]);
                     }
                 }
             }

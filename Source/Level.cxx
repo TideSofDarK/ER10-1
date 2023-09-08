@@ -12,26 +12,26 @@ void SLevel::InitWallJoints() {
             if (CurrentTile == nullptr) {
                 continue;
             }
-            if (CurrentTile->IsWallBasedEdge(EDirection::North) &&
-                CurrentTile->IsWallBasedEdge(EDirection::West)) {
+            if (CurrentTile->IsWallBasedEdge(SDirection::North()) &&
+                CurrentTile->IsWallBasedEdge(SDirection::West())) {
                 if (auto WallJoint = GetWallJointAtMutable(Coords)) {
                     *WallJoint = true;
                 }
             }
-            if (CurrentTile->IsWallBasedEdge(EDirection::North) &&
-                CurrentTile->IsWallBasedEdge(EDirection::East)) {
+            if (CurrentTile->IsWallBasedEdge(SDirection::North()) &&
+                CurrentTile->IsWallBasedEdge(SDirection::East())) {
                 if (auto WallJoint = GetWallJointAtMutable({Coords.X + 1, Coords.Y})) {
                     *WallJoint = true;
                 }
             }
-            if (CurrentTile->IsWallBasedEdge(EDirection::South) &&
-                CurrentTile->IsWallBasedEdge(EDirection::East)) {
+            if (CurrentTile->IsWallBasedEdge(SDirection::South()) &&
+                CurrentTile->IsWallBasedEdge(SDirection::East())) {
                 if (auto WallJoint = GetWallJointAtMutable({Coords.X + 1, Coords.Y + 1})) {
                     *WallJoint = true;
                 }
             }
-            if (CurrentTile->IsWallBasedEdge(EDirection::South) &&
-                CurrentTile->IsWallBasedEdge(EDirection::West)) {
+            if (CurrentTile->IsWallBasedEdge(SDirection::South()) &&
+                CurrentTile->IsWallBasedEdge(SDirection::West())) {
                 if (auto WallJoint = GetWallJointAtMutable({Coords.X, Coords.Y + 1})) {
                     *WallJoint = true;
                 }
@@ -46,12 +46,12 @@ void SLevel::Excavate(UVec2Int Coords) {
     auto Tile = GetTileAtMutable(Coords);
     Tile->Type = ETileType::Floor;
 
-    for (unsigned Direction = 0; Direction < DIRECTION_COUNT; ++Direction) {
+    for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction) {
         auto &TileEdge = Tile->Edges[Direction];
 
-        auto NeighborTile = GetTileAtMutable(Coords + SDirection(Direction).GetVector<int>());
+        auto NeighborTile = GetTileAtMutable(Coords + SDirection{Direction}.GetVector<int>());
         if (NeighborTile != nullptr) {
-            auto NeighborDirection = SDirection(Direction);
+            auto NeighborDirection = SDirection{Direction};
             NeighborDirection.CycleCW();
             NeighborDirection.CycleCW();
 

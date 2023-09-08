@@ -16,34 +16,10 @@ struct SWindowData {
     bool bQuit{};
 };
 
-enum class EDiagonalDirection {
-    None = -1,
-    NorthWest = 0,
-    NorthEast,
-    SouthEast,
-    SouthWest,
-    Count
-};
-
-enum class EDirection {
-    None = -1,
-    North = 0,
-    East,
-    South,
-    West,
-    Count
-};
-
-constexpr const char *DirectionNames[] = {"North", "East", "South", "West"};
-
 struct SDirection {
-    unsigned Index: 2;
-
-    explicit SDirection(unsigned InDirection) : Index(InDirection) {}
-
-    explicit SDirection(EDirection InDirection) : Index((unsigned) InDirection) {}
-
-    [[nodiscard]] EDirection GetEnum() const { return static_cast<EDirection>(Index); }
+    using Type = unsigned;
+    static constexpr Type Count = 4;
+    Type Index: 2;
 
     void CycleCW() {
         Index++;
@@ -53,37 +29,53 @@ struct SDirection {
         Index--;
     }
 
+    constexpr static const char *Names[] = {"North", "East", "South", "West"};
+
+    constexpr static SDirection North() {
+        return SDirection{0};
+    }
+
+    constexpr static SDirection East() {
+        return SDirection{1};
+    }
+
+    constexpr static SDirection South() {
+        return SDirection{2};
+    }
+
+    constexpr static SDirection West() {
+        return SDirection{3};
+    }
+
     template<typename T>
-    SVec2<T> GetVector() const {
-        switch (GetEnum()) {
-            case EDirection::North:
+    constexpr SVec2<T> GetVector() const {
+        switch (Index) {
+            case North().Index:
                 return {0, -1};
-            case EDirection::East:
+            case East().Index:
                 return {1, 0};
-            case EDirection::South:
+            case South().Index:
                 return {0, 1};
-            case EDirection::West:
+            case West().Index:
                 return {-1, 0};
             default:
                 return {};
         }
     }
 
-    [[nodiscard]] float RotationFromDirection() const {
-        switch (GetEnum()) {
-            case EDirection::East:
+    [[nodiscard]] constexpr float RotationFromDirection() const {
+        switch (Index) {
+            case East().Index:
                 return Math::PI * -0.5f;
-            case EDirection::South:
+            case South().Index:
                 return Math::PI;
-            case EDirection::West:
+            case West().Index:
                 return Math::PI / 2.0f;
             default:
                 return 0.0f;
         }
     }
 };
-
-#define DIRECTION_COUNT ((unsigned) EDirection::Count)
 
 enum class EKeyState : unsigned {
     None,
