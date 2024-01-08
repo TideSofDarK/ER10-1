@@ -2,79 +2,94 @@
 
 #include <cmath>
 
-template<typename T>
-struct SVec2 {
+template <typename T>
+struct SVec2
+{
     T X{};
     T Y{};
 
-    SVec2<T> operator+(const SVec2<T> &Other) const {
-        return {X + Other.X, Y + Other.Y};
+    SVec2<T> operator+(const SVec2<T>& Other) const
+    {
+        return { X + Other.X, Y + Other.Y };
     }
 
-    SVec2<T> &operator+=(const SVec2<T> &Other) {
+    SVec2<T>& operator+=(const SVec2<T>& Other)
+    {
         X += Other.X;
         Y += Other.Y;
         return *this;
     }
 
-    SVec2<T> operator-() const {
-        return {-X, -Y};
+    SVec2<T> operator-() const
+    {
+        return { -X, -Y };
     }
 
-    SVec2<T> Swapped() const {
-        return {Y, X};
+    SVec2<T> Swapped() const
+    {
+        return { Y, X };
     }
 };
 
-template<typename T>
-struct SVec3 {
+template <typename T>
+struct SVec3
+{
     T X{};
     T Y{};
     T Z{};
 
-    SVec3<T> operator+(const SVec3<T> &Other) const {
-        return {X + Other.X, Y + Other.Y, Z + Other.Z};
+    SVec3<T> operator+(const SVec3<T>& Other) const
+    {
+        return { X + Other.X, Y + Other.Y, Z + Other.Z };
     }
 
-    SVec3<T> operator-(const SVec3<T> &Other) const {
-        return {X - Other.X, Y - Other.Y, Z - Other.Z};
+    SVec3<T> operator-(const SVec3<T>& Other) const
+    {
+        return { X - Other.X, Y - Other.Y, Z - Other.Z };
     }
 
-    SVec3<T> operator*(const T A) const {
-        return {X * A, Y * A, Z * A};
+    SVec3<T> operator*(const T A) const
+    {
+        return { X * A, Y * A, Z * A };
     }
 
-    SVec3<T> operator/(const T A) const {
-        return {X / A, Y / A, Z / A};
+    SVec3<T> operator/(const T A) const
+    {
+        return { X / A, Y / A, Z / A };
     }
 
-    SVec3<T> &operator+=(const SVec3<T> &Other) {
+    SVec3<T>& operator+=(const SVec3<T>& Other)
+    {
         X += Other.X;
         Y += Other.Y;
         Z += Other.Z;
         return *this;
     }
 
-    SVec3<T> operator-() const {
-        return {-X, -Y, -Z};
+    SVec3<T> operator-() const
+    {
+        return { -X, -Y, -Z };
     }
 
-    bool operator==(const SVec3<T> &Other) const {
+    bool operator==(const SVec3<T>& Other) const
+    {
         return X == Other.X && Y == Other.Y && Z == Other.Z;
     }
 
-    [[nodiscard]] SVec3<T> Normalized() const {
+    [[nodiscard]] SVec3<T> Normalized() const
+    {
         SVec3<T> NormalizedVector = *this;
-        float Sqr = NormalizedVector.X * NormalizedVector.X + NormalizedVector.Y * NormalizedVector.Y +
-                    NormalizedVector.Z * NormalizedVector.Z;
+        float Sqr = NormalizedVector.X * NormalizedVector.X + NormalizedVector.Y * NormalizedVector.Y + NormalizedVector.Z * NormalizedVector.Z;
         return NormalizedVector * (1.0f / std::sqrt(Sqr));
     }
 
-    [[nodiscard]] T Dot(const SVec3<T> &Other) const {
+    [[nodiscard]] T Dot(const SVec3<T>& Other) const
+    {
         return X * Other.X + Y * Other.Y + Z * Other.Z;
     }
 
-    [[nodiscard]] SVec3<T> Cross(const SVec3<T> &Other) const {
+    [[nodiscard]] SVec3<T> Cross(const SVec3<T>& Other) const
+    {
         SVec3<T> Result{};
         Result.X = Y * Other.Z - Z * Other.Y;
         Result.Y = Z * Other.X - X * Other.Z;
@@ -82,14 +97,16 @@ struct SVec3 {
         return Result;
     }
 
-    [[nodiscard]] static inline SVec3<T> Mix(const SVec3<T> &A, const SVec3<T> &B, const T Alpha) {
+    [[nodiscard]] static inline SVec3<T> Mix(const SVec3<T>& A, const SVec3<T>& B, const T Alpha)
+    {
         SVec3<T> Result = (B - A) * Alpha;
         return A + Result;
     }
 };
 
-template<typename T>
-struct SVec4 {
+template <typename T>
+struct SVec4
+{
     T X{};
     T Y{};
     T Z{};
@@ -97,23 +114,28 @@ struct SVec4 {
 
     SVec4<T>() = default;
 
-    SVec4<T>(T InX, T InY, T InZ, T InW) : X(InX), Y(InY), Z(InZ), W(InW) {
-
+    SVec4<T>(T InX, T InY, T InZ, T InW)
+        : X(InX), Y(InY), Z(InZ), W(InW)
+    {
     }
 
-    SVec4<T>(const SVec3<T> FromVector3, T InW) : X(FromVector3.X), Y(FromVector3.Y), Z(FromVector3.Z), W(InW) {
-
+    SVec4<T>(const SVec3<T> FromVector3, T InW)
+        : X(FromVector3.X), Y(FromVector3.Y), Z(FromVector3.Z), W(InW)
+    {
     }
 
-    SVec4<T> operator+(const SVec4<T> &Other) const {
-        return {X + Other.X, Y + Other.Y, Z + Other.Z, W + Other.W};
+    SVec4<T> operator+(const SVec4<T>& Other) const
+    {
+        return { X + Other.X, Y + Other.Y, Z + Other.Z, W + Other.W };
     }
 
-    SVec4<T> operator*(const float A) const {
-        return {X * A, Y * A, Z * A, W * A};
+    SVec4<T> operator*(const float A) const
+    {
+        return { X * A, Y * A, Z * A, W * A };
     }
 
-    SVec4<T> &operator+=(const SVec4<T> &Other) {
+    SVec4<T>& operator+=(const SVec4<T>& Other)
+    {
         X += Other.X;
         Y += Other.Y;
         Z += Other.Z;
@@ -121,8 +143,9 @@ struct SVec4 {
         return *this;
     }
 
-    SVec4<T> operator-() const {
-        return {-X, -Y, -Z, -W};
+    SVec4<T> operator-() const
+    {
+        return { -X, -Y, -Z, -W };
     }
 };
 
@@ -133,18 +156,21 @@ using UVec3Int = SVec3<int>;
 using UVec3Size = SVec3<size_t>;
 using UVec4 = SVec4<float>;
 
-template<typename T>
-struct SMat4x4 {
+template <typename T>
+struct SMat4x4
+{
     UVec4 X{};
     UVec4 Y{};
     UVec4 Z{};
     UVec4 W{};
 
-    void Translate(const SVec3<T> &Vector) {
+    void Translate(const SVec3<T>& Vector)
+    {
         W = X * Vector.X + Y * Vector.Y + Z * Vector.Z + W;
     }
 
-    void Rotate(const float Angle, SVec3<T> Axis) {
+    void Rotate(const float Angle, SVec3<T> Axis)
+    {
         T const Cos = std::cos(Angle);
         T const Sin = std::sin(Angle);
 
@@ -170,21 +196,24 @@ struct SMat4x4 {
         Z = Current.X * Rotate.Z.X + Current.Y * Rotate.Z.Y + Current.Z * Rotate.Z.Z;
     }
 
-    static inline SMat4x4<T> One() {
-        return {{T(1), T(1), T(1), T(1)},
-                {T(1), T(1), T(1), T(1)},
-                {T(1), T(1), T(1), T(1)},
-                {T(1), T(1), T(1), T(1)}};
+    static inline SMat4x4<T> One()
+    {
+        return { { T(1), T(1), T(1), T(1) },
+            { T(1), T(1), T(1), T(1) },
+            { T(1), T(1), T(1), T(1) },
+            { T(1), T(1), T(1), T(1) } };
     }
 
-    static inline SMat4x4<T> Identity() {
-        return {{T(1), T(0), T(0), T(0)},
-                {T(0), T(1), T(0), T(0)},
-                {T(0), T(0), T(1), T(0)},
-                {T(0), T(0), T(0), T(1)}};
+    static inline SMat4x4<T> Identity()
+    {
+        return { { T(1), T(0), T(0), T(0) },
+            { T(0), T(1), T(0), T(0) },
+            { T(0), T(0), T(1), T(0) },
+            { T(0), T(0), T(0), T(1) } };
     }
 
-    static inline SMat4x4<T> LookAtRH(const SVec3<T> &Eye, const SVec3<T> &Center, const SVec3<T> &Up) {
+    static inline SMat4x4<T> LookAtRH(const SVec3<T>& Eye, const SVec3<T>& Center, const SVec3<T>& Up)
+    {
         SVec3<T> const F((Center - Eye).Normalized());
         SVec3<T> const S = F.Cross(Up).Normalized();
         SVec3<T> const U(S.Cross(F));
@@ -208,15 +237,17 @@ struct SMat4x4 {
 
 using UMat4x4 = SMat4x4<float>;
 
-namespace Math {
+namespace Math
+{
     constexpr float PI = 3.141592653589793f;
 
-    constexpr float Radians(float Degrees) {
+    constexpr float Radians(float Degrees)
+    {
         return Degrees * 0.01745329251994329576923690768489f;
     }
 
-//    template <typename T>
-//    constexpr T Clamp(T A, T Min, T Max) {
-//        return std::max(std::min(A, Max), Min);
-//    }
+    //    template <typename T>
+    //    constexpr T Clamp(T A, T Min, T Max) {
+    //        return std::max(std::min(A, Max), Min);
+    //    }
 }

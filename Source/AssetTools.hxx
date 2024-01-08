@@ -5,47 +5,51 @@
 
 #define EXTERN_ASSET(NAME) extern const SAsset NAME;
 
-struct SAsset {
-    const unsigned char *Data;
+struct SAsset
+{
+    const unsigned char* Data;
     size_t Length;
 
-    explicit SAsset(const char *InData, size_t InLength) : Data(reinterpret_cast<const unsigned char *>(InData)),
-                                                           Length(InLength) {
+    explicit SAsset(const char* InData, size_t InLength)
+        : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength){
 
-    };
+        };
 
-    [[nodiscard]] std::string ToString() const { return {reinterpret_cast<const char *>(Data), Length}; }
+    [[nodiscard]] std::string ToString() const { return { reinterpret_cast<const char*>(Data), Length }; }
 };
 
-class CRawMesh {
+class CRawMesh
+{
 public:
     std::pmr::vector<UVec3> Positions;
     std::pmr::vector<UVec2> TexCoords;
     std::pmr::vector<UVec3> Normals;
     std::pmr::vector<unsigned short> Indices;
 
-    [[nodiscard]] int GetVertexCount() const { return (int) Positions.size(); }
+    [[nodiscard]] int GetVertexCount() const { return (int)Positions.size(); }
 
-    [[nodiscard]] int GetElementCount() const { return (int) Indices.size(); }
+    [[nodiscard]] int GetElementCount() const { return (int)Indices.size(); }
 
-    CRawMesh(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
+    CRawMesh(const SAsset& Resource, CScratchBuffer& ScratchBuffer);
 };
 
-class CRawImage {
+class CRawImage
+{
 public:
     int Width{};
     int Height{};
     int Channels{};
-    void *Data{};
+    void* Data{};
 
-    CRawImage(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
+    CRawImage(const SAsset& Resource, CScratchBuffer& ScratchBuffer);
 };
 
-class CRawImageInfo {
+class CRawImageInfo
+{
 public:
     int Width{};
     int Height{};
     int Channels{};
 
-    CRawImageInfo(const SAsset &Resource, CScratchBuffer &ScratchBuffer);
+    CRawImageInfo(const SAsset& Resource, CScratchBuffer& ScratchBuffer);
 };

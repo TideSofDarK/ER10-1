@@ -1,5 +1,5 @@
 #pragma once
 
-struct SBattle {
-
+struct SBattle
+{
 };

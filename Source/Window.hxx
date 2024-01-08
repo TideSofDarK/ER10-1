@@ -3,8 +3,9 @@
 #include "SDL_video.h"
 #include "CommonTypes.hxx"
 
-struct SWindow : SWindowData {
-    SDL_Window *Window{};
+struct SWindow : SWindowData
+{
+    SDL_Window* Window{};
     SDL_GLContext Context{};
 
     void Init();

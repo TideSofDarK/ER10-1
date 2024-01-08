@@ -9,14 +9,13 @@
 #include "GameSystem.hxx"
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-
-#include "DevTools.hxx"
-
+    #include "DevTools.hxx"
 #endif
 
-struct SGame {
+struct SGame
+{
 private:
-    static EKeyState UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, uint8_t Scancode);
+    static EKeyState UpdateKeyState(EKeyState OldKeyState, const uint8_t* KeyboardState, uint8_t Scancode);
 
     int SpriteDemoState;
 

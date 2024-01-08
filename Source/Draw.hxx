@@ -24,18 +24,18 @@
 #define ATLAS_PRIMARY2D 1
 #define ATLAS_PRIMARY3D 2
 
-
 struct SLevel;
 
-struct SProgram {
+struct SProgram
+{
 private:
     static void CheckShader(unsigned ShaderID);
 
     static void CheckProgram(unsigned ShaderID);
 
-    static unsigned int CreateVertexShader(const SAsset &Resource);
+    static unsigned int CreateVertexShader(const SAsset& Resource);
 
-    static unsigned int CreateFragmentShader(const SAsset &Resource);
+    static unsigned int CreateFragmentShader(const SAsset& Resource);
 
     static unsigned int CreateProgram(unsigned int VertexShader, unsigned int FragmentShader);
 
@@ -49,14 +49,15 @@ public:
     int UniformModeControlBID{};
 
     void
-    Init(const SAsset &VertexShaderData, const SAsset &FragmentShaderData);
+    Init(const SAsset& VertexShaderData, const SAsset& FragmentShaderData);
 
     void Cleanup() const;
 
     void Use() const;
 };
 
-struct SProgramPostProcess : SProgram {
+struct SProgramPostProcess : SProgram
+{
 protected:
     void InitUniforms() override;
 
@@ -64,7 +65,8 @@ public:
     int UniformColorTextureID{};
 };
 
-struct SProgram2D : SProgram {
+struct SProgram2D : SProgram
+{
 protected:
     void InitUniforms() override;
 
@@ -77,7 +79,8 @@ public:
     int UniformPrimaryAtlasID{};
 };
 
-struct SProgram3D : SProgram {
+struct SProgram3D : SProgram
+{
 protected:
     void InitUniforms() override;
 
@@ -88,7 +91,8 @@ public:
     int UniformPrimaryAtlasID{};
 };
 
-struct SFrameBuffer {
+struct SFrameBuffer
+{
     unsigned FBO{};
     unsigned ColorID{};
     unsigned DepthID{};
@@ -103,25 +107,29 @@ struct SFrameBuffer {
     void BindForReading() const;
 };
 
-struct SGeometry {
+struct SGeometry
+{
     unsigned VAO{};
     unsigned VBO{};
     unsigned EBO{};
     unsigned CBO{};
     int ElementCount{};
 
-    void InitFromRawMesh(const CRawMesh &RawMesh);
+    void InitFromRawMesh(const CRawMesh& RawMesh);
 
     virtual void Cleanup();
 };
 
-struct SSubGeometry {
+struct SSubGeometry
+{
     int ElementOffset{};
     int ElementCount{};
 };
 
-namespace ETileGeometryType {
-    enum {
+namespace ETileGeometryType
+{
+    enum
+    {
         Floor,
         Wall,
         WallJoint,
@@ -135,16 +143,18 @@ namespace ETileGeometryType {
     };
 }
 
-struct STileSet : SGeometry {
+struct STileSet : SGeometry
+{
     /**  */
     std::array<SSubGeometry, 5> TileGeometry;
 
     void InitPlaceholder();
 
-    void InitBasic(const SAsset &Floor, const SAsset &Wall, const SAsset &WallJoint, const SAsset &Door);
+    void InitBasic(const SAsset& Floor, const SAsset& Wall, const SAsset& WallJoint, const SAsset& Door);
 };
 
-struct SCamera {
+struct SCamera
+{
     UMat4x4 View{};
     UMat4x4 Projection{};
     UVec3 Position{};
@@ -160,21 +170,23 @@ struct SCamera {
     void Update();
 };
 
-struct STexture {
+struct STexture
+{
     unsigned ID{};
 
-    void InitFromPixels(int Width, int Height, bool bAlpha, const void *Pixels);
+    void InitFromPixels(int Width, int Height, bool bAlpha, const void* Pixels);
 
     void InitEmpty(int Width, int Height, bool bAlpha);
 
-    void InitFromRawImage(const CRawImage &RawImage);
+    void InitFromRawImage(const CRawImage& RawImage);
 
     void Cleanup();
 
     void BindToTextureUnit(int TextureUnit) const;
 };
 
-struct SUniformBlock {
+struct SUniformBlock
+{
     unsigned UBO{};
 
     void Init(int Size);
@@ -183,114 +195,134 @@ struct SUniformBlock {
 
     void Bind() const;
 
-    void SetMatrix(int Position, const UMat4x4 &Value) const;
+    void SetMatrix(int Position, const UMat4x4& Value) const;
 
-    void SetVector2(int Position, const UVec2 &Value) const;
+    void SetVector2(int Position, const UVec2& Value) const;
 
     void SetFloat(int Position, float Value) const;
 };
 
-enum class EProgram2DType {
+enum class EProgram2DType
+{
     HUD,
     Uber2D,
 };
 
-struct SEntryMode {
+struct SEntryMode
+{
     int ID{};
     UVec4 ControlA{};
     UVec4 ControlB{};
 };
 
-struct SEntry {
+struct SEntry
+{
     SEntryMode Mode{};
 };
 
-struct SEntry2D : SEntry {
+struct SEntry2D : SEntry
+{
     EProgram2DType Program2DType{};
     UVec3 Position{};
     UVec2Int SizePixels{};
     UVec4 UVRect{};
 };
 
-struct SInstancedDrawCall {
-    SSubGeometry *SubGeometry{};
+struct SInstancedDrawCall
+{
+    SSubGeometry* SubGeometry{};
     std::array<UMat4x4, UBER3D_MODEL_COUNT> Transform{};
     int Count{};
 };
 
-template<int Size>
-struct SInstancedDrawData {
+template <int Size>
+struct SInstancedDrawData
+{
     std::array<SInstancedDrawCall, Size> DrawCalls;
 
-    void Clear() {
-        for (auto &DrawCall: DrawCalls) {
+    void Clear()
+    {
+        for (auto& DrawCall : DrawCalls)
+        {
             DrawCall.Count = 0;
         }
     }
 };
 
-struct SEntry3D : SEntry {
+struct SEntry3D : SEntry
+{
     UMat4x4 Model{};
-    SGeometry *Geometry{};
-    SInstancedDrawCall *InstancedDrawCall{};
+    SGeometry* Geometry{};
+    SInstancedDrawCall* InstancedDrawCall{};
     int InstancedDrawCallCount{};
 };
 
-template<typename TEntry, int Size>
-struct SRenderQueue {
+template <typename TEntry, int Size>
+struct SRenderQueue
+{
     SUniformBlock CommonUniformBlock;
     int CurrentIndex{};
     std::array<TEntry, Size> Entries;
 
-    void Enqueue(const TEntry &Entry) {
-        if (CurrentIndex >= Entries.size()) {
+    void Enqueue(const TEntry& Entry)
+    {
+        if (CurrentIndex >= Entries.size())
+        {
             CurrentIndex = 0;
         }
         Entries[CurrentIndex] = Entry;
         CurrentIndex++;
     }
 
-    void Reset() {
+    void Reset()
+    {
         CurrentIndex = 0;
     }
 
-    void Init(int CommonUniformBlockSize) {
+    void Init(int CommonUniformBlockSize)
+    {
         CommonUniformBlock.Init(CommonUniformBlockSize);
     }
 
-    void Cleanup() {
+    void Cleanup()
+    {
         CommonUniformBlock.Cleanup();
     }
 };
 
-struct SSpriteHandle {
-    struct SAtlas *Atlas{};
-    struct SSprite *Sprite{};
+struct SSpriteHandle
+{
+    struct SAtlas* Atlas{};
+    struct SSprite* Sprite{};
 };
 
-struct SSprite {
+struct SSprite
+{
     UVec4 UVRect{};
     UVec2Int SizePixels{};
-    const SAsset *Resource{};
+    const SAsset* Resource{};
 };
 
-struct SAtlas : STexture {
+struct SAtlas : STexture
+{
 private:
     static std::array<int, ATLAS_MAX_SPRITE_COUNT> SortingIndices;
     static constexpr int WidthAndHeight = ATLAS_SIZE;
     int CurrentIndex{};
     int TextureUnitID{};
+
 public:
     std::array<SSprite, ATLAS_MAX_SPRITE_COUNT> Sprites;
 
     void Init(int InTextureUnitID);
 
-    SSpriteHandle AddSprite(const SAsset &Resource);
+    SSpriteHandle AddSprite(const SAsset& Resource);
 
     void Build();
 };
 
-struct SRenderer {
+struct SRenderer
+{
     SRenderQueue<SEntry2D, RENDERER_QUEUE2D_SIZE> Queue2D;
     SRenderQueue<SEntry3D, RENDERER_QUEUE3D_SIZE> Queue3D;
     SAtlas Atlases[3];
@@ -309,38 +341,38 @@ struct SRenderer {
 
     void Cleanup();
 
-    void UploadProjectionAndViewFromCamera(const SCamera &Camera) const;
+    void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
-    void Flush(const SWindowData &WindowData);
+    void Flush(const SWindowData& WindowData);
 
 #pragma region Queue_2D_API
 
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
-    void Draw2D(UVec3 Position, const SSpriteHandle &SpriteHandle);
+    void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 
-    void Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode, UVec4 ModeControlA);
+    void Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, UVec4 ModeControlA);
 
-    void Draw2DEx(UVec3 Position, const SSpriteHandle &SpriteHandle, int Mode, UVec4 ModeControlA,
-                  UVec4 ModeControlB);
+    void Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, UVec4 ModeControlA,
+        UVec4 ModeControlB);
 
     void
-    Draw2DHaze(UVec3 Position, const SSpriteHandle &SpriteHandle, float XIntensity, float YIntensity, float Speed);
+    Draw2DHaze(UVec3 Position, const SSpriteHandle& SpriteHandle, float XIntensity, float YIntensity, float Speed);
 
-    void Draw2DBackBlur(UVec3 Position, const SSpriteHandle &SpriteHandle, float Count, float Speed, float Step);
+    void Draw2DBackBlur(UVec3 Position, const SSpriteHandle& SpriteHandle, float Count, float Speed, float Step);
 
-    void Draw2DGlow(UVec3 Position, const SSpriteHandle &SpriteHandle, UVec3 Color, float Intensity);
+    void Draw2DGlow(UVec3 Position, const SSpriteHandle& SpriteHandle, UVec3 Color, float Intensity);
 
-    void Draw2DDisintegrate(UVec3 Position, const SSpriteHandle &SpriteHandle, const SSpriteHandle &NoiseHandle,
-                            float Progress);
+    void Draw2DDisintegrate(UVec3 Position, const SSpriteHandle& SpriteHandle, const SSpriteHandle& NoiseHandle,
+        float Progress);
 
 #pragma endregion
 
 #pragma region Queue_3D_API
 
-    void Draw3D(UVec3 Position, SGeometry *Geometry);
+    void Draw3D(UVec3 Position, SGeometry* Geometry);
 
-    void Draw3DLevel(const SLevel &Level, const UVec2Int &POVOrigin, const SDirection &POVDirection);
+    void Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection);
 
 #pragma endregion
 };

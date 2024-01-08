@@ -4,14 +4,15 @@
 #define STR(x) STR2(x)
 
 #ifdef _WIN32
-#define INCBIN_SECTION ".rdata, \"dr\""
+    #define INCBIN_SECTION ".rdata, \"dr\""
 #elif defined(__APPLE__)
-#define INCBIN_SECTION "__TEXT,__const"
-//#define INCBIN_SECTION ".const_data"
+    #define INCBIN_SECTION "__TEXT,__const"
+    // #define INCBIN_SECTION ".const_data"
 #else
-#define INCBIN_SECTION ".rodata"
+    #define INCBIN_SECTION ".rodata"
 #endif
 
+// clang-format off
 #ifdef __APPLE__
 #define INCBIN(name, file) \
     __asm__(".section " INCBIN_SECTION "\n" \
@@ -45,18 +46,20 @@
     extern "C"                              const char incbin_ ## name ## _end[]; \
     const size_t incbin_ ## name ## _length = incbin_ ## name ## _end - incbin_ ## name ## _start;
 #endif
+// clang-format on
 
 #ifdef __clang__
-#define EXTERN_OR_INLINE extern
+    #define EXTERN_OR_INLINE extern
 #else
-#define EXTERN_OR_INLINE inline
+    #define EXTERN_OR_INLINE inline
 #endif
 
 #define DEFINE_ASSET(NAME, PATH) \
-    INCBIN(NAME, PATH) \
-    EXTERN_OR_INLINE const SAsset NAME(&(incbin_ ## NAME ## _start[0]), incbin_ ## NAME ## _length);
+    INCBIN(NAME, PATH)           \
+    EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length);
 
-namespace Asset::Common {
+namespace Asset::Common
+{
     DEFINE_ASSET(FramePNG, "../Asset/Texture/Frame.png")
     DEFINE_ASSET(RefPNG, "../Asset/Texture/Ref.png")
     DEFINE_ASSET(AngelPNG, "../Asset/Texture/Angel.png")
@@ -65,7 +68,8 @@ namespace Asset::Common {
     DEFINE_ASSET(PillarOBJ, "../Asset/Mesh/Pillar.obj")
 }
 
-namespace Asset::Shader {
+namespace Asset::Shader
+{
     DEFINE_ASSET(SharedGLSL, "../Asset/Shader/Shared.glsl")
     DEFINE_ASSET(HUDVERT, "../Asset/Shader/HUD.vert")
     DEFINE_ASSET(HUDFRAG, "../Asset/Shader/HUD.frag")
@@ -77,7 +81,8 @@ namespace Asset::Shader {
     DEFINE_ASSET(PostProcessFRAG, "../Asset/Shader/PostProcess.frag")
 }
 
-namespace Asset::TileSet::Hotel {
+namespace Asset::TileSet::Hotel
+{
     DEFINE_ASSET(FloorOBJ, "../Asset/TileSet/Hotel/Floor.obj")
     DEFINE_ASSET(WallOBJ, "../Asset/TileSet/Hotel/Wall.obj")
     DEFINE_ASSET(WallJointOBJ, "../Asset/TileSet/Hotel/WallJoint.obj")

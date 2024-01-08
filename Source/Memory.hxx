@@ -7,46 +7,57 @@
 
 static constexpr std::size_t ScratchBufferSize = 1024 * 1024 * 16;
 
-class CScratchBuffer {
+class CScratchBuffer
+{
 private:
-    std::pmr::monotonic_buffer_resource *MemoryResource;
+    std::pmr::monotonic_buffer_resource* MemoryResource;
+
 public:
-    explicit CScratchBuffer(std::pmr::monotonic_buffer_resource *MemoryResource) : MemoryResource(MemoryResource) {
+    explicit CScratchBuffer(std::pmr::monotonic_buffer_resource* MemoryResource)
+        : MemoryResource(MemoryResource)
+    {
     }
 
-    ~CScratchBuffer() {
+    ~CScratchBuffer()
+    {
         MemoryResource->release();
     }
 
-    auto GetAllocator() {
+    auto GetAllocator()
+    {
         return MemoryResource;
     }
 
-    template<typename T2>
-    auto GetVector() {
+    template <typename T2>
+    auto GetVector()
+    {
         return std::pmr::vector<T2>(MemoryResource);
     }
 };
 
-class CNewDeleteResource final : public std::pmr::memory_resource {
-    void *
-    do_allocate(size_t Length, size_t Alignment) override {
+class CNewDeleteResource final : public std::pmr::memory_resource
+{
+    void*
+    do_allocate(size_t Length, size_t Alignment) override
+    {
         std::printf("Allocating %zu bytes through NewDeleteResource, probably ScratchBuffer overflow!\n", Length);
         return ::operator new(Length, std::align_val_t(Alignment));
     }
 
     void
-    do_deallocate(void *Pointer, size_t Length, size_t Alignment) noexcept
-    override {
+    do_deallocate(void* Pointer, size_t Length, size_t Alignment) noexcept
+        override
+    {
         std::printf("Deallocating %zu bytes through NewDeleteResource\n", Length);
         ::operator delete(Pointer, Length, std::align_val_t(Alignment));
     }
 
     [[nodiscard]] bool
-    do_is_equal(const memory_resource &Other) const noexcept override { return &Other == this; }
+    do_is_equal(const memory_resource& Other) const noexcept override { return &Other == this; }
 };
 
-namespace Memory {
+namespace Memory
+{
     void Init();
 
     CScratchBuffer GetScratchBuffer();

@@ -3,14 +3,16 @@
 #include "CommonTypes.hxx"
 #include "Math.hxx"
 
-enum class EPlayerAnimationType {
+enum class EPlayerAnimationType
+{
     Idle,
     Turn,
     Walk,
     Bump
 };
 
-struct SBlob {
+struct SBlob
+{
     SDirection Direction{};
     UVec2Int Coords{};
 

@@ -8,7 +8,8 @@
 #define MAX_LEVEL_HEIGHT 32
 #define MAX_LEVEL_TILE_COUNT (MAX_LEVEL_WIDTH * MAX_LEVEL_HEIGHT)
 
-struct SLevel {
+struct SLevel
+{
     using UWallJoint = bool;
 
     int Width{};
@@ -17,58 +18,71 @@ struct SLevel {
     std::array<UWallJoint, (MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
     bool bUseWallJoints = false;
 
-    [[nodiscard]] STile *GetTileAtMutable(UVec2Int Coords) {
-        if (IsValidTile(Coords)) {
+    [[nodiscard]] STile* GetTileAtMutable(UVec2Int Coords)
+    {
+        if (IsValidTile(Coords))
+        {
             auto Index = CoordsToIndex(Coords.X, Coords.Y);
             return &Tiles[Index];
         }
         return nullptr;
     }
 
-    [[nodiscard]] UWallJoint *GetWallJointAtMutable(UVec2Int Coords) {
-        if (IsValidWallJoint(Coords)) {
+    [[nodiscard]] UWallJoint* GetWallJointAtMutable(UVec2Int Coords)
+    {
+        if (IsValidWallJoint(Coords))
+        {
             auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
             return &WallJoints[Index];
         }
         return nullptr;
     }
 
-    [[nodiscard]] STile const *GetTileAt(UVec2Int Coords) const {
-        if (IsValidTile(Coords)) {
+    [[nodiscard]] STile const* GetTileAt(UVec2Int Coords) const
+    {
+        if (IsValidTile(Coords))
+        {
             auto Index = CoordsToIndex(Coords.X, Coords.Y);
             return &Tiles[Index];
         }
         return nullptr;
     }
 
-    [[nodiscard]] bool IsValidTile(UVec2Int Coords) const {
+    [[nodiscard]] bool IsValidTile(UVec2Int Coords) const
+    {
         return IsValidTileX(Coords.X) && IsValidTileY(Coords.Y);
     }
 
-    [[nodiscard]] bool IsValidTileX(int Coord) const {
+    [[nodiscard]] bool IsValidTileX(int Coord) const
+    {
         return Coord >= 0 && Coord < Width;
     }
 
-    [[nodiscard]] bool IsValidTileY(int Coord) const {
+    [[nodiscard]] bool IsValidTileY(int Coord) const
+    {
         return Coord >= 0 && Coord < Height;
     }
 
     [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
 
-    [[nodiscard]] UWallJoint GetWallJointAt(UVec2Int Coords) const {
+    [[nodiscard]] UWallJoint GetWallJointAt(UVec2Int Coords) const
+    {
         auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
         return WallJoints[Index];
     }
 
-    [[nodiscard]] bool IsValidWallJoint(UVec2Int Coords) const {
+    [[nodiscard]] bool IsValidWallJoint(UVec2Int Coords) const
+    {
         return IsValidWallJointX(Coords.X) && IsValidWallJointY(Coords.Y);
     }
 
-    [[nodiscard]] bool IsValidWallJointX(int Coord) const {
+    [[nodiscard]] bool IsValidWallJointX(int Coord) const
+    {
         return Coord >= 0 && Coord < Width + 1;
     }
 
-    [[nodiscard]] bool IsValidWallJointY(int Coord) const {
+    [[nodiscard]] bool IsValidWallJointY(int Coord) const
+    {
         return Coord >= 0 && Coord < Height + 1;
     }
 
@@ -78,5 +92,3 @@ struct SLevel {
 
     void Excavate(UVec2Int Coords);
 };
-
-

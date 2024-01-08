@@ -1,8 +1,8 @@
 #ifdef SHADER_CONSTANTS_LITERAL
-#define SHADER_CONST(NAME, INDEX) R"(const int )" #NAME " = " #INDEX ";\n"
+    #define SHADER_CONST(NAME, INDEX) R"(const int )" #NAME " = " #INDEX ";\n"
 #else
-#define SHADER_CONST(NAME, INDEX) \
-    constexpr int NAME = INDEX;
+    #define SHADER_CONST(NAME, INDEX) \
+        constexpr int NAME = INDEX;
 #endif
 
 /** Uber2D Modes */

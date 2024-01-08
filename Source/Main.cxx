@@ -3,7 +3,8 @@
 #include "Memory.hxx"
 #include "Game.hxx"
 
-int main([[maybe_unused]] int ArgCount, [[maybe_unused]] char *Arguments[]) {
+int main([[maybe_unused]] int ArgCount, [[maybe_unused]] char* Arguments[])
+{
     Memory::Init();
 
     auto Game = std::make_unique<SGame>();
@@ -13,5 +14,3 @@ int main([[maybe_unused]] int ArgCount, [[maybe_unused]] char *Arguments[]) {
 
     return 0;
 }
-
-
