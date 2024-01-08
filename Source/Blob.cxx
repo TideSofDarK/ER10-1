@@ -1,6 +1,6 @@
-#include "Player.hxx"
+#include "Blob.hxx"
 
-void SPlayer::Update(float DeltaTime) {
+void SBlob::Update(float DeltaTime) {
     AnimationAlpha += DeltaTime * 3.3f;
     if (AnimationAlpha >= 1.0f) {
         AnimationAlpha = 1.0f;
@@ -25,12 +25,12 @@ void SPlayer::Update(float DeltaTime) {
     }
 }
 
-SPlayer::SPlayer() : Direction() {
+SBlob::SBlob() {
     EyePositionCurrent = EyePositionTarget = {(float) Coords.X, EyeHeight, (float) Coords.Y};
     ApplyDirection(true);
 }
 
-void SPlayer::Turn(bool bRight) {
+void SBlob::Turn(bool bRight) {
     if (AnimationType != EPlayerAnimationType::Idle)
         return;
     if (!bRight) {
@@ -42,7 +42,7 @@ void SPlayer::Turn(bool bRight) {
     }
 }
 
-void SPlayer::ApplyDirection(bool bImmediate) {
+void SBlob::ApplyDirection(bool bImmediate) {
     EyeForwardTarget = {0.0f, 0.0f, 0.0f};
     auto DirectionVector = Direction.GetVector<float>();
     EyeForwardTarget.X += DirectionVector.X;
@@ -59,7 +59,7 @@ void SPlayer::ApplyDirection(bool bImmediate) {
     }
 }
 
-void SPlayer::Step(UVec2Int DirectionVector) {
+void SBlob::Step(UVec2Int DirectionVector) {
     if (AnimationType != EPlayerAnimationType::Idle)
         return;
     AnimationType = EPlayerAnimationType::Walk;
@@ -69,7 +69,7 @@ void SPlayer::Step(UVec2Int DirectionVector) {
     Coords += DirectionVector;
 }
 
-void SPlayer::BumpIntoWall() {
+void SBlob::BumpIntoWall() {
     if (AnimationType != EPlayerAnimationType::Idle)
         return;
     AnimationType = EPlayerAnimationType::Bump;

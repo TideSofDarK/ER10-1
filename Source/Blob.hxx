@@ -10,8 +10,8 @@ enum class EPlayerAnimationType {
     Bump
 };
 
-struct SPlayer {
-    SDirection Direction;
+struct SBlob {
+    SDirection Direction{};
     UVec2Int Coords{};
 
     EPlayerAnimationType AnimationType{};
@@ -26,7 +26,7 @@ struct SPlayer {
     UVec3 EyePositionCurrent{};
     UVec3 EyePositionTarget{};
 
-    SPlayer();
+    SBlob();
 
     void Update(float DeltaTime);
 

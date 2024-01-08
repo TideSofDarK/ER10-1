@@ -26,7 +26,7 @@ SGame::SGame() {
     Window.Init();
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    Editor.Init(Window.Window, Window.Context);
+    DevTools.Init(Window.Window, Window.Context);
 #endif
 
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -63,7 +63,7 @@ SGame::SGame() {
             Asset::TileSet::Hotel::FloorOBJ, Asset::TileSet::Hotel::WallOBJ,
             Asset::TileSet::Hotel::WallJointOBJ, Asset::TileSet::Hotel::DoorOBJ);
 
-    Player.ApplyDirection(true);
+    Blob.ApplyDirection(true);
 
     Camera.RegenerateProjection();
 
@@ -80,11 +80,14 @@ SGame::SGame() {
     };
     Level.InitWallJoints();
 
-#ifdef EQUINOX_REACH_DEVELOPMENT
-    Editor.Level = std::make_shared<SLevel>(Level);
-#endif
-
     SpriteDemoState = 5;
+
+    PlayerParty.AddCharacter({"PC", 75.0f, 100.0f, 10, 1});
+    PlayerParty.AddCharacter({"Juggernaut", 30.0f, 50.0f, 10, 1});
+    PlayerParty.AddCharacter({"Vulture", 45.0f, 50.0f, 10, 2, false});
+    PlayerParty.AddCharacter({"Mortar", 30.0f, 30.0f, 10, 2, true});
+
+    std::cout << PlayerParty.GetPartyCount() << std::endl;
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t *KeyboardState, const uint8_t Scancode) {
@@ -116,7 +119,7 @@ void SGame::Run() {
         SDL_Event Event;
         while (SDL_PollEvent(&Event)) {
 #ifdef EQUINOX_REACH_DEVELOPMENT
-            Editor.ProcessEvent(&Event);
+            DevTools.ProcessEvent(&Event);
 #endif
             switch (Event.type) {
                 case SDL_WINDOWEVENT:
@@ -133,7 +136,7 @@ void SGame::Run() {
         }
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-        Editor.Update();
+        DevTools.Update();
 #endif
 
 #pragma region InputHandling
@@ -166,7 +169,7 @@ void SGame::Run() {
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
         if (InputState.ToggleLevelEditor == EKeyState::Pressed) {
-            Editor.bLevelEditorActive = !Editor.bLevelEditorActive;
+            DevTools.bLevelEditorActive = !DevTools.bLevelEditorActive;
         }
 #endif
 
@@ -174,40 +177,42 @@ void SGame::Run() {
         if (IsGameRunning()) {
 #ifdef EQUINOX_REACH_DEVELOPMENT
             {
-                SDebugToolsData Data = {Window.DeltaTime, Player.Coords, Player.Direction, false};
-                SEditor::DebugTools(Data);
+                SDebugToolsData Data = {Window.DeltaTime, Blob.Coords, Blob.Direction, &PlayerParty, false};
+                SDevTools::DebugTools(Data);
 
                 if (Data.bImportLevel) {
-                    Level = *Editor.Level;
+                    Level = DevTools.Level;
                     Level.InitWallJoints();
                 }
+
+//                SDevTools::DrawParty(PlayerParty);
             }
 #endif
 
-            if (!Player.IsMoving()) {
+            if (!Blob.IsMoving()) {
                 /* Moving */
                 if (InputState.L == EKeyState::Held) {
-                    auto PlayerDirection = Player.Direction;
+                    auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCCW();
                     AttemptPlayerStep(PlayerDirection);
                 }
                 if (InputState.R == EKeyState::Held) {
-                    auto PlayerDirection = Player.Direction;
+                    auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCW();
                     AttemptPlayerStep(PlayerDirection);
                 }
                 if (InputState.Up == EKeyState::Held) {
-                    auto PlayerDirection = Player.Direction;
+                    auto PlayerDirection = Blob.Direction;
                     if (!AttemptPlayerStep(PlayerDirection)) {
-                        Player.BumpIntoWall();
+                        Blob.BumpIntoWall();
                     }
                 }
 
                 /* Turning */
                 if (InputState.Left == EKeyState::Held) {
-                    Player.Turn(false);
+                    Blob.Turn(false);
                 } else if (InputState.Right == EKeyState::Held) {
-                    Player.Turn(true);
+                    Blob.Turn(true);
                 }
             }
 
@@ -219,10 +224,10 @@ void SGame::Run() {
                 SpriteDemoState = std::min(5, SpriteDemoState + 1);
             }
 
-            Player.Update(Window.DeltaTime);
+            Blob.Update(Window.DeltaTime);
 
-            Camera.Position = Player.EyePositionCurrent;
-            Camera.Target = Camera.Position + Player.EyeForwardCurrent;
+            Camera.Position = Blob.EyePositionCurrent;
+            Camera.Target = Camera.Position + Blob.EyeForwardCurrent;
             Camera.Update();
 
             Renderer.UploadProjectionAndViewFromCamera(Camera);
@@ -233,7 +238,7 @@ void SGame::Run() {
             Renderer.Draw3D({-5.0f, 0.0f, -4.0f}, &Floor);
             Renderer.Draw3D({-6.0f, 0.0f, -4.0f}, &Floor);
             Renderer.Draw3D({-7.0f, 0.0f, -4.0f}, &Floor);
-            Renderer.Draw3DLevel(Level, Player.Coords, Player.Direction);
+            Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
             switch (SpriteDemoState) {
                 case 0:
                     Renderer.Draw2DEx({220, 80.0f, 0.0f}, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
@@ -264,21 +269,21 @@ void SGame::Run() {
 #pragma endregion
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-        Editor.Draw();
+        DevTools.Draw();
 #endif
 
         Window.SwapBuffers();
     }
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    Editor.Cleanup();
+    DevTools.Cleanup();
 #endif
     Renderer.Cleanup();
     Window.Cleanup();
 }
 
 bool SGame::AttemptPlayerStep(SDirection Direction) {
-    auto CurrentTile = Level.GetTileAt(Player.Coords);
+    auto CurrentTile = Level.GetTileAt(Blob.Coords);
     if (CurrentTile == nullptr) {
         return false;
     }
@@ -288,18 +293,18 @@ bool SGame::AttemptPlayerStep(SDirection Direction) {
     }
 
     auto DirectionVector = Direction.GetVector<int>();
-    auto NextTile = Level.GetTileAt(Player.Coords + DirectionVector);
+    auto NextTile = Level.GetTileAt(Blob.Coords + DirectionVector);
     if (NextTile == nullptr || !NextTile->IsWalkable()) {
         return false;
     }
 
-    Player.Step(DirectionVector);
+    Blob.Step(DirectionVector);
     return true;
 }
 
 bool SGame::IsGameRunning() const {
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    return !Editor.bLevelEditorActive;
+    return !DevTools.bLevelEditorActive;
 #else
     return true;
 #endif

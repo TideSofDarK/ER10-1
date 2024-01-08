@@ -1,12 +1,12 @@
-#include "Editor.hxx"
+#include "DevTools.hxx"
 
 #include <iostream>
-#include <memory>
 #include "glad/gl.h"
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl2.h"
 #include "Constants.hxx"
+#include "GameSystem.hxx"
 
 #define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
 #define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
@@ -16,7 +16,10 @@
 #define SELECTION_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 98, 255)))
 #define SELECTION_MODIFY_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 200, 255)))
 
-void SEditor::Init(SDL_Window *Window, void *Context) {
+#define PARTY_SLOT_COLOR (ImGui::GetColorU32(IM_COL32(100, 75, 230, 200)))
+#define HPBAR_COLOR (ImGui::GetColorU32(IM_COL32(255, 19, 25, 255)))
+
+void SDevTools::Init(SDL_Window *Window, void *Context) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
@@ -33,16 +36,16 @@ void SEditor::Init(SDL_Window *Window, void *Context) {
     bDrawWallJoints = false;
     bDrawEdges = true;
     bDrawGridLines = false;
-    Level = nullptr;
+    Level = SLevel{8, 8};
 }
 
-void SEditor::Cleanup() {
+void SDevTools::Cleanup() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 }
 
-void SEditor::Update() {
+void SDevTools::Update() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
@@ -86,83 +89,93 @@ void SEditor::Update() {
             ImGui::SliderInt("Width", &NewLevelSize.X, 8, MAX_LEVEL_WIDTH);
             ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
             if (ImGui::Button("Accept")) {
-                Level = std::make_shared<SLevel>(SLevel{NewLevelSize.X, NewLevelSize.Y});
+                Level = SLevel{NewLevelSize.X, NewLevelSize.Y};
                 ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
         }
 
-        if (IsLevelLoaded()) {
-            /* Validate Selected Tile */
-            if (SelectedTileCoords.has_value()) {
-                if (!Level->IsValidTile(*SelectedTileCoords)) {
-                    SelectedTileCoords.reset();
-                } else {
-                    /* Tile Settings Window */
-                    auto SelectedTile = Level->GetTileAtMutable(*SelectedTileCoords);
-                    if (ImGui::Begin("Tile Settings", nullptr,
-                                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize |
-                                     ImGuiWindowFlags_NoFocusOnAppearing)) {
-                        ImGui::Text("X=%d, Y=%d", SelectedTileCoords->X, SelectedTileCoords->Y);
-                        ImGui::Separator();
-                        const char *TileTypes[] = {"Empty", "Floor", "Hole"};
-                        const char *EdgeTypes[] = {"Empty", "Wall", "Door"};
+        /* Validate Selected Tile */
+        if (SelectedTileCoords.has_value()) {
+            if (!Level.IsValidTile(*SelectedTileCoords)) {
+                SelectedTileCoords.reset();
+            } else {
+                /* Tile Settings Window */
+                auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
+                if (ImGui::Begin("Tile Settings", nullptr,
+                                 ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize |
+                                 ImGuiWindowFlags_NoFocusOnAppearing)) {
+                    ImGui::Text("X=%d, Y=%d", SelectedTileCoords->X, SelectedTileCoords->Y);
+                    ImGui::Separator();
+                    const char *TileTypes[] = {"Empty", "Floor", "Hole"};
+                    const char *EdgeTypes[] = {"Empty", "Wall", "Door"};
+                    ImGui::BeginGroup();
+                    {
+                        ImGui::PushItemWidth(70.0f);
+
                         ImGui::BeginGroup();
-                        {
-                            ImGui::PushItemWidth(70.0f);
+                        ImGui::Dummy(ImVec2(70.0f, 0.0f));
+                        ImGui::SameLine();
+                        EnumCombo("##N", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                  &SelectedTile->Edges[SDirection::North().Index]);
+                        ImGui::EndGroup();
 
-                            ImGui::BeginGroup();
-                            ImGui::Dummy(ImVec2(70.0f, 0.0f));
-                            ImGui::SameLine();
-                            EnumCombo("##N", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[SDirection::North().Index]);
-                            ImGui::EndGroup();
+                        ImGui::BeginGroup();
+                        EnumCombo("##W", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                  &SelectedTile->Edges[SDirection::West().Index]);
+                        ImGui::SameLine();
+                        EnumCombo("##T", TileTypes, IM_ARRAYSIZE(TileTypes), &SelectedTile->Type);
+                        ImGui::SameLine();
+                        EnumCombo("##E", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                  &SelectedTile->Edges[SDirection::East().Index]);
+                        ImGui::EndGroup();
 
-                            ImGui::BeginGroup();
-                            EnumCombo("##W", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[SDirection::West().Index]);
-                            ImGui::SameLine();
-                            EnumCombo("##T", TileTypes, IM_ARRAYSIZE(TileTypes), &SelectedTile->Type);
-                            ImGui::SameLine();
-                            EnumCombo("##E", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[SDirection::East().Index]);
-                            ImGui::EndGroup();
+                        ImGui::BeginGroup();
+                        ImGui::Dummy(ImVec2(70.0f, 0.0f));
+                        ImGui::SameLine();
+                        EnumCombo("##S", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
+                                  &SelectedTile->Edges[SDirection::South().Index]);
+                        ImGui::EndGroup();
 
-                            ImGui::BeginGroup();
-                            ImGui::Dummy(ImVec2(70.0f, 0.0f));
-                            ImGui::SameLine();
-                            EnumCombo("##S", EdgeTypes, IM_ARRAYSIZE(EdgeTypes),
-                                      &SelectedTile->Edges[SDirection::South().Index]);
-                            ImGui::EndGroup();
+                        ImGui::PopItemWidth();
 
-                            ImGui::PopItemWidth();
-
-                            ImGui::EndGroup();
-                        }
-                        ImGui::End();
+                        ImGui::EndGroup();
                     }
+                    ImGui::End();
                 }
             }
-
-            DrawLevel();
         }
+
+        DrawLevel();
     }
 }
 
-void SEditor::DebugTools(SDebugToolsData &Data) {
+void SDevTools::DebugTools(SDebugToolsData &Data) {
     if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Frames Per Second: %.6f", Data.FPS);
-        ImGui::Text("Player Direction: %s", SDirection::Names[Data.PlayerDirection.Index]);
-        ImGui::Text("Player Coords: X=%d, Y=%d", Data.PlayerCoords.X, Data.PlayerCoords.Y);
-        ImGui::Separator();
-        if (ImGui::Button("Import Level From Editor")) {
-            Data.bImportLevel = true;
+        if (ImGui::TreeNode("System Info")) {
+            ImGui::Text("Frames Per Second: %.6f", Data.FPS);
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Player Info")) {
+            ImGui::Text("Direction: %s", SDirection::Names[Data.PlayerDirection.Index]);
+            ImGui::Text("Coords: X=%d, Y=%d", Data.PlayerCoords.X, Data.PlayerCoords.Y);
+            if (Data.Party) {
+                DrawParty(*Data.Party, 0.5f, true);
+                DrawParty(*Data.Party, 0.5f, false);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Level Tools")) {
+            if (ImGui::Button("Import Level From Editor")) {
+                Data.bImportLevel = true;
+            }
+            ImGui::TreePop();
         }
         ImGui::End();
     }
 }
 
-void SEditor::Draw() const {
+void SDevTools::Draw() const {
     ImGui::Render();
     ImGuiIO &io = ImGui::GetIO();
     glViewport(0, 0, (int) io.DisplaySize.x, (int) io.DisplaySize.y);
@@ -173,11 +186,11 @@ void SEditor::Draw() const {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void SEditor::ProcessEvent(const SDL_Event *Event) {
+void SDevTools::ProcessEvent(const SDL_Event *Event) {
     ImGui_ImplSDL2_ProcessEvent(Event);
 }
 
-void SEditor::DrawLevel() {
+void SDevTools::DrawLevel() {
     ImGuiIO &IO = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(IO.DisplaySize.x * 0.5f, IO.DisplaySize.y * 0.5f), ImGuiCond_Once,
                             ImVec2(0.5f, 0.5f));
@@ -190,8 +203,8 @@ void SEditor::DrawLevel() {
                      ImGuiWindowFlags_NoSavedSettings |
                      ImGuiWindowFlags_NoTitleBar)) {
         auto *DrawList = ImGui::GetWindowDrawList();
-        ImVec2 GridSize = ImVec2((LevelEditorCellSize * (float) Level->Width),
-                                 (LevelEditorCellSize * (float) Level->Height));
+        ImVec2 GridSize = ImVec2((LevelEditorCellSize * (float) Level.Width),
+                                 (LevelEditorCellSize * (float) Level.Height));
         ImVec2 PosMin = ImGui::GetCursorScreenPos();
         ImVec2 PosMax = ImVec2(PosMin.x + GridSize.x,
                                PosMin.y + GridSize.y);
@@ -206,17 +219,15 @@ void SEditor::DrawLevel() {
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 auto MousePos = ImGui::GetMousePos();
                 MousePos = ImVec2(MousePos.x - PosMin.x, MousePos.y - PosMin.y);
-
-                auto SelectedX = (int) (MousePos.x / LevelEditorCellSize);
-                auto SelectedY = (int) (MousePos.y / LevelEditorCellSize);
-                SelectedTileCoords = UVec2Int{SelectedX, SelectedY};
+                SelectedTileCoords = UVec2Int{(int) (MousePos.x / LevelEditorCellSize),
+                                              (int) (MousePos.y / LevelEditorCellSize)};
             }
         }
 
         /* Draw tiles */
-        for (int X = 0; X <= Level->Width; X += 1) {
-            for (int Y = 0; Y <= Level->Height; Y += 1) {
-                auto CurrentTile = Level->GetTileAt({X, Y});
+        for (int X = 0; X <= Level.Width; X += 1) {
+            for (int Y = 0; Y <= Level.Height; Y += 1) {
+                auto CurrentTile = Level.GetTileAt({X, Y});
                 if (CurrentTile == nullptr)
                     continue;
                 auto TilePosMin = ImVec2(PosMin.x + ((float) X * LevelEditorCellSize),
@@ -266,7 +277,7 @@ void SEditor::DrawLevel() {
         const float DoorOffsetX = (float) LevelEditorCellSize * 0.15f;
         const float DoorOffsetY = (float) LevelEditorCellSize * 0.12f;
         if (bDrawEdges) {
-            for (int Y = 0; Y <= Level->Height; Y += 1) {
+            for (int Y = 0; Y <= Level.Height; Y += 1) {
                 ImVec2 NorthPosMin;
                 ImVec2 NorthPosMax;
                 bool bNorthEdge{};
@@ -275,8 +286,8 @@ void SEditor::DrawLevel() {
                 ImVec2 SouthPosMax;
                 bool bSouthEdge{};
 
-                for (int X = 0; X <= Level->Width; X += 1) {
-                    auto CurrentTile = Level->GetTileAt({X, Y});
+                for (int X = 0; X <= Level.Width; X += 1) {
+                    auto CurrentTile = Level.GetTileAt({X, Y});
                     if (CurrentTile == nullptr)
                         continue;
                     auto TilePosMin = ImVec2(PosMin.x + ((float) X * LevelEditorCellSize),
@@ -292,7 +303,7 @@ void SEditor::DrawLevel() {
                         }
                         NorthPosMax = ImVec2(TilePosMax.x, TilePosMin.y);
                     }
-                    if ((!bShouldDrawNorthEdge || X + 1 == Level->Width) && bNorthEdge) {
+                    if ((!bShouldDrawNorthEdge || X + 1 == Level.Width) && bNorthEdge) {
                         NorthPosMin.y += EdgeOffset;
                         NorthPosMax.y += EdgeOffset;
                         NorthPosMin.x += EdgeOffset;
@@ -316,7 +327,7 @@ void SEditor::DrawLevel() {
                         }
                         SouthPosMax = TilePosMax;
                     }
-                    if ((!bShouldDrawSouthEdge || X + 1 == Level->Width) && bSouthEdge) {
+                    if ((!bShouldDrawSouthEdge || X + 1 == Level.Width) && bSouthEdge) {
                         SouthPosMin.y -= EdgeOffset;
                         SouthPosMax.y -= EdgeOffset;
                         SouthPosMin.x += EdgeOffset;
@@ -333,7 +344,7 @@ void SEditor::DrawLevel() {
                 }
             }
 
-            for (int X = 0; X <= Level->Width; X += 1) {
+            for (int X = 0; X <= Level.Width; X += 1) {
                 ImVec2 WestPosMin;
                 ImVec2 WestPosMax;
                 bool bWestEdge{};
@@ -342,8 +353,8 @@ void SEditor::DrawLevel() {
                 ImVec2 EastPosMax;
                 bool bEastEdge{};
 
-                for (int Y = 0; Y <= Level->Height; Y += 1) {
-                    auto CurrentTile = Level->GetTileAt({X, Y});
+                for (int Y = 0; Y <= Level.Height; Y += 1) {
+                    auto CurrentTile = Level.GetTileAt({X, Y});
                     if (CurrentTile == nullptr)
                         continue;
                     auto TilePosMin = ImVec2(PosMin.x + ((float) X * LevelEditorCellSize),
@@ -359,7 +370,7 @@ void SEditor::DrawLevel() {
                         }
                         WestPosMax = ImVec2(TilePosMin.x, TilePosMax.y);
                     }
-                    if ((!bShouldDrawWestEdge || Y + 1 == Level->Height) && bWestEdge) {
+                    if ((!bShouldDrawWestEdge || Y + 1 == Level.Height) && bWestEdge) {
                         WestPosMin.x += EdgeOffset;
                         WestPosMax.x += EdgeOffset;
                         WestPosMin.y += EdgeOffset;
@@ -383,7 +394,7 @@ void SEditor::DrawLevel() {
                         }
                         EastPosMax = TilePosMax;
                     }
-                    if ((!bShouldDrawEastEdge || Y + 1 == Level->Height) && bEastEdge) {
+                    if ((!bShouldDrawEastEdge || Y + 1 == Level.Height) && bEastEdge) {
                         EastPosMin.x -= EdgeOffset;
                         EastPosMax.x -= EdgeOffset;
                         EastPosMin.y += EdgeOffset;
@@ -424,19 +435,19 @@ void SEditor::DrawLevel() {
                         SelectedTileCoords->X = std::max(0, SelectedTileCoords->X - 1);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) {
-                        SelectedTileCoords->Y = std::min(Level->Height - 1, SelectedTileCoords->Y + 1);
+                        SelectedTileCoords->Y = std::min(Level.Height - 1, SelectedTileCoords->Y + 1);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) {
-                        SelectedTileCoords->X = std::min(Level->Width - 1, SelectedTileCoords->X + 1);
+                        SelectedTileCoords->X = std::min(Level.Width - 1, SelectedTileCoords->X + 1);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space))) {
-                        Level->Excavate(*SelectedTileCoords);
+                        Level.Excavate(*SelectedTileCoords);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D))) {
                         LevelEditorMode = ELevelEditorMode::ToggleDoor;
                     }
                 } else if (LevelEditorMode == ELevelEditorMode::ToggleDoor) {
-                    auto SelectedTile = Level->GetTileAtMutable(*SelectedTileCoords);
+                    auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
                     auto ToggleDoor = [this](ETileEdgeType *TileEdgeType) {
                         if (*TileEdgeType == ETileEdgeType::Door) {
                             *TileEdgeType = ETileEdgeType::Wall;
@@ -487,4 +498,105 @@ void SEditor::DrawLevel() {
         ImGui::End();
     }
     ImGui::PopStyleVar();
+}
+
+void SDevTools::DrawParty(SParty &Party, float Scale, bool bReversed) {
+//    if (ImGui::Begin("Player Party", nullptr, 0)) { //ImGuiWindowFlags_AlwaysAutoResize
+    auto *DrawList = ImGui::GetWindowDrawList();
+    ImVec2 PosMin = ImGui::GetCursorScreenPos();
+
+    Scale *= ImGui::GetFontSize();
+    const float SlotWidth = Scale * 15.f;
+    const float SlotHeight = Scale * 9.f;
+    const float SlotOffset = Scale * 1.f;
+
+    for (int Index = 0; Index < PARTY_SIZE; ++Index) {
+        auto &Slot = Party.Slots[Index];
+
+        auto CurrentCol = Index % PARTY_COLS;
+        auto CurrentRow = Index / PARTY_COLS;
+
+        if (Slot.IsRealChar()) {
+            auto Char = Slot.GetRealChar();
+
+            auto SlotPosMin = ImVec2((float) CurrentCol * SlotWidth,
+                                     (float) CurrentRow * SlotHeight);
+            SlotPosMin.x += PosMin.x;
+            SlotPosMin.y += PosMin.y;
+
+            ImVec2 SlotSize{};
+            switch (Char.Size) {
+                case 1:
+                    SlotSize.x += SlotWidth;
+                    SlotSize.y += SlotHeight;
+                    break;
+                case 2:
+                    if (Char.bHorizontal) {
+                        SlotSize.x += SlotWidth * 2;
+                        SlotSize.y += SlotHeight;
+                    } else {
+                        SlotSize.x += SlotWidth;
+                        SlotSize.y += SlotHeight * 2;
+                    }
+                    break;
+                case 4:
+                    SlotSize.x += SlotWidth * 2;
+                    SlotSize.y += SlotHeight * 2;
+                    break;
+                default:
+                    ImGui::End();
+                    return;
+            }
+            ImVec2 SlotPosMax = SlotPosMin;
+            SlotPosMax.x += SlotSize.x;
+            SlotPosMax.y += SlotSize.y;
+
+            SlotPosMin.x += SlotOffset;
+            SlotPosMin.y += SlotOffset;
+
+            auto ButtonSize = SlotSize;
+            ButtonSize.x -= SlotOffset;
+            ButtonSize.y -= SlotOffset;
+
+            /* Slot Button */
+            {
+//                ImGui::SetCursorScreenPos(SlotPosMin);
+//                if (ImGui::Button(Char.Name, ButtonSize)) {
+//                }
+
+                DrawList->AddRectFilled(SlotPosMin, SlotPosMax, PARTY_SLOT_COLOR);
+            }
+
+            /* HPBar */
+            {
+                const auto HPRatio = Char.Health / Char.MaxHealth;
+                const auto HPBarHeight = SlotWidth * 0.1f;
+                const auto HPBarOffsetX = SlotWidth * 0.05f;
+                ImVec2 HPBarPosMin = SlotPosMin;
+                HPBarPosMin.x += HPBarOffsetX;
+                HPBarPosMin.y = SlotPosMax.y - HPBarOffsetX - HPBarHeight;
+                ImVec2 HPBarPosMax = ImVec2(SlotPosMax.x - HPBarOffsetX, SlotPosMax.y - HPBarOffsetX);
+
+                DrawList->AddRect(HPBarPosMin, HPBarPosMax, HPBAR_COLOR);
+                HPBarPosMax.x = HPBarPosMin.x + ((ButtonSize.x - (HPBarOffsetX * 2.0f)) * HPRatio);
+                DrawList->AddRectFilled(HPBarPosMin, HPBarPosMax, HPBAR_COLOR);
+
+                auto LabelPos = ImVec2(HPBarPosMin.x, HPBarPosMin.y - ImGui::GetFontSize());
+                ImGui::SetCursorScreenPos(LabelPos);
+                ImGui::Text("%.0f/%.0f", Char.Health, Char.MaxHealth);
+
+                LabelPos.y -= ImGui::GetFontSize();
+                ImGui::SetCursorScreenPos(LabelPos);
+                ImGui::Text("%s", Char.Name);
+//                    DrawList->AddText(LabelPos, ImGui::GetColorU32({255,255,255,255}),  "Test", LabelPos);
+            }
+        }
+    }
+
+    const ImVec2 PartyBlockSize = {SlotWidth * (float) PARTY_COLS,
+                                   SlotHeight * (float) PARTY_ROWS};
+    ImGui::Dummy(PartyBlockSize);
+
+    PosMin.y += PartyBlockSize.y;
+    ImGui::SetCursorScreenPos(PosMin);
 }

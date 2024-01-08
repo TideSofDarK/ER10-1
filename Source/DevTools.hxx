@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
 #include "imgui.h"
 #include "Level.hxx"
+
+struct SParty;
 
 enum class ELevelEditorMode {
     Normal,
@@ -13,10 +14,11 @@ struct SDebugToolsData {
     float FPS{};
     UVec2Int PlayerCoords{};
     SDirection PlayerDirection{0};
+    SParty *Party{};
     bool bImportLevel{};
 };
 
-struct SEditor {
+struct SDevTools {
     bool bLevelEditorActive{};
     ELevelEditorMode LevelEditorMode{};
     UVec2Int NewLevelSize{};
@@ -25,7 +27,7 @@ struct SEditor {
     bool bDrawEdges{};
     bool bDrawGridLines{};
     std::optional<UVec2Int> SelectedTileCoords{};
-    std::shared_ptr<SLevel> Level{};
+    SLevel Level{};
 
     void Init(struct SDL_Window *Window, void *Context);
 
@@ -37,11 +39,9 @@ struct SEditor {
 
     static void DebugTools(SDebugToolsData &Data);
 
-    void Draw() const;
+    static void DrawParty(SParty &Party, float Scale, bool bReversed);
 
-    [[nodiscard]] bool IsLevelLoaded() const {
-        return Level != nullptr;
-    }
+    void Draw() const;
 
 private:
     void DrawLevel();

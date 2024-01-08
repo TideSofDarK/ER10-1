@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 17)
 
 set(BUILD_SHARED_LIBS OFF)
@@ -20,7 +22,7 @@ set(SDL_TEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         SDL
         GIT_REPOSITORY https://github.com/libsdl-org/SDL
-        GIT_TAG 1d495351a0944c598e78c130b635f9447b5bc871
+        GIT_TAG 5e12e4b81340a860637c057418a0fdbe8900ef2e
         GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(SDL)
@@ -60,7 +62,7 @@ macro(add_equinox_reach_target)
             Source/Window.cxx
             Source/Draw.cxx
             Source/Level.cxx
-            Source/Player.cxx
+            Source/Blob.cxx
             Source/AssetTools.cxx
             Source/Game.cxx
             ${TARGET_SOURCES}
@@ -115,7 +117,7 @@ add_equinox_reach_target(
         DEF
         EQUINOX_REACH_DEVELOPMENT
         SOURCES
-        Source/Editor.cxx
+        Source/DevTools.cxx
         Vendor/imgui/imgui.cpp
         Vendor/imgui/imgui_draw.cpp
         Vendor/imgui/imgui_tables.cpp

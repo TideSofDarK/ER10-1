@@ -2,13 +2,15 @@
 
 #include "CommonTypes.hxx"
 #include "Draw.hxx"
-#include "Player.hxx"
+#include "Blob.hxx"
+#include "Battle.hxx"
 #include "Window.hxx"
 #include "Level.hxx"
+#include "GameSystem.hxx"
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
 
-#include "Editor.hxx"
+#include "DevTools.hxx"
 
 #endif
 
@@ -22,13 +24,15 @@ public:
     SWindow Window{};
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    SEditor Editor;
+    SDevTools DevTools;
 #endif
 
     SRenderer Renderer;
     SInputState OldInputState{}, InputState{};
     SCamera Camera;
-    SPlayer Player;
+    SParty PlayerParty;
+    SBlob Blob;
+    SBattle Battle;
     SLevel Level;
     SGeometry TestGeometry;
     SGeometry Floor;
