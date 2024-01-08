@@ -46,5 +46,5 @@ NamespaceIndentation: All
 PointerAlignment: Left
 SortIncludes: false
 SpaceBeforeCaseColon: false
-TabWidth: 1
+TabWidth: 4
 UseTab: Never
