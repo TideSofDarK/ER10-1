@@ -1,5 +1,6 @@
 #include "AssetTools.hxx"
 
+#include <algorithm>
 #include <string>
 #include <array>
 #include <algorithm>
