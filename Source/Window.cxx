@@ -3,7 +3,8 @@
 #include <iostream>
 #include "Constants.hxx"
 #include "glad/gl.h"
-#include "SDL3/SDL.h"
+#include "SDL3/SDL_init.h"
+#include "SDL3/SDL_log.h"
 
 void SWindow::SwapBuffers() const
 {
@@ -19,7 +20,6 @@ void SWindow::Init()
 {
     if (Window != nullptr)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
         exit(1);
     }
 

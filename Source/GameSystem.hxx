@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <optional>
 #include <variant>
 
 constexpr int PARTY_COLS = 3;

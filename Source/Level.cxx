@@ -1,7 +1,5 @@
 #include "Level.hxx"
 
-#include "Utility.hxx"
-
 void SLevel::InitWallJoints()
 {
     WallJoints.fill(false);
