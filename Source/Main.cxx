@@ -1,5 +1,5 @@
 #include <memory>
-#include "SDL_main.h"
+#include "SDL3/SDL_main.h"
 #include "Memory.hxx"
 #include "Game.hxx"
 

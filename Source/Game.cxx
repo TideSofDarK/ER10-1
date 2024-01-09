@@ -3,7 +3,8 @@
 #include <iostream>
 #include "Constants.hxx"
 #include "AssetTools.hxx"
-#include "SDL.h"
+#include "SDL3/SDL.h"
+#include "SDL3/SDL_events.h"
 
 namespace Asset::Common
 {
@@ -143,11 +144,11 @@ EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t* KeyboardSt
 
 void SGame::Run()
 {
-    Window.Now = SDL_GetTicks64();
+    Window.Now = SDL_GetTicks();
     while (!Window.bQuit)
     {
         Window.Last = Window.Now;
-        Window.Now = SDL_GetTicks64();
+        Window.Now = SDL_GetTicks();
         Window.DeltaTime = (float)(Window.Now - Window.Last) / 1000.0f;
         Window.Seconds += Window.DeltaTime;
 
@@ -159,13 +160,10 @@ void SGame::Run()
 #endif
             switch (Event.type)
             {
-                case SDL_WINDOWEVENT:
-                    if (Event.window.event == SDL_WINDOWEVENT_RESIZED)
-                    {
-                        Window.OnWindowResized(Event.window.data1, Event.window.data2);
-                    }
+                case SDL_EVENT_WINDOW_RESIZED:
+                    Window.OnWindowResized(Event.window.data1, Event.window.data2);
                     break;
-                case SDL_QUIT:
+                case SDL_EVENT_QUIT:
                     Window.bQuit = true;
                     break;
                 default:

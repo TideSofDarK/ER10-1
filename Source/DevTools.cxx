@@ -4,7 +4,7 @@
 #include "glad/gl.h"
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
-#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdl3.h"
 #include "Constants.hxx"
 #include "GameSystem.hxx"
 
@@ -27,7 +27,7 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
     ImGui::StyleColorsDark();
-    ImGui_ImplSDL2_InitForOpenGL(Window, Context);
+    ImGui_ImplSDL3_InitForOpenGL(Window, Context);
     ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
 
     bLevelEditorActive = false;
@@ -43,14 +43,14 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
 void SDevTools::Cleanup()
 {
     ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
 }
 
 void SDevTools::Update()
 {
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
     if (bLevelEditorActive)
@@ -211,7 +211,7 @@ void SDevTools::Draw() const
 
 void SDevTools::ProcessEvent(const SDL_Event* Event)
 {
-    ImGui_ImplSDL2_ProcessEvent(Event);
+    ImGui_ImplSDL3_ProcessEvent(Event);
 }
 
 void SDevTools::DrawLevel()

@@ -22,7 +22,7 @@ set(SDL_TEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         SDL
         GIT_REPOSITORY https://github.com/libsdl-org/SDL
-        GIT_TAG 5e12e4b81340a860637c057418a0fdbe8900ef2e
+        GIT_TAG 590d0bec6f2feb4ff5d167c8bd83004e9420c9a7
         GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(SDL)
@@ -83,8 +83,8 @@ macro(add_equinox_reach_target)
     target_link_libraries(
             ${TARGET_NAME}
             PRIVATE
-            SDL2::SDL2main
-            SDL2::SDL2-static
+            SDL3::SDL3
+            SDL3::SDL3-static
             ${TARGET_LIBS}
             ${PLATFORM_LIBS}
     )
@@ -122,7 +122,7 @@ add_equinox_reach_target(
         Vendor/imgui/imgui_draw.cpp
         Vendor/imgui/imgui_tables.cpp
         Vendor/imgui/imgui_widgets.cpp
-        Vendor/imgui/imgui_impl_sdl2.cpp
+        Vendor/imgui/imgui_impl_sdl3.cpp
         Vendor/imgui/imgui_impl_opengl3.cpp
         INCLUDE_DIRS
         Vendor/imgui
