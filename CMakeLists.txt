@@ -20,10 +20,10 @@ set(SDL_VULKAN OFF CACHE BOOL "" FORCE)
 set(SDL_3DNOW OFF CACHE BOOL "" FORCE)
 set(SDL_TEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
-        SDL
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL
-        GIT_TAG 590d0bec6f2feb4ff5d167c8bd83004e9420c9a7
-        GIT_PROGRESS TRUE
+    SDL
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL
+    GIT_TAG 590d0bec6f2feb4ff5d167c8bd83004e9420c9a7
+    GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(SDL)
 
@@ -31,13 +31,13 @@ project(EquinoxReach LANGUAGES C CXX)
 
 # Make sure AssetDef gets recompiled whenever an asset is added or modified
 file(GLOB_RECURSE ASSET_FILES
-        CONFIGURE_DEPENDS
-        "Asset/*.png"
-        "Asset/*.obj"
-        "Asset/*.glsl"
-        "Asset/*.vert"
-        "Asset/*.frag"
-        )
+    CONFIGURE_DEPENDS
+    "Asset/*.png"
+    "Asset/*.obj"
+    "Asset/*.glsl"
+    "Asset/*.vert"
+    "Asset/*.frag"
+)
 list(JOIN ASSET_FILES "\;" ASSET_FILES)
 set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSET_FILES})
 
@@ -52,41 +52,36 @@ macro(add_equinox_reach_target)
     target_compile_definitions(${TARGET_NAME} PRIVATE ${TARGET_DEF})
 
     target_sources(
-            ${TARGET_NAME}
-            PRIVATE
-            Vendor/glad/glad/gl.c
-            Source/AssetDef.cxx
-            Source/Memory.cxx
-            Source/Utility.cxx
-            Source/Main.cxx
-            Source/Window.cxx
-            Source/Draw.cxx
-            Source/Level.cxx
-            Source/Blob.cxx
-            Source/AssetTools.cxx
-            Source/Game.cxx
-            ${TARGET_SOURCES}
+        ${TARGET_NAME}
+        PRIVATE
+        Vendor/glad/glad/gl.c
+        Source/AssetDef.cxx
+        Source/Memory.cxx
+        Source/Utility.cxx
+        Source/Main.cxx
+        Source/Window.cxx
+        Source/Draw.cxx
+        Source/Level.cxx
+        Source/Blob.cxx
+        Source/AssetTools.cxx
+        Source/Game.cxx
+        ${TARGET_SOURCES}
     )
 
     target_include_directories(
-            ${TARGET_NAME}
-            PRIVATE
-            Vendor/glad/
-            Vendor/stb/
-            Source/
-            ${TARGET_INCLUDE_DIRS}
+        ${TARGET_NAME}
+        PRIVATE
+        Vendor/glad/
+        Vendor/stb/
+        Source/
+        ${TARGET_INCLUDE_DIRS}
     )
 
-    if (WIN32)
-        set(PLATFORM_LIBS Dwmapi.lib)
-    endif ()
     target_link_libraries(
-            ${TARGET_NAME}
-            PRIVATE
-            SDL3::SDL3
-            SDL3::SDL3-static
-            ${TARGET_LIBS}
-            ${PLATFORM_LIBS}
+        ${TARGET_NAME}
+        PRIVATE
+        SDL3::SDL3
+        SDL3::SDL3-static
     )
 
     if (WIN32)
@@ -105,25 +100,25 @@ macro(add_equinox_reach_target)
 endmacro()
 
 add_equinox_reach_target(
-        NAME
-        EquinoxReach
-        DEF
-        EQUINOX_REACH_GAME
+    NAME
+    EquinoxReach
+    DEF
+    EQUINOX_REACH_GAME
 )
 
 add_equinox_reach_target(
-        NAME
-        EquinoxReachDevelopment
-        DEF
-        EQUINOX_REACH_DEVELOPMENT
-        SOURCES
-        Source/DevTools.cxx
-        Vendor/imgui/imgui.cpp
-        Vendor/imgui/imgui_draw.cpp
-        Vendor/imgui/imgui_tables.cpp
-        Vendor/imgui/imgui_widgets.cpp
-        Vendor/imgui/imgui_impl_sdl3.cpp
-        Vendor/imgui/imgui_impl_opengl3.cpp
-        INCLUDE_DIRS
-        Vendor/imgui
+    NAME
+    EquinoxReachDevelopment
+    DEF
+    EQUINOX_REACH_DEVELOPMENT
+    SOURCES
+    Source/DevTools.cxx
+    Vendor/imgui/imgui.cpp
+    Vendor/imgui/imgui_draw.cpp
+    Vendor/imgui/imgui_tables.cpp
+    Vendor/imgui/imgui_widgets.cpp
+    Vendor/imgui/imgui_impl_sdl3.cpp
+    Vendor/imgui/imgui_impl_opengl3.cpp
+    INCLUDE_DIRS
+    Vendor/imgui
 )
