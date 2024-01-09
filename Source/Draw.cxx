@@ -59,20 +59,20 @@ void SProgram::CheckProgram(unsigned int ProgramID)
     }
 }
 
-unsigned int SProgram::CreateVertexShader(const SAsset& Resource)
+unsigned int SProgram::CreateVertexShader(const SAsset& Asset)
 {
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
-        reinterpret_cast<const char*>(Asset::Shader::SharedGLSL.Data),
+        Asset::Shader::SharedGLSL.AsSignedCharPtr(),
         &ShaderConstants[0],
-        reinterpret_cast<const char*>(Resource.Data)
+        Asset.AsSignedCharPtr()
     };
     int const Lengths[4] = {
         (int)GLSLVersion.length(),
         (int)Asset::Shader::SharedGLSL.Length,
         (int)ShaderConstants.length(),
-        (int)Resource.Length
+        (int)Asset.Length
     };
     glShaderSource(VertexShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(VertexShaderID);
@@ -80,20 +80,20 @@ unsigned int SProgram::CreateVertexShader(const SAsset& Resource)
     return VertexShaderID;
 }
 
-unsigned int SProgram::CreateFragmentShader(const SAsset& Resource)
+unsigned int SProgram::CreateFragmentShader(const SAsset& Asset)
 {
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
-        reinterpret_cast<const char*>(Asset::Shader::SharedGLSL.Data),
+        Asset::Shader::SharedGLSL.AsSignedCharPtr(),
         &ShaderConstants[0],
-        reinterpret_cast<const char*>(Resource.Data)
+        Asset.AsSignedCharPtr()
     };
     int const Lengths[4] = {
         (int)GLSLVersion.length(),
         (int)Asset::Shader::SharedGLSL.Length,
         (int)ShaderConstants.length(),
-        (int)Resource.Length
+        (int)Asset.Length
     };
     glShaderSource(FragmentShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(FragmentShaderID);

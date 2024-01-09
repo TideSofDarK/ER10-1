@@ -2,11 +2,12 @@
 
 #include <iostream>
 #include "glad/gl.h"
-#include "imgui.h"
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_sdl3.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_sdl3.h"
 #include "Constants.hxx"
 #include "GameSystem.hxx"
+#include "AssetTools.hxx"
 
 #define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
 #define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
@@ -19,16 +20,27 @@
 #define PARTY_SLOT_COLOR (ImGui::GetColorU32(IM_COL32(100, 75, 230, 200)))
 #define HPBAR_COLOR (ImGui::GetColorU32(IM_COL32(255, 19, 25, 255)))
 
+namespace Asset::Common
+{
+    EXTERN_ASSET(DroidSansTTF)
+}
+
 void SDevTools::Init(SDL_Window* Window, void* Context)
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     ImGui::StyleColorsDark();
     ImGui_ImplSDL3_InitForOpenGL(Window, Context);
     ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
+
+    /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
+    ImFontConfig FontConfig;
+    FontConfig.SizePixels = 40.0f;
+    FontConfig.FontDataOwnedByAtlas = false;
+    io.Fonts->AddFontFromMemoryTTF(Asset::Common::DroidSansTTF.AsVoidPtr(), Asset::Common::DroidSansTTF.Length, 16.0f, &FontConfig);
 
     bLevelEditorActive = false;
     LevelEditorMode = ELevelEditorMode::Normal;
@@ -255,7 +267,9 @@ void SDevTools::DrawLevel()
             {
                 auto CurrentTile = Level.GetTileAt({ X, Y });
                 if (CurrentTile == nullptr)
+                {
                     continue;
+                }
                 auto TilePosMin = ImVec2(PosMin.x + ((float)X * LevelEditorCellSize),
                     PosMin.y + ((float)Y * LevelEditorCellSize));
                 auto TilePosMax = ImVec2(TilePosMin.x + (float)LevelEditorCellSize,
@@ -320,7 +334,9 @@ void SDevTools::DrawLevel()
                 {
                     auto CurrentTile = Level.GetTileAt({ X, Y });
                     if (CurrentTile == nullptr)
+                    {
                         continue;
+                    }
                     auto TilePosMin = ImVec2(PosMin.x + ((float)X * LevelEditorCellSize),
                         PosMin.y + ((float)Y * LevelEditorCellSize));
                     auto TilePosMax = ImVec2(TilePosMin.x + (float)LevelEditorCellSize,
@@ -397,7 +413,9 @@ void SDevTools::DrawLevel()
                 {
                     auto CurrentTile = Level.GetTileAt({ X, Y });
                     if (CurrentTile == nullptr)
+                    {
                         continue;
+                    }
                     auto TilePosMin = ImVec2(PosMin.x + ((float)X * LevelEditorCellSize),
                         PosMin.y + ((float)Y * LevelEditorCellSize));
                     auto TilePosMax = ImVec2(TilePosMin.x + (float)LevelEditorCellSize,

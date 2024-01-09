@@ -32,9 +32,9 @@ private:
 
     static void CheckProgram(unsigned ShaderID);
 
-    static unsigned int CreateVertexShader(const SAsset& Resource);
+    static unsigned int CreateVertexShader(const SAsset& Asset);
 
-    static unsigned int CreateFragmentShader(const SAsset& Resource);
+    static unsigned int CreateFragmentShader(const SAsset& Asset);
 
     static unsigned int CreateProgram(unsigned int VertexShader, unsigned int FragmentShader);
 

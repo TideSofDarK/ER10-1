@@ -40,7 +40,7 @@ void STBIFree(void* Pointer)
     //    STBIScratchBuffer->GetAllocator()->release();
 }
 
-#include "stb_image.h"
+#include "stb/stb_image.h"
 
 CRawMesh::CRawMesh(const SAsset& Resource, CScratchBuffer& ScratchBuffer)
     : Positions(ScratchBuffer.GetVector<UVec3>()), TexCoords(ScratchBuffer.GetVector<UVec2>()), Normals(ScratchBuffer.GetVector<UVec3>()), Indices(ScratchBuffer.GetVector<unsigned short>())

@@ -37,6 +37,7 @@ file(GLOB_RECURSE ASSET_FILES
     "Asset/*.glsl"
     "Asset/*.vert"
     "Asset/*.frag"
+    "Asset/*.ttf"
 )
 list(JOIN ASSET_FILES "\;" ASSET_FILES)
 set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSET_FILES})
@@ -54,7 +55,7 @@ macro(add_equinox_reach_target)
     target_sources(
         ${TARGET_NAME}
         PRIVATE
-        Vendor/glad/glad/gl.c
+        Vendor/glad/gl.c
         Source/AssetDef.cxx
         Source/Memory.cxx
         Source/Utility.cxx
@@ -71,8 +72,7 @@ macro(add_equinox_reach_target)
     target_include_directories(
         ${TARGET_NAME}
         PRIVATE
-        Vendor/glad/
-        Vendor/stb/
+        Vendor/
         Source/
         ${TARGET_INCLUDE_DIRS}
     )
@@ -119,6 +119,6 @@ add_equinox_reach_target(
     Vendor/imgui/imgui_widgets.cpp
     Vendor/imgui/imgui_impl_sdl3.cpp
     Vendor/imgui/imgui_impl_opengl3.cpp
-    INCLUDE_DIRS
-    Vendor/imgui
+    # INCLUDE_DIRS
+    # Vendor/imgui
 )

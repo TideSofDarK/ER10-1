@@ -66,6 +66,7 @@ namespace Asset::Common
     DEFINE_ASSET(NoisePNG, "../Asset/Texture/Noise.png")
     DEFINE_ASSET(QuadOBJ, "../Asset/Mesh/Quad.obj")
     DEFINE_ASSET(PillarOBJ, "../Asset/Mesh/Pillar.obj")
+    DEFINE_ASSET(DroidSansTTF, "../Asset/Font/DroidSans.ttf")
 }
 
 namespace Asset::Shader

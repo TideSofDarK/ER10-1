@@ -15,7 +15,17 @@ struct SAsset
 
         };
 
-    [[nodiscard]] std::string ToString() const { return { reinterpret_cast<const char*>(Data), Length }; }
+    [[nodiscard]] std::string ToString() const { return { AsSignedCharPtr(), Length }; }
+
+    const char* AsSignedCharPtr() const
+    {
+        return reinterpret_cast<const char*>(Data);
+    }
+
+    void* AsVoidPtr() const
+    {
+        return reinterpret_cast<void*>(const_cast<unsigned char*>(Data));
+    }
 };
 
 class CRawMesh
