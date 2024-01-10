@@ -1,8 +1,5 @@
 #pragma once
 
-#include "CommonTypes.hxx"
-#include "Math.hxx"
-
 #define SIZE_OF_VECTOR_ELEMENT(Vector) sizeof(decltype(Vector)::value_type)
 
 namespace Utility

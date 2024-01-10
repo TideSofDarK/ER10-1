@@ -273,7 +273,7 @@ void STileSet::InitPlaceholder()
 
 void STileSet::InitBasic(const SAsset& Floor, const SAsset& Wall, const SAsset& WallJoint, const SAsset& Door)
 {
-    auto ScratchBuffer = Memory::GetScratchBuffer();
+    auto ScratchBuffer = Memory::CreateScratchBuffer();
 
     auto Positions = ScratchBuffer.GetVector<UVec3>();
     auto TexCoords = ScratchBuffer.GetVector<UVec2>();
@@ -973,7 +973,7 @@ void SAtlas::Init(int InTextureUnitID)
 
 SSpriteHandle SAtlas::AddSprite(const SAsset& Resource)
 {
-    auto ScratchBuffer = Memory::GetScratchBuffer();
+    auto ScratchBuffer = Memory::CreateScratchBuffer();
 
     CRawImageInfo const RawImageInfo(Resource, ScratchBuffer);
 
@@ -984,7 +984,7 @@ SSpriteHandle SAtlas::AddSprite(const SAsset& Resource)
 
 void SAtlas::Build()
 {
-    auto ScratchBuffer = Memory::GetScratchBuffer();
+    auto ScratchBuffer = Memory::CreateScratchBuffer();
 
     BindToTextureUnit(TextureUnitID);
 

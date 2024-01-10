@@ -60,7 +60,7 @@ namespace Memory
 {
     void Init();
 
-    CScratchBuffer GetScratchBuffer();
+    CScratchBuffer CreateScratchBuffer();
 
     void Shutdown();
 }

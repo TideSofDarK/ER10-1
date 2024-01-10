@@ -24,7 +24,7 @@ namespace Memory
         bMemorySystemInitialized = true;
     }
 
-    CScratchBuffer GetScratchBuffer()
+    CScratchBuffer CreateScratchBuffer()
     {
         return CScratchBuffer(ScratchBufferResource);
     }

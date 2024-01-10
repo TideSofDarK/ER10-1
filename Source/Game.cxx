@@ -55,7 +55,7 @@ SGame::SGame()
     PrimaryAtlas3D.Build();
 
     {
-        auto ScratchBuffer = Memory::GetScratchBuffer();
+        auto ScratchBuffer = Memory::CreateScratchBuffer();
         auto FloorMesh = CRawMesh(
             Asset::TileSet::Hotel::FloorOBJ, ScratchBuffer);
         Floor.InitFromRawMesh(FloorMesh);
