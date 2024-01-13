@@ -212,7 +212,7 @@ void SGame::Run()
         {
 #ifdef EQUINOX_REACH_DEVELOPMENT
             {
-                SDebugToolsData Data = { Window.DeltaTime, CMemory::NumberOfBlocks(), Blob.Coords, Blob.Direction, &PlayerParty, false };
+                SDebugToolsData Data = { 1000.0f / Window.DeltaTime / 1000.0f, CMemory::NumberOfBlocks(), Blob.Coords, Blob.Direction, &PlayerParty, false };
                 SDevTools::DebugTools(Data);
 
                 if (Data.bImportLevel)

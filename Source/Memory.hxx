@@ -107,7 +107,7 @@ public:
 
             if (AllocationHeader->NextBlock != nullptr)
             {
-                if (BytePtr + sizeof(AllocationHeader) + Bytes >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock))
+                if (BytePtr + sizeof(SAllocationHeader) + Bytes >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock))
                 {
                     Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, AllocationHeader);
                     /* Can't go beyond NextBlock! */
@@ -123,7 +123,7 @@ public:
             }
             else
             {
-                if (BytePtr + sizeof(AllocationHeader) + Bytes >= Buffer.data() + Buffer.size())
+                if (BytePtr + sizeof(SAllocationHeader) + Bytes >= Buffer.data() + Buffer.size())
                 {
                     Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, AllocationHeader);
                     /* Can't go beyond end of the buffer! */
@@ -310,26 +310,22 @@ public:
 
     inline static void* Malloc(size_t Bytes)
     {
-        NumberOfBlocks();
         return Get().InlineResource.Allocate(nullptr, Bytes);
     }
 
     inline static void* Calloc(size_t Num, size_t Bytes)
     {
-        NumberOfBlocks();
         return Get().InlineResource.Allocate(nullptr, Num * Bytes);
     }
 
     inline static void* Realloc(void* Ptr, size_t Bytes)
     {
-        NumberOfBlocks();
         return Get().InlineResource.Allocate(Ptr, Bytes);
     }
 
     inline static void Free(void* Ptr)
     {
         Get().InlineResource.Allocate(Ptr, 0);
-        NumberOfBlocks();
     }
 
     template <typename T>

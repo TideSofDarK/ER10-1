@@ -183,7 +183,7 @@ void SDevTools::DebugTools(SDebugToolsData& Data)
         if (ImGui::TreeNode("System Info"))
         {
             ImGui::Text("Frames Per Second: %.6f", Data.FPS);
-            ImGui::Text("Number Of Blocks: %d", Data.NumberOfBlocks);
+            ImGui::Text("Number Of Blocks: %zu", Data.NumberOfBlocks);
             ImGui::TreePop();
         }
         if (ImGui::TreeNode("Player Info"))
