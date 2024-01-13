@@ -30,7 +30,7 @@ struct SProgram
 private:
     static void CheckShader(unsigned ShaderID);
 
-    static void CheckProgram(unsigned ShaderID);
+    static void CheckProgram(unsigned ProgramID);
 
     static unsigned int CreateVertexShader(const SAsset& Asset);
 
