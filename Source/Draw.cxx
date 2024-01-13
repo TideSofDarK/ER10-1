@@ -273,17 +273,15 @@ void STileSet::InitPlaceholder()
 
 void STileSet::InitBasic(const SAsset& Floor, const SAsset& Wall, const SAsset& WallJoint, const SAsset& Door)
 {
-    auto ScratchBuffer = Memory::CreateScratchBuffer();
-
-    auto Positions = ScratchBuffer.GetVector<UVec3>();
-    auto TexCoords = ScratchBuffer.GetVector<UVec2>();
-    auto Indices = ScratchBuffer.GetVector<unsigned short>();
+    auto Positions = CMemory::GetVector<UVec3>();
+    auto TexCoords = CMemory::GetVector<UVec2>();
+    auto Indices = CMemory::GetVector<unsigned short>();
 
     int LastElementOffset = 0;
     int LastVertexOffset = 0;
 
     auto InitGeometry = [&](const SAsset& Resource, int Type) {
-        auto Mesh = CRawMesh(Resource, ScratchBuffer);
+        auto Mesh = CRawMesh(Resource);
 
         auto& Geometry = TileGeometry[Type];
         Geometry.ElementOffset = LastElementOffset;
@@ -973,9 +971,7 @@ void SAtlas::Init(int InTextureUnitID)
 
 SSpriteHandle SAtlas::AddSprite(const SAsset& Resource)
 {
-    auto ScratchBuffer = Memory::CreateScratchBuffer();
-
-    CRawImageInfo const RawImageInfo(Resource, ScratchBuffer);
+    CRawImageInfo const RawImageInfo(Resource);
 
     Sprites[CurrentIndex].SizePixels = { RawImageInfo.Width, RawImageInfo.Height };
     Sprites[CurrentIndex].Resource = &Resource;
@@ -984,8 +980,6 @@ SSpriteHandle SAtlas::AddSprite(const SAsset& Resource)
 
 void SAtlas::Build()
 {
-    auto ScratchBuffer = Memory::CreateScratchBuffer();
-
     BindToTextureUnit(TextureUnitID);
 
     std::sort(SortingIndices.begin(), SortingIndices.end(), [&](const int& IndexA, const int& IndexB) {
@@ -999,7 +993,7 @@ void SAtlas::Build()
     for (int Index = 0; Index < CurrentIndex; ++Index)
     {
         auto& Sprite = Sprites[SortingIndices[Index]];
-        CRawImage const Image(*Sprite.Resource, ScratchBuffer);
+        CRawImage const Image(*Sprite.Resource);
 
         if (CursorX + Image.Width > WidthAndHeight)
         {

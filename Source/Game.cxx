@@ -54,14 +54,11 @@ SGame::SGame()
         Asset::TileSet::Hotel::AtlasPNG);
     PrimaryAtlas3D.Build();
 
-    {
-        auto ScratchBuffer = Memory::CreateScratchBuffer();
-        auto FloorMesh = CRawMesh(
-            Asset::TileSet::Hotel::FloorOBJ, ScratchBuffer);
-        Floor.InitFromRawMesh(FloorMesh);
-        TestGeometry.InitFromRawMesh(CRawMesh(
-            Asset::Common::PillarOBJ, ScratchBuffer));
-    }
+    auto FloorMesh = CRawMesh(
+        Asset::TileSet::Hotel::FloorOBJ);
+    Floor.InitFromRawMesh(FloorMesh);
+    TestGeometry.InitFromRawMesh(CRawMesh(
+        Asset::Common::PillarOBJ));
 
     Renderer.TileSet.InitBasic(
         Asset::TileSet::Hotel::FloorOBJ, Asset::TileSet::Hotel::WallOBJ,
@@ -110,8 +107,6 @@ SGame::SGame()
     PlayerParty.AddCharacter({ "Juggernaut", 30.0f, 50.0f, 10, 1 });
     PlayerParty.AddCharacter({ "Vulture", 45.0f, 50.0f, 10, 2, false });
     PlayerParty.AddCharacter({ "Mortar", 30.0f, 30.0f, 10, 2, true });
-
-    std::cout << PlayerParty.GetPartyCount() << std::endl;
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t* KeyboardState, const uint8_t Scancode)
@@ -217,7 +212,7 @@ void SGame::Run()
         {
 #ifdef EQUINOX_REACH_DEVELOPMENT
             {
-                SDebugToolsData Data = { Window.DeltaTime, Blob.Coords, Blob.Direction, &PlayerParty, false };
+                SDebugToolsData Data = { Window.DeltaTime, CMemory::NumberOfBlocks(), Blob.Coords, Blob.Direction, &PlayerParty, false };
                 SDevTools::DebugTools(Data);
 
                 if (Data.bImportLevel)

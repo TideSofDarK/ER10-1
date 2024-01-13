@@ -14,6 +14,7 @@ enum class ELevelEditorMode
 struct SDebugToolsData
 {
     float FPS{};
+    std::size_t NumberOfBlocks{};
     UVec2Int PlayerCoords{};
     SDirection PlayerDirection{ 0 };
     SParty* Party{};
@@ -62,7 +63,9 @@ private:
                     *SelectedType = static_cast<E>(I);
                 }
                 if (bIsSelected)
+                {
                     ImGui::SetItemDefaultFocus();
+                }
             }
             ImGui::EndCombo();
         }

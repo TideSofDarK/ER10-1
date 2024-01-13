@@ -55,7 +55,6 @@ macro(add_equinox_reach_target)
         PRIVATE
         Vendor/glad/gl.c
         Source/AssetDef.cxx
-        Source/Memory.cxx
         Source/Utility.cxx
         Source/Main.cxx
         Source/Window.cxx

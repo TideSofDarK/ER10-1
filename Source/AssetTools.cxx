@@ -1,5 +1,6 @@
 #include "AssetTools.hxx"
 
+#include <iostream>
 #include <algorithm>
 #include <string>
 #include <array>
@@ -21,34 +22,30 @@
 #define STBI_REALLOC STBIRealloc
 #define STBI_FREE STBIFree
 
-CScratchBuffer* STBIScratchBuffer{};
-
 void* STBIMalloc(size_t Length)
 {
-    auto Allocator = STBIScratchBuffer->GetAllocator();
-    return Allocator->allocate(Length);
+    return CMemory::Malloc(Length);
 }
 
 void* STBIRealloc(void* Pointer, size_t Length)
 {
-    auto Allocator = STBIScratchBuffer->GetAllocator();
-    return Allocator->allocate(Length);
+    return CMemory::Realloc(Pointer, Length);
 }
 
 void STBIFree(void* Pointer)
 {
-    //    STBIScratchBuffer->GetAllocator()->release();
+    CMemory::Free(Pointer);
 }
 
 #include "stb/stb_image.h"
 
-CRawMesh::CRawMesh(const SAsset& Resource, CScratchBuffer& ScratchBuffer)
-    : Positions(ScratchBuffer.GetVector<UVec3>()), TexCoords(ScratchBuffer.GetVector<UVec2>()), Normals(ScratchBuffer.GetVector<UVec3>()), Indices(ScratchBuffer.GetVector<unsigned short>())
+CRawMesh::CRawMesh(const SAsset& Resource)
+    : Positions(CMemory::GetVector<UVec3>()), TexCoords(CMemory::GetVector<UVec2>()), Normals(CMemory::GetVector<UVec3>()), Indices(CMemory::GetVector<unsigned short>())
 {
-    auto ScratchPositions = ScratchBuffer.GetVector<UVec3>();
-    auto ScratchTexCoords = ScratchBuffer.GetVector<UVec2>();
-    auto ScratchNormals = ScratchBuffer.GetVector<UVec3>();
-    auto ScratchOBJIndices = ScratchBuffer.GetVector<UVec3Size>();
+    auto ScratchPositions = CMemory::GetVector<UVec3>();
+    auto ScratchTexCoords = CMemory::GetVector<UVec2>();
+    auto ScratchNormals = CMemory::GetVector<UVec3>();
+    auto ScratchOBJIndices = CMemory::GetVector<UVec3Size>();
 
     Positions.clear();
     Normals.clear();
@@ -128,20 +125,21 @@ CRawMesh::CRawMesh(const SAsset& Resource, CScratchBuffer& ScratchBuffer)
     }
 }
 
-CRawImage::CRawImage(const SAsset& Resource, CScratchBuffer& ScratchBuffer)
+CRawImage::CRawImage(const SAsset& Resource)
 {
-    STBIScratchBuffer = &ScratchBuffer;
-
     Data = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(Resource.Data), (int)Resource.Length,
         &Width,
         &Height, &Channels,
         4);
 }
 
-CRawImageInfo::CRawImageInfo(const SAsset& Resource, CScratchBuffer& ScratchBuffer)
+CRawImage::~CRawImage()
 {
-    STBIScratchBuffer = &ScratchBuffer;
+    stbi_image_free(Data);
+}
 
+CRawImageInfo::CRawImageInfo(const SAsset& Resource)
+{
     auto Result = stbi_info_from_memory(reinterpret_cast<const stbi_uc*>(Resource.Data),
         (int)Resource.Length, &Width, &Height, &Channels);
     if (!Result)

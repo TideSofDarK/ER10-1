@@ -38,7 +38,9 @@ SBlob::SBlob()
 void SBlob::Turn(bool bRight)
 {
     if (AnimationType != EPlayerAnimationType::Idle)
+    {
         return;
+    }
     if (!bRight)
     {
         Direction.CycleCCW();
@@ -75,7 +77,9 @@ void SBlob::ApplyDirection(bool bImmediate)
 void SBlob::Step(UVec2Int DirectionVector)
 {
     if (AnimationType != EPlayerAnimationType::Idle)
+    {
         return;
+    }
     AnimationType = EPlayerAnimationType::Walk;
     AnimationAlpha = 0.0f;
     EyePositionFrom = EyePositionCurrent;
@@ -86,7 +90,9 @@ void SBlob::Step(UVec2Int DirectionVector)
 void SBlob::BumpIntoWall()
 {
     if (AnimationType != EPlayerAnimationType::Idle)
+    {
         return;
+    }
     AnimationType = EPlayerAnimationType::Bump;
     AnimationAlpha = 0.0f;
 

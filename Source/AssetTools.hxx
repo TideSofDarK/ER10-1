@@ -40,7 +40,7 @@ public:
 
     [[nodiscard]] int GetElementCount() const { return (int)Indices.size(); }
 
-    CRawMesh(const SAsset& Resource, CScratchBuffer& ScratchBuffer);
+    CRawMesh(const SAsset& Resource);
 };
 
 class CRawImage
@@ -51,7 +51,8 @@ public:
     int Channels{};
     void* Data{};
 
-    CRawImage(const SAsset& Resource, CScratchBuffer& ScratchBuffer);
+    explicit CRawImage(const SAsset& Resource);
+    ~CRawImage();
 };
 
 class CRawImageInfo
@@ -61,5 +62,5 @@ public:
     int Height{};
     int Channels{};
 
-    CRawImageInfo(const SAsset& Resource, CScratchBuffer& ScratchBuffer);
+    explicit CRawImageInfo(const SAsset& Resource);
 };

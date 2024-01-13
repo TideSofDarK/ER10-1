@@ -49,7 +49,9 @@ void SLevel::InitWallJoints()
 void SLevel::Excavate(UVec2Int Coords)
 {
     if (!IsValidTile(Coords))
+    {
         return;
+    }
     auto Tile = GetTileAtMutable(Coords);
     Tile->Type = ETileType::Floor;
 

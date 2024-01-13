@@ -5,6 +5,7 @@
 #include "glad/gl.h"
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_log.h"
+#include "Memory.hxx"
 
 void SWindow::SwapBuffers() const
 {
@@ -23,6 +24,8 @@ void SWindow::Init()
         exit(1);
     }
 
+    // SDL_SetMemoryFunctions(&CMemory::Malloc, &CMemory::Calloc, &CMemory::Realloc, &CMemory::Free);
+
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
@@ -31,7 +34,7 @@ void SWindow::Init()
 
     Window = SDL_CreateWindow(GAME_NAME,
         WINDOW_WIDTH, WINDOW_HEIGHT,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_HIDDEN);
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);

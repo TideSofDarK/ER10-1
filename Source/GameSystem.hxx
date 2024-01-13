@@ -88,7 +88,9 @@ struct SParty
         for (; I < PARTY_SIZE; ++I)
         {
             if (!Slots[I].IsEmpty())
+            {
                 continue;
+            }
             if (Char.Size == 1)
             {
                 Slots[I].SetRealChar(Char);
@@ -115,7 +117,9 @@ struct SParty
         for (const auto& Slot : Slots)
         {
             if (Slot.IsRealChar())
+            {
                 Count++;
+            }
         }
         return Count;
     }
