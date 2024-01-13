@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <cstring>
+#include <mutex>
 #include <memory_resource>
 #include <vector>
 #include <cstddef>
@@ -265,7 +268,7 @@ protected:
             override
         {
             Log::Memory("Freeing %d bytes through topmost resource.", Bytes);
-            ::operator delete(Pointer, Bytes, std::align_val_t(Align));
+            ::operator delete(Pointer);
         }
 
         [[nodiscard]] inline bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override
