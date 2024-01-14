@@ -9,8 +9,7 @@
 #include <array>
 #include "Log.hxx"
 
-static constexpr std::size_t PoolSize = 1024 * 1024 * 4;
-static constexpr std::size_t HeapSize = 1024 * 1024 * 10;
+static constexpr std::size_t HeapSize = 1024 * 1024 * 12;
 
 template <size_t Size>
 class TInlineResource : public std::pmr::memory_resource
@@ -73,13 +72,23 @@ public:
 
     inline void* do_allocate(size_t bytes, size_t alignment) override
     {
+        std::unique_lock Lock{ Mutex };
         return Allocate(nullptr, bytes, alignment);
     }
 
     inline void do_deallocate(void* ptr, size_t bytes, size_t alignment) override
     {
+        std::unique_lock Lock{ Mutex };
         Allocate(ptr, 0);
     }
+
+    inline void* do_reallocate(void* ptr, size_t bytes)
+    {
+        std::unique_lock Lock{ Mutex };
+        return Allocate(ptr, bytes);
+    }
+
+    std::mutex Mutex;
 
     inline void* Allocate(void* SrcPtr, size_t Bytes, const size_t Align = alignof(max_align_t))
     {
@@ -277,64 +286,52 @@ protected:
         }
     };
 
-    char Heap[PoolSize]{};
     CTopmostResource TopmostResource;
-    std::pmr::monotonic_buffer_resource MainResource;
-    std::pmr::unsynchronized_pool_resource PoolResource;
     TInlineResource<HeapSize> InlineResource;
+    std::pmr::synchronized_pool_resource PoolResource;
 
-    static CMemory& GetInstance()
-    {
-        static CMemory Instance;
-        return Instance;
-    }
-
-    static CMemory& Get()
-    {
-        static std::once_flag Flag;
-        std::call_once(Flag, [] { GetInstance(); });
-        return GetInstance();
-    }
+    static CMemory& Get();
 
 public:
     explicit CMemory()
-        : MainResource(
-            &this->Heap[0],
-            std::size(Heap),
+        : InlineResource(
 #ifdef EQUINOX_REACH_DEVELOPMENT
             std::pmr::null_memory_resource())
 #else
             &this->TopmostResource)
 #endif
-        , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, &MainResource)
-        , InlineResource(&PoolResource){};
-
-    std::pmr::monotonic_buffer_resource& GetMainResource() { return MainResource; }
+        , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, &InlineResource)
+    {
+        Log::Memory("Initiated heap and pool resources, total size: %zu bytes.", HeapSize);
+    };
 
     inline static void* Malloc(size_t Bytes)
     {
-        return Get().InlineResource.Allocate(nullptr, Bytes);
+        void* Ptr = Get().InlineResource.do_allocate(Bytes, alignof(std::max_align_t));
+        return Ptr;
     }
 
     inline static void* Calloc(size_t Num, size_t Bytes)
     {
-        return Get().InlineResource.Allocate(nullptr, Num * Bytes);
+        void* Ptr = Get().InlineResource.do_allocate(Num * Bytes, alignof(std::max_align_t));
+        std::memset(Ptr, 0, Bytes * Num);
+        return Ptr;
     }
 
     inline static void* Realloc(void* Ptr, size_t Bytes)
     {
-        return Get().InlineResource.Allocate(Ptr, Bytes);
+        return Get().InlineResource.do_reallocate(Ptr, Bytes);
     }
 
     inline static void Free(void* Ptr)
     {
-        Get().InlineResource.Allocate(Ptr, 0);
+        Get().InlineResource.do_deallocate(Ptr, 0, alignof(std::max_align_t));
     }
 
     template <typename T>
     inline static std::shared_ptr<T> MakeShared()
     {
-        return std::allocate_shared<T, std::pmr::polymorphic_allocator<T>>(&Get().MainResource);
+        return std::allocate_shared<T, std::pmr::polymorphic_allocator<T>>(&Get().InlineResource);
     }
 
     template <typename T>

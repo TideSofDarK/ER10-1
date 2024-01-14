@@ -24,7 +24,11 @@ void SWindow::Init()
         exit(1);
     }
 
-    // SDL_SetMemoryFunctions(&CMemory::Malloc, &CMemory::Calloc, &CMemory::Realloc, &CMemory::Free);
+    //    if (SDL_SetMemoryFunctions(&CMemory::Malloc, &CMemory::Calloc, &CMemory::Realloc, &CMemory::Free))
+    //    {
+    //        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
+    //        exit(1);
+    //    }
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
