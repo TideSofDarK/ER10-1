@@ -24,11 +24,11 @@ void SWindow::Init()
         exit(1);
     }
 
-    //    if (SDL_SetMemoryFunctions(&CMemory::Malloc, &CMemory::Calloc, &CMemory::Realloc, &CMemory::Free))
-    //    {
-    //        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
-    //        exit(1);
-    //    }
+    if (SDL_SetMemoryFunctions(&CMemory::Malloc, &CMemory::Calloc, &CMemory::Realloc, &CMemory::Free))
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
+        exit(1);
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
@@ -82,7 +82,7 @@ void SWindow::Cleanup() const
 {
     SDL_GL_DeleteContext(Context);
     SDL_DestroyWindow(Window);
-    SDL_Quit();
+//    SDL_Quit();
 }
 
 void SWindow::ToggleBorderlessFullscreen() const

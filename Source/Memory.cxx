@@ -1,8 +1,7 @@
 #include "Memory.hxx"
 
-CMemory MemoryInstance{};
-
 CMemory& CMemory::Get()
 {
+    static CMemory MemoryInstance{};
     return MemoryInstance;
 }

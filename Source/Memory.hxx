@@ -26,6 +26,7 @@ private:
         std::array<std::byte, Size> Buffer{};
     SAllocationHeader* FirstAllocation{};
     std::pmr::memory_resource* Upstream = std::pmr::new_delete_resource();
+    std::mutex Mutex;
 
     void DestroyBlock(SAllocationHeader* AllocationHeader)
     {
@@ -73,78 +74,78 @@ public:
     inline void* do_allocate(size_t bytes, size_t alignment) override
     {
         std::unique_lock Lock{ Mutex };
-        return Allocate(nullptr, bytes, alignment);
+        return AllocateInline(nullptr, bytes, alignment);
     }
 
     inline void do_deallocate(void* ptr, size_t bytes, size_t alignment) override
     {
         std::unique_lock Lock{ Mutex };
-        Allocate(ptr, 0);
+        AllocateInline(ptr, 0);
     }
 
     inline void* do_reallocate(void* ptr, size_t bytes)
     {
         std::unique_lock Lock{ Mutex };
-        return Allocate(ptr, bytes);
+        return AllocateInline(ptr, bytes);
     }
 
-    std::mutex Mutex;
-
-    inline void* Allocate(void* SrcPtr, size_t Bytes, const size_t Align = alignof(max_align_t))
+    inline void* AllocateInline(void* SrcPtr, size_t Bytes, const size_t Alignment = alignof(std::max_align_t))
     {
+        std::size_t BytesWithHeader = Bytes + sizeof(SAllocationHeader);
+        std::size_t FinalAllocationSize = BytesWithHeader + (Alignment - 1);
         std::size_t ReallocBytes{};
         if (SrcPtr != nullptr)
         {
             auto BytePtr = static_cast<std::byte*>(SrcPtr);
-            auto AllocationHeader = reinterpret_cast<SAllocationHeader*>(BytePtr - sizeof(SAllocationHeader));
+            auto AllocationHeader = reinterpret_cast<SAllocationHeader*>(BytePtr) - 1;
 
             /* Freeing. */
             if (Bytes == 0)
             {
-
                 /* Check if the pointer is within our range. */
                 if (BytePtr < Buffer.data() || BytePtr >= Buffer.data() + Buffer.size())
                 {
-                    Log::Memory("Freeing %zu bytes from upstream at %p.", AllocationHeader->Length, AllocationHeader);
-                    Upstream->deallocate(AllocationHeader, AllocationHeader->Length + sizeof(SAllocationHeader), Align);
+                    Log::Memory("Freeing from upstream at %p.", BytePtr);
+                    Upstream->deallocate(AllocationHeader, Bytes, Alignment);
                     return nullptr;
                 }
 
                 DestroyBlock(AllocationHeader);
 
-                Log::Memory("Freeing %zu bytes at %p.", AllocationHeader->Length, AllocationHeader);
+                Log::Memory("Freeing %zu bytes at %p.", AllocationHeader->Length, BytePtr);
 
                 return nullptr;
             }
 
+            /* Reallocating. */
             if (AllocationHeader->NextBlock != nullptr)
             {
-                if (BytePtr + sizeof(SAllocationHeader) + Bytes >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock))
+                if (BytePtr + BytesWithHeader >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock) || !CMemory::IsAlignedPtr(SrcPtr, Alignment))
                 {
-                    Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, AllocationHeader);
+                    Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond NextBlock! */
-                    ReallocBytes = AllocationHeader->Length;
+                    ReallocBytes = std::min(AllocationHeader->Length, Bytes);
                     DestroyBlock(AllocationHeader);
                 }
                 else
                 {
-                    Log::Memory("Reallocating %zu bytes at %p.", Bytes, AllocationHeader);
+                    Log::Memory("Reallocating %zu bytes at %p.", Bytes, BytePtr);
                     AllocationHeader->Length = Bytes;
                     return SrcPtr;
                 }
             }
             else
             {
-                if (BytePtr + sizeof(SAllocationHeader) + Bytes >= Buffer.data() + Buffer.size())
+                if (BytePtr + BytesWithHeader >= Buffer.data() + Buffer.size() || !CMemory::IsAlignedPtr(SrcPtr, Alignment))
                 {
-                    Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, AllocationHeader);
+                    Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond end of the buffer! */
-                    ReallocBytes = AllocationHeader->Length;
+                    ReallocBytes = std::min(AllocationHeader->Length, Bytes);
                     DestroyBlock(AllocationHeader);
                 }
                 else
                 {
-                    Log::Memory("Reallocating %zu bytes at %p.", Bytes, AllocationHeader);
+                    Log::Memory("Reallocating %zu bytes at %p.", Bytes, BytePtr);
                     AllocationHeader->Length = Bytes;
                     return SrcPtr;
                 }
@@ -155,24 +156,21 @@ public:
             return nullptr;
         }
 
-        std::size_t FinalAllocationSize = Bytes + sizeof(SAllocationHeader);
-
         std::byte* NewPtr{};
         SAllocationHeader* NewPreviousBlock = nullptr;
         SAllocationHeader* NewNextBlock = nullptr;
 
         if (FinalAllocationSize > Buffer.size())
         {
-            NewPtr = static_cast<std::byte*>(Upstream->allocate(FinalAllocationSize, Align));
+            NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
             Log::Memory("Allocating %zu bytes from upstream at %p.", Bytes, NewPtr);
+            return NewPtr;
         }
         else
         {
             if (FirstAllocation == nullptr)
             {
                 NewPtr = Buffer.data();
-                FirstAllocation = reinterpret_cast<SAllocationHeader*>(NewPtr);
-                Log::Memory("Allocating %zu bytes at %p.", Bytes, NewPtr);
             }
             else
             {
@@ -191,7 +189,6 @@ public:
                             NewPtr = DataAfterHeader;
                             NewPreviousBlock = AllocationHeader;
                             NewNextBlock = AllocationHeader->NextBlock;
-                            Log::Memory("Allocating %zu bytes at %p.", Bytes, NewPtr);
                             break;
                         }
                         else
@@ -205,16 +202,15 @@ public:
                         /* No next block; just check if it fits. */
                         if (DataAfterHeader + FinalAllocationSize >= Buffer.data() + Buffer.size())
                         {
-                            NewPtr = static_cast<std::byte*>(Upstream->allocate(FinalAllocationSize, Align));
+                            NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
                             Log::Memory("Allocating %zu bytes from upstream at %p.", Bytes, NewPtr);
-                            break;
+                            return NewPtr;
                         }
                         else
                         {
                             NewPtr = DataAfterHeader;
                             NewPreviousBlock = AllocationHeader;
                             NewNextBlock = AllocationHeader->NextBlock;
-                            Log::Memory("Allocating %zu bytes at %p.", Bytes, NewPtr);
                             break;
                         }
                     }
@@ -227,11 +223,26 @@ public:
             Log::Memory("Failed to allocate %zu bytes.", Bytes);
             exit(1);
         }
+        else
+        {
+            NewPtr = static_cast<std::byte*>(CMemory::AlignPtr(NewPtr + sizeof(SAllocationHeader), Alignment));
+#ifdef EQUINOX_REACH_DEVELOPMENT
+            if (ReallocBytes == 0)
+            {
+                Log::Memory("Allocating %zu bytes at %p.", Bytes, NewPtr);
+            }
+#endif
+        }
 
-        auto NewAllocationHeader = reinterpret_cast<SAllocationHeader*>(NewPtr);
+        auto NewAllocationHeader = reinterpret_cast<SAllocationHeader*>(NewPtr) - 1;
         NewAllocationHeader->Length = Bytes;
         NewAllocationHeader->NextBlock = NewNextBlock;
         NewAllocationHeader->PreviousBlock = NewPreviousBlock;
+
+        if (FirstAllocation == nullptr)
+        {
+            FirstAllocation = NewAllocationHeader;
+        }
 
         if (NewNextBlock != nullptr)
         {
@@ -243,15 +254,13 @@ public:
             NewPreviousBlock->NextBlock = NewAllocationHeader;
         }
 
-        auto ResultPtr = NewPtr + sizeof(SAllocationHeader);
-
         if (ReallocBytes != 0)
         {
-            Log::Memory("Copying %zu bytes to %p.", std::min(ReallocBytes, Bytes), ResultPtr);
-            std::memcpy(ResultPtr, SrcPtr, std::min(ReallocBytes, Bytes));
+            Log::Memory("Copying %zu bytes to %p.", std::min(ReallocBytes, Bytes), NewPtr);
+            std::memcpy(NewPtr, SrcPtr, std::min(ReallocBytes, Bytes));
         }
 
-        return ResultPtr;
+        return NewPtr;
     }
 
     [[nodiscard]] inline bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override
@@ -292,7 +301,6 @@ protected:
 
     static CMemory& Get();
 
-public:
     explicit CMemory()
         : InlineResource(
 #ifdef EQUINOX_REACH_DEVELOPMENT
@@ -304,6 +312,8 @@ public:
     {
         Log::Memory("Initiated heap and pool resources, total size: %zu bytes.", HeapSize);
     };
+
+public:
 
     inline static void* Malloc(size_t Bytes)
     {
@@ -346,4 +356,19 @@ public:
         return Get().InlineResource.NumberOfBlocks();
     }
 #endif
+
+    static constexpr std::size_t DoAlign(std::size_t Num, std::size_t Alignment)
+    {
+        return (Num + (Alignment - 1)) & ~(Alignment - 1);
+    }
+
+    static inline void* AlignPtr(void* Ptr, std::size_t Alignment)
+    {
+        return (void*)(DoAlign((size_t)Ptr, Alignment));
+    }
+
+    static inline bool IsAlignedPtr(void* Ptr, std::size_t Alignment)
+    {
+        return ((std::size_t)Ptr & (Alignment - 1)) == 0;
+    }
 };
