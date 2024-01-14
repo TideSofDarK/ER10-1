@@ -37,7 +37,7 @@ void STBIFree(void* Pointer)
     CMemory::Free(Pointer);
 }
 
-#include "stb/stb_image.h"
+#include <stb/stb_image.h>
 
 CRawMesh::CRawMesh(const SAsset& Resource)
     : Positions(CMemory::GetVector<UVec3>()), TexCoords(CMemory::GetVector<UVec2>()), Normals(CMemory::GetVector<UVec3>()), Indices(CMemory::GetVector<unsigned short>())

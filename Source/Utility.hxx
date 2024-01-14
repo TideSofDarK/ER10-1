@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #define SIZE_OF_VECTOR_ELEMENT(Vector) sizeof(decltype(Vector)::value_type)
 
 namespace Utility
@@ -35,4 +37,19 @@ namespace Utility
     void ParseFloats(const char* Start, const char* End, float* Floats, int FloatCount);
 
     void ParseInts(const char* Start, const char* End, int* Ints, int IntCount);
+
+    static constexpr std::size_t DoAlign(std::size_t Num, std::size_t Alignment)
+    {
+        return (Num + (Alignment - 1)) & ~(Alignment - 1);
+    }
+
+    static inline void* AlignPtr(void* Ptr, std::size_t Alignment)
+    {
+        return (void*)(DoAlign((size_t)Ptr, Alignment));
+    }
+
+    static inline bool IsAlignedPtr(void* Ptr, std::size_t Alignment)
+    {
+        return ((std::size_t)Ptr & (Alignment - 1)) == 0;
+    }
 }

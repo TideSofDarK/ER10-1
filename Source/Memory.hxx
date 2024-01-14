@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <array>
 #include "Log.hxx"
+#include "Utility.hxx"
 
 static constexpr std::size_t HeapSize = 1024 * 1024 * 12;
 
@@ -120,7 +121,7 @@ public:
             /* Reallocating. */
             if (AllocationHeader->NextBlock != nullptr)
             {
-                if (BytePtr + BytesWithHeader >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock) || !CMemory::IsAlignedPtr(SrcPtr, Alignment))
+                if (BytePtr + BytesWithHeader >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock) || !Utility::IsAlignedPtr(SrcPtr, Alignment))
                 {
                     Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond NextBlock! */
@@ -136,7 +137,7 @@ public:
             }
             else
             {
-                if (BytePtr + BytesWithHeader >= Buffer.data() + Buffer.size() || !CMemory::IsAlignedPtr(SrcPtr, Alignment))
+                if (BytePtr + BytesWithHeader >= Buffer.data() + Buffer.size() || !Utility::IsAlignedPtr(SrcPtr, Alignment))
                 {
                     Log::Memory("Pending reallocation of %zu bytes into %zu at %p.", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond end of the buffer! */
@@ -225,7 +226,7 @@ public:
         }
         else
         {
-            NewPtr = static_cast<std::byte*>(CMemory::AlignPtr(NewPtr + sizeof(SAllocationHeader), Alignment));
+            NewPtr = static_cast<std::byte*>(Utility::AlignPtr(NewPtr + sizeof(SAllocationHeader), Alignment));
 #ifdef EQUINOX_REACH_DEVELOPMENT
             if (ReallocBytes == 0)
             {
@@ -356,19 +357,4 @@ public:
         return Get().InlineResource.NumberOfBlocks();
     }
 #endif
-
-    static constexpr std::size_t DoAlign(std::size_t Num, std::size_t Alignment)
-    {
-        return (Num + (Alignment - 1)) & ~(Alignment - 1);
-    }
-
-    static inline void* AlignPtr(void* Ptr, std::size_t Alignment)
-    {
-        return (void*)(DoAlign((size_t)Ptr, Alignment));
-    }
-
-    static inline bool IsAlignedPtr(void* Ptr, std::size_t Alignment)
-    {
-        return ((std::size_t)Ptr & (Alignment - 1)) == 0;
-    }
 };

@@ -1,10 +1,10 @@
 #include "DevTools.hxx"
 
 #include <iostream>
-#include "glad/gl.h"
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_opengl3.h"
-#include "imgui/imgui_impl_sdl3.h"
+#include <glad/gl.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_impl_sdl3.h>
 #include "Constants.hxx"
 #include "GameSystem.hxx"
 #include "AssetTools.hxx"

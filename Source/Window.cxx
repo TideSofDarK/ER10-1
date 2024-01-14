@@ -2,9 +2,9 @@
 
 #include <iostream>
 #include "Constants.hxx"
-#include "glad/gl.h"
-#include "SDL3/SDL_init.h"
-#include "SDL3/SDL_log.h"
+#include <glad/gl.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_log.h>
 #include "Memory.hxx"
 
 void SWindow::SwapBuffers() const

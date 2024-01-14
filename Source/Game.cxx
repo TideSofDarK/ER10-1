@@ -1,10 +1,10 @@
 #include "Game.hxx"
 
 #include <iostream>
+#include <SDL3/SDL_timer.h>
+#include <SDL3/SDL_events.h>
 #include "Constants.hxx"
 #include "AssetTools.hxx"
-#include "SDL3/SDL_timer.h"
-#include "SDL3/SDL_events.h"
 
 namespace Asset::Common
 {
