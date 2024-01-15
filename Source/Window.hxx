@@ -12,10 +12,6 @@ struct SWindow : SWindowData
 
     void Cleanup() const;
 
-    [[nodiscard]] bool IsExclusiveFullscreen() const;
-
-    [[nodiscard]] bool IsDesktopFullscreen() const;
-
     [[nodiscard]] bool IsAnyFullscreen() const;
 
     void SwapBuffers() const;
