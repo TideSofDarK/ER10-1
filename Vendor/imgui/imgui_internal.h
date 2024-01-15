@@ -695,7 +695,7 @@ struct ImPool
 };
 
 // Helper: ImChunkStream<>
-// Build and iterate a contiguous stream of variable-sized structures.
+// Build and iterate a contiguous MainAudioStream of variable-sized structures.
 // This is used by Settings to store persistent data while reducing allocation count.
 // We store the chunk size first, and align the final size on 4 bytes boundaries.
 // The tedious/zealous amount of casting is to avoid -Wcast-align warnings.
@@ -1817,7 +1817,7 @@ struct ImGuiStackLevelInfo
     ImS8                    QueryFrameCount;            // >= 1: Query in progress
     bool                    QuerySuccess;               // Obtained result from DebugHookIdInfo()
     ImGuiDataType           DataType : 8;
-    char                    Desc[57];                   // Arbitrarily sized buffer to hold a result (FIXME: could replace Results[] with a chunk stream?) FIXME: Now that we added CTRL+C this should be fixed.
+    char                    Desc[57];                   // Arbitrarily sized buffer to hold a result (FIXME: could replace Results[] with a chunk MainAudioStream?) FIXME: Now that we added CTRL+C this should be fixed.
 
     ImGuiStackLevelInfo()   { memset(this, 0, sizeof(*this)); }
 };

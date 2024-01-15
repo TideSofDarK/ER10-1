@@ -36,6 +36,7 @@ file(GLOB_RECURSE ASSET_FILES
         "Asset/*.vert"
         "Asset/*.frag"
         "Asset/*.ttf"
+        "Asset/*.wav"
 )
 list(JOIN ASSET_FILES "\;" ASSET_FILES)
 set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSET_FILES})
@@ -55,6 +56,7 @@ macro(add_equinox_reach_target)
             PRIVATE
             Vendor/glad/gl.c
             Source/Memory.cxx
+            Source/Audio.cxx
             Source/AssetDef.cxx
             Source/Utility.cxx
             Source/Main.cxx

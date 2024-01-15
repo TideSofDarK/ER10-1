@@ -4171,7 +4171,7 @@ static unsigned int stb_adler32(unsigned int adler32, unsigned char *buffer, uns
 static unsigned int stb_decompress(unsigned char *output, const unsigned char *i, unsigned int /*length*/)
 {
     if (stb__in4(0) != 0x57bC0000) return 0;
-    if (stb__in4(4) != 0)          return 0; // error! stream is > 4GB
+    if (stb__in4(4) != 0)          return 0; // error! MainAudioStream is > 4GB
     const unsigned int olen = stb_decompress_length(i);
     stb__barrier_in_b = i;
     stb__barrier_out_e = output + olen;

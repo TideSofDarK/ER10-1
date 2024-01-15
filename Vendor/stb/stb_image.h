@@ -249,7 +249,7 @@ RECENT REVISION HISTORY:
 // overhead.
 //
 // The three functions you must define are "read" (reads some bytes of data),
-// "skip" (skips some bytes of data), "eof" (reports if the stream is at the end).
+// "skip" (skips some bytes of data), "eof" (reports if the MainAudioStream is at the end).
 //
 // ===========================================================================
 //
@@ -856,7 +856,7 @@ static void stbi__stdio_skip(void *user, int n)
    fseek((FILE*) user, n, SEEK_CUR);
    ch = fgetc((FILE*) user);  /* have to read a byte to reset feof()'s flag */
    if (ch != EOF) {
-      ungetc(ch, (FILE *) user);  /* push byte back onto stream if valid. */
+      ungetc(ch, (FILE *) user);  /* push byte back onto MainAudioStream if valid. */
    }
 }
 
@@ -883,7 +883,7 @@ static void stbi__start_file(stbi__context *s, FILE *f)
 
 static void stbi__rewind(stbi__context *s)
 {
-   // conceptually rewind SHOULD rewind to the beginning of the stream,
+   // conceptually rewind SHOULD rewind to the beginning of the MainAudioStream,
    // but we just rewind to the beginning of the initial buffer, because
    // we only use it after doing 'test', which only ever looks at at most 92 bytes
    s->img_buffer = s->img_buffer_original;
@@ -2153,7 +2153,7 @@ stbi_inline static int stbi__extend_receive(stbi__jpeg *j, int n)
    unsigned int k;
    int sgn;
    if (j->code_bits < n) stbi__grow_buffer_unsafe(j);
-   if (j->code_bits < n) return 0; // ran out of bits from stream, return 0s intead of continuing
+   if (j->code_bits < n) return 0; // ran out of bits from MainAudioStream, return 0s intead of continuing
 
    sgn = j->code_buffer >> 31; // sign bit always in MSB; 0 if MSB clear (positive), 1 if MSB set (negative)
    k = stbi_lrot(j->code_buffer, n);
@@ -2168,7 +2168,7 @@ stbi_inline static int stbi__jpeg_get_bits(stbi__jpeg *j, int n)
 {
    unsigned int k;
    if (j->code_bits < n) stbi__grow_buffer_unsafe(j);
-   if (j->code_bits < n) return 0; // ran out of bits from stream, return 0s intead of continuing
+   if (j->code_bits < n) return 0; // ran out of bits from MainAudioStream, return 0s intead of continuing
    k = stbi_lrot(j->code_buffer, n);
    j->code_buffer = k & ~stbi__bmask[n];
    k &= stbi__bmask[n];
@@ -2180,14 +2180,14 @@ stbi_inline static int stbi__jpeg_get_bit(stbi__jpeg *j)
 {
    unsigned int k;
    if (j->code_bits < 1) stbi__grow_buffer_unsafe(j);
-   if (j->code_bits < 1) return 0; // ran out of bits from stream, return 0s intead of continuing
+   if (j->code_bits < 1) return 0; // ran out of bits from MainAudioStream, return 0s intead of continuing
    k = j->code_buffer;
    j->code_buffer <<= 1;
    --j->code_bits;
    return k & 0x80000000;
 }
 
-// given a value that's at position X in the zigzag stream,
+// given a value that's at position X in the zigzag MainAudioStream,
 // where does it appear in the 8x8 matrix coded as row-major?
 static const stbi_uc stbi__jpeg_dezigzag[64+15] =
 {
@@ -2911,8 +2911,8 @@ static void stbi__idct_simd(stbi_uc *out, int out_stride, short data[64])
 #endif // STBI_NEON
 
 #define STBI__MARKER_none  0xff
-// if there's a pending marker from the entropy stream, return that
-// otherwise, fetch from the stream and get a marker. if there's no
+// if there's a pending marker from the entropy MainAudioStream, return that
+// otherwise, fetch from the MainAudioStream and get a marker. if there's no
 // marker, return 0xff, which is never a valid marker value
 static stbi_uc stbi__get_marker(stbi__jpeg *j)
 {
@@ -4167,7 +4167,7 @@ static int stbi__zbuild_huffman(stbi__zhuffman *z, const stbi_uc *sizelist, int 
 }
 
 // zlib-from-memory implementation for PNG reading
-//    because PNG allows splitting the zlib stream arbitrarily,
+//    because PNG allows splitting the zlib MainAudioStream arbitrarily,
 //    and it's annoying structurally to have PNG call ZLIB call PNG,
 //    we require PNG read all the IDATs and combine them into a single
 //    memory buffer
@@ -6735,7 +6735,7 @@ static stbi_uc *stbi__process_gif_raster(stbi__context *s, stbi__gif *g)
             avail = clear + 2;
             oldcode = -1;
             first = 0;
-         } else if (code == clear + 1) { // end of stream code
+         } else if (code == clear + 1) { // end of MainAudioStream code
             stbi__skip(s, len);
             while ((len = stbi__get8(s)) > 0)
                stbi__skip(s,len);
@@ -6939,7 +6939,7 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
             break;
          }
 
-         case 0x3B: // gif stream termination code
+         case 0x3B: // gif MainAudioStream termination code
             return (stbi_uc *) s; // using '1' causes warning on some compilers
 
          default:

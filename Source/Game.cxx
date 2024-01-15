@@ -1,10 +1,10 @@
 #include "Game.hxx"
 
-#include <iostream>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_events.h>
 #include "Constants.hxx"
 #include "AssetTools.hxx"
+#include "Audio.hxx"
 
 namespace Asset::Common
 {
@@ -28,6 +28,8 @@ namespace Asset::TileSet::Hotel
 SGame::SGame()
 {
     Window.Init();
+
+    Audio::Init();
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Init(Window.Window, Window.Context);
@@ -333,6 +335,7 @@ void SGame::Run()
     DevTools.Cleanup();
 #endif
     Renderer.Cleanup();
+    Audio::Shutdown();
     Window.Cleanup();
 }
 
@@ -357,6 +360,9 @@ bool SGame::AttemptPlayerStep(SDirection Direction)
     }
 
     Blob.Step(DirectionVector);
+
+    Audio::TestAudio();
+
     return true;
 }
 
