@@ -82,7 +82,7 @@ void SWindow::Cleanup() const
 {
     SDL_GL_DeleteContext(Context);
     SDL_DestroyWindow(Window);
-//    SDL_Quit();
+    SDL_Quit();
 }
 
 void SWindow::ToggleBorderlessFullscreen() const

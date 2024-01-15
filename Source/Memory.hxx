@@ -16,7 +16,7 @@ template <size_t Size>
 class TInlineResource : public std::pmr::memory_resource
 {
 private:
-    struct SAllocationHeader
+    struct alignas(alignof(std::max_align_t)) SAllocationHeader
     {
         std::size_t Length{};
         SAllocationHeader* PreviousBlock{};
@@ -49,6 +49,7 @@ public:
     explicit TInlineResource(std::pmr::memory_resource* up = std::pmr::new_delete_resource())
         : Upstream(up)
     {
+        Log::Memory("Creating inline resource, total size: %zu bytes, data(): %p.", HeapSize, Buffer.data());
     }
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
@@ -115,6 +116,8 @@ public:
 
                 Log::Memory("Freeing %zu bytes at %p.", AllocationHeader->Length, BytePtr);
 
+                std::memset(AllocationHeader, 1, AllocationHeader->Length + sizeof(SAllocationHeader));
+
                 return nullptr;
             }
 
@@ -175,44 +178,54 @@ public:
             }
             else
             {
-                SAllocationHeader* AllocationHeader = FirstAllocation;
-                while (AllocationHeader != nullptr)
+                auto fd = reinterpret_cast<std::byte*>(FirstAllocation) - Buffer.data();
+                if (reinterpret_cast<std::byte*>(FirstAllocation) > Buffer.data() && reinterpret_cast<std::byte*>(FirstAllocation) - Buffer.data() >= BytesWithHeader)
                 {
-                    auto DataAfterHeader = reinterpret_cast<std::byte*>(AllocationHeader) + AllocationHeader->Length + sizeof(SAllocationHeader);
+                    NewPtr = Buffer.data();
+                    NewNextBlock = FirstAllocation;
+                    FirstAllocation = nullptr;
+                }
+                else
+                {
+                    SAllocationHeader* AllocationHeader = FirstAllocation;
+                    while (AllocationHeader != nullptr)
+                    {
+                        auto DataAfterHeader = reinterpret_cast<std::byte*>(AllocationHeader) + AllocationHeader->Length + sizeof(SAllocationHeader);
 
-                    /* See if there is free space after the header. */
-                    if (AllocationHeader->NextBlock != nullptr)
-                    {
-                        auto NextBlockData = reinterpret_cast<std::byte*>(AllocationHeader->NextBlock) + sizeof(SAllocationHeader);
-                        if (DataAfterHeader + FinalAllocationSize < NextBlockData)
+                        /* See if there is free space after the header. */
+                        if (AllocationHeader->NextBlock != nullptr)
                         {
-                            /* We can fit an allocation between two. */
-                            NewPtr = DataAfterHeader;
-                            NewPreviousBlock = AllocationHeader;
-                            NewNextBlock = AllocationHeader->NextBlock;
-                            break;
+                            auto NextBlockData = reinterpret_cast<std::byte*>(AllocationHeader->NextBlock);
+                            if (DataAfterHeader + FinalAllocationSize < NextBlockData)
+                            {
+                                /* We can fit an allocation between two. */
+                                NewPtr = DataAfterHeader;
+                                NewPreviousBlock = AllocationHeader;
+                                NewNextBlock = AllocationHeader->NextBlock;
+                                break;
+                            }
+                            else
+                            {
+                                AllocationHeader = AllocationHeader->NextBlock;
+                                continue;
+                            }
                         }
                         else
                         {
-                            AllocationHeader = AllocationHeader->NextBlock;
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        /* No next block; just check if it fits. */
-                        if (DataAfterHeader + FinalAllocationSize >= Buffer.data() + Buffer.size())
-                        {
-                            NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
-                            Log::Memory("Allocating %zu bytes from upstream at %p.", Bytes, NewPtr);
-                            return NewPtr;
-                        }
-                        else
-                        {
-                            NewPtr = DataAfterHeader;
-                            NewPreviousBlock = AllocationHeader;
-                            NewNextBlock = AllocationHeader->NextBlock;
-                            break;
+                            /* No next block; just check if it fits. */
+                            if (DataAfterHeader + FinalAllocationSize >= Buffer.data() + Buffer.size())
+                            {
+                                NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
+                                Log::Memory("Allocating %zu bytes from upstream at %p.", Bytes, NewPtr);
+                                return NewPtr;
+                            }
+                            else
+                            {
+                                NewPtr = DataAfterHeader;
+                                NewPreviousBlock = AllocationHeader;
+                                NewNextBlock = AllocationHeader->NextBlock;
+                                break;
+                            }
                         }
                     }
                 }
@@ -270,7 +283,7 @@ public:
     }
 };
 
-class CMemory final
+class alignas(alignof(std::max_align_t)) CMemory final
 {
 protected:
     class CTopmostResource final : public std::pmr::memory_resource
@@ -297,10 +310,9 @@ protected:
     };
 
     CTopmostResource TopmostResource;
-    TInlineResource<HeapSize> InlineResource;
+    alignas(alignof(std::max_align_t))
+        TInlineResource<HeapSize> InlineResource;
     std::pmr::synchronized_pool_resource PoolResource;
-
-    static CMemory& Get();
 
     explicit CMemory()
         : InlineResource(
@@ -309,13 +321,11 @@ protected:
 #else
             &this->TopmostResource)
 #endif
-        , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, &InlineResource)
-    {
-        Log::Memory("Initiated heap and pool resources, total size: %zu bytes.", HeapSize);
-    };
+        , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, std::pmr::new_delete_resource()){};
+
+    static CMemory& Get();
 
 public:
-
     inline static void* Malloc(size_t Bytes)
     {
         void* Ptr = Get().InlineResource.do_allocate(Bytes, alignof(std::max_align_t));
