@@ -178,7 +178,6 @@ public:
             }
             else
             {
-                auto fd = reinterpret_cast<std::byte*>(FirstAllocation) - Buffer.data();
                 if (reinterpret_cast<std::byte*>(FirstAllocation) > Buffer.data() && reinterpret_cast<std::byte*>(FirstAllocation) - Buffer.data() >= BytesWithHeader)
                 {
                     NewPtr = Buffer.data();
@@ -239,6 +238,7 @@ public:
         }
         else
         {
+            /* Shift pointer to point to allocated data. */
             NewPtr = static_cast<std::byte*>(Utility::AlignPtr(NewPtr + sizeof(SAllocationHeader), Alignment));
 #ifdef EQUINOX_REACH_DEVELOPMENT
             if (ReallocBytes == 0)
@@ -283,7 +283,7 @@ public:
     }
 };
 
-class alignas(alignof(std::max_align_t)) CMemory final
+class CMemory final
 {
 protected:
     class CTopmostResource final : public std::pmr::memory_resource
@@ -310,8 +310,7 @@ protected:
     };
 
     CTopmostResource TopmostResource;
-    alignas(alignof(std::max_align_t))
-        TInlineResource<HeapSize> InlineResource;
+    TInlineResource<HeapSize> InlineResource;
     std::pmr::synchronized_pool_resource PoolResource;
 
     explicit CMemory()
@@ -321,7 +320,7 @@ protected:
 #else
             &this->TopmostResource)
 #endif
-        , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, std::pmr::new_delete_resource()){};
+        , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, &InlineResource){};
 
     static CMemory& Get();
 

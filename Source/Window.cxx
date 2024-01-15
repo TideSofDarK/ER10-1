@@ -1,6 +1,5 @@
 #include "Window.hxx"
 
-#include <iostream>
 #include "Constants.hxx"
 #include <glad/gl.h>
 #include <SDL3/SDL_init.h>
@@ -30,7 +29,7 @@ void SWindow::Init()
         exit(1);
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
         exit(1);
