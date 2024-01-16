@@ -4,6 +4,7 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
+#include <cstdio>
 #include "AssetTools.hxx"
 
 namespace Asset::Common
@@ -113,6 +114,7 @@ namespace Audio
     void TestAudio()
     {
         const auto& Stream = TestSoundClip.Channels() == 1 ? MonoStream : StereoStream;
+        std::printf("dodik %d\n", SDL_GetAudioStreamAvailable(Stream.Stream));
         Stream.Clear();
         Stream.Put(TestSoundClip);
     }

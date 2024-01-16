@@ -52,7 +52,6 @@ public:
         Log::Memory("Creating inline resource, total size: %zu bytes, data(): %p.", HeapSize, Buffer.data());
     }
 
-#ifdef EQUINOX_REACH_DEVELOPMENT
     size_t NumberOfBlocks()
     {
         if (FirstAllocation == nullptr)
@@ -71,7 +70,6 @@ public:
 
         return Num;
     }
-#endif
 
     inline void* do_allocate(size_t bytes, size_t alignment) override
     {
@@ -365,10 +363,8 @@ public:
         return std::pmr::vector<T>(&Get().PoolResource);
     }
 
-#ifdef EQUINOX_REACH_DEVELOPMENT
     static std::size_t NumberOfBlocks()
     {
         return Get().InlineResource.NumberOfBlocks();
     }
-#endif
 };
