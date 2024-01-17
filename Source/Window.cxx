@@ -15,7 +15,7 @@ bool SWindow::IsAnyFullscreen() const
     return (SDL_GetWindowFlags(Window) & SDL_WINDOW_FULLSCREEN) != 0;
 }
 
-void SWindow::Init()
+SWindow::SWindow()
 {
     if (Window != nullptr)
     {
@@ -69,6 +69,13 @@ void SWindow::Init()
     OnWindowResized(Width, Height);
 }
 
+SWindow::~SWindow()
+{
+    SDL_GL_DeleteContext(Context);
+    SDL_DestroyWindow(Window);
+    SDL_Quit();
+}
+
 void SWindow::OnWindowResized(int InWidth, int InHeight)
 {
     Width = InWidth;
@@ -82,13 +89,6 @@ void SWindow::OnWindowResized(int InWidth, int InHeight)
     }
     BlitX = std::max((Width - BlitWidth) / 2, 0);
     BlitY = std::max((Height - BlitHeight) / 2, 0);
-}
-
-void SWindow::Cleanup() const
-{
-    SDL_GL_DeleteContext(Context);
-    SDL_DestroyWindow(Window);
-    SDL_Quit();
 }
 
 void SWindow::ToggleBorderlessFullscreen() const

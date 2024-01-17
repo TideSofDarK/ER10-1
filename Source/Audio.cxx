@@ -4,118 +4,117 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
-#include <cstdio>
+#include <SDL3/SDL_stdinc.h>
+#include <cstring>
 #include "AssetTools.hxx"
+#include "Log.hxx"
 
 namespace Asset::Common
 {
     EXTERN_ASSET(Tile_01WAV)
+    EXTERN_ASSET(TestMusicWAV)
 }
 
-namespace Audio
+void SDLCALL CAudio::Callback(void* Userdata, struct SDL_AudioStream* Stream, int AdditionalAmount, int TotalAmount)
 {
-    struct SSoundClip
+    auto Audio = static_cast<CAudio*>(Userdata);
+    if (AdditionalAmount > 0)
     {
-        friend class SAudioStream;
+        auto Offset = Audio->Buffer.size() - AdditionalAmount;
+        SDL_PutAudioStreamData(Stream, Audio->Buffer.data(), AdditionalAmount);
 
-    private:
-        SDL_AudioSpec Spec{};
-        uint32_t Length{};
-        uint8_t* Ptr{};
+        std::memcpy(Audio->Buffer.data(), static_cast<const void*>(Audio->Buffer.data() + AdditionalAmount), Offset);
+        std::memset(static_cast<void*>(Audio->Buffer.data() + Offset), 0, AdditionalAmount);
+    }
+}
 
-    public:
-        void Load(const SAsset& Asset)
-        {
-            auto TestRW = SDL_RWFromConstMem(Asset.AsVoidPtr(), Asset.Length);
-            SDL_LoadWAV_RW(TestRW, 1, &Spec, &Ptr, &Length);
-        }
+void SSoundClip::Free() const
+{
+    SDL_free(Ptr);
+}
 
-        void Free() const
-        {
-            SDL_free(Ptr);
-        }
+void CAudio::Clear() const
+{
+    SDL_ClearAudioStream(Stream);
+}
 
-        [[nodiscard]] int Channels() const
-        {
-            return Spec.channels;
-        }
-    };
+void CAudio::Put(const SSoundClip* SoundClip) const
+{
+    SDL_PutAudioStreamData(Stream, SoundClip->Ptr, static_cast<int>(SoundClip->Length));
+}
 
-    struct SAudioStream
+CAudio::CAudio()
+    : AudioSpec({ SDL_AUDIO_S16, 2, 44100 })
+{
+    std::memset(Buffer.data(), 0, Buffer.size());
+
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) == 0)
     {
-        const SDL_AudioSpec AudioSpec;
-        SDL_AudioStream* Stream{};
-
-        explicit SAudioStream(int Channels) : AudioSpec({ SDL_AUDIO_S16, Channels, 44100 }) {};
-
-        void Open()
+        int i, num_devices;
+        SDL_AudioDeviceID* devices = SDL_GetAudioOutputDevices(&num_devices);
+        if (devices)
         {
-            Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &AudioSpec, nullptr, nullptr);
-            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(Stream));
-        }
-
-        void Close() const
-        {
-            SDL_DestroyAudioStream(Stream);
-        }
-
-        void Clear() const {
-            SDL_ClearAudioStream(Stream);
-        }
-
-        void Put(const SSoundClip& SoundClip) const
-        {
-            SDL_PutAudioStreamData(Stream, SoundClip.Ptr, static_cast<int>(SoundClip.Length));
-        }
-    };
-
-    SAudioStream MonoStream(1);
-    SAudioStream StereoStream(2);
-
-    SSoundClip TestSoundClip;
-
-    void Init()
-    {
-        if (SDL_InitSubSystem(SDL_INIT_AUDIO) == 0)
-        {
-            int i, num_devices;
-            SDL_AudioDeviceID* devices = SDL_GetAudioOutputDevices(&num_devices);
-            if (devices)
+            for (i = 0; i < num_devices; ++i)
             {
-                for (i = 0; i < num_devices; ++i)
-                {
-                    SDL_AudioDeviceID instance_id = devices[i];
-                    char* name = SDL_GetAudioDeviceName(instance_id);
-                    SDL_Log("AudioDevice %" SDL_PRIu32 ": %s\n", instance_id, name);
-                    SDL_free(name);
-                }
-                SDL_free(devices);
+                SDL_AudioDeviceID instance_id = devices[i];
+                char* name = SDL_GetAudioDeviceName(instance_id);
+                SDL_Log("AudioDevice %" SDL_PRIu32 ": %s\n", instance_id, name);
+                SDL_free(name);
             }
+            SDL_free(devices);
         }
-        else
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
-        }
-
-        TestSoundClip.Load(Asset::Common::Tile_01WAV);
-
-        MonoStream.Open();
-        StereoStream.Open();
     }
-
-    void Shutdown()
+    else
     {
-        TestSoundClip.Free();
-        MonoStream.Close();
-        StereoStream.Close();
-        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
     }
 
-    void TestAudio()
-    {
-        const auto& Stream = TestSoundClip.Channels() == 1 ? MonoStream : StereoStream;
-        std::printf("dodik %d\n", SDL_GetAudioStreamAvailable(Stream.Stream));
-        Stream.Clear();
-        Stream.Put(TestSoundClip);
-    }
+    SDL_AudioSpec DestSpec;
+    DestSpec.freq = AudioSpec.Freq;
+    DestSpec.format = AudioSpec.Format;
+    DestSpec.channels = AudioSpec.Channels;
+
+    Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &DestSpec, &Callback, this);
+
+    SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(Stream));
+
+    LoadSoundClip(Asset::Common::Tile_01WAV, TestSoundClip);
+    LoadSoundClip(Asset::Common::TestMusicWAV, TestMusic);
+}
+
+CAudio::~CAudio()
+{
+    TestSoundClip.Free();
+    TestMusic.Free();
+    SDL_DestroyAudioStream(Stream);
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+}
+
+void CAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
+{
+    auto TestRW = SDL_RWFromConstMem(Asset.AsVoidPtr(), Asset.Length);
+
+    SDL_AudioSpec TempSpec;
+    uint32_t TempLength{};
+    uint8_t* TempPtr{};
+    SDL_LoadWAV_RW(TestRW, 1, &TempSpec, &TempPtr, &TempLength);
+
+    SDL_AudioSpec DestSpec;
+    DestSpec.freq = AudioSpec.Freq;
+    DestSpec.format = AudioSpec.Format;
+    DestSpec.channels = AudioSpec.Channels;
+
+    SDL_ConvertAudioSamples(&TempSpec,
+        TempPtr,
+        static_cast<int>(TempLength),
+        &DestSpec,
+        &SoundClip.Ptr,
+        &SoundClip.Length);
+
+    SDL_free(TempPtr);
+}
+
+void CAudio::TestAudio()
+{
+    SDL_MixAudioFormat(Buffer.data(), TestSoundClip.Ptr, SDL_AUDIO_S16, SDL_min(Buffer.size(), TestSoundClip.Length), SDL_MIX_MAXVOLUME);
 }

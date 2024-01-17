@@ -16,6 +16,14 @@ namespace Log
     }
 
     template <typename... Ps>
+    static inline void Audio(const char* Fmt, Ps... Args)
+    {
+#ifdef EQUINOX_REACH_DEVELOPMENT
+        LogInternal("Audio", Fmt, Args...);
+#endif
+    }
+
+    template <typename... Ps>
     static inline void Memory(const char* Fmt, Ps... Args)
     {
 #ifdef EQUINOX_REACH_DEVELOPMENT

@@ -68,6 +68,7 @@ namespace Asset::Common
     DEFINE_ASSET(PillarOBJ, "../Asset/Mesh/Pillar.obj")
     DEFINE_ASSET(DroidSansTTF, "../Asset/Font/DroidSans.ttf")
     DEFINE_ASSET(Tile_01WAV, "../Asset/Sound/Step/Tile_01.wav")
+    DEFINE_ASSET(TestMusicWAV, "../Asset/Music/TestMusic.wav")
 }
 
 namespace Asset::Shader

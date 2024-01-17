@@ -10,7 +10,7 @@
 #include "Log.hxx"
 #include "Utility.hxx"
 
-static constexpr std::size_t HeapSize = 1024 * 1024 * 12;
+static constexpr std::size_t HeapSize = 1024 * 1024 * 16;
 
 template <size_t Size>
 class TInlineResource : public std::pmr::memory_resource

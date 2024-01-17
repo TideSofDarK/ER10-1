@@ -4,6 +4,7 @@
 #include "Draw.hxx"
 #include "Blob.hxx"
 #include "Battle.hxx"
+#include "Audio.hxx"
 #include "Window.hxx"
 #include "Level.hxx"
 #include "GameSystem.hxx"
@@ -20,12 +21,13 @@ private:
     int SpriteDemoState;
 
 public:
-    SWindow Window{};
+    SWindow Window;
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
     SDevTools DevTools;
 #endif
 
+    CAudio Audio;
     SRenderer Renderer;
     SInputState OldInputState{}, InputState{};
     SCamera Camera;

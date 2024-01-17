@@ -27,10 +27,6 @@ namespace Asset::TileSet::Hotel
 
 SGame::SGame()
 {
-    Window.Init();
-
-    Audio::Init();
-
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Init(Window.Window, Window.Context);
 #endif
@@ -242,12 +238,14 @@ void SGame::Run()
                     auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCCW();
                     AttemptPlayerStep(PlayerDirection);
+                    Audio.TestAudio();
                 }
                 if (InputState.R == EKeyState::Held)
                 {
                     auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCW();
                     AttemptPlayerStep(PlayerDirection);
+                    Audio.TestAudio();
                 }
                 if (InputState.Up == EKeyState::Held)
                 {
@@ -255,6 +253,10 @@ void SGame::Run()
                     if (!AttemptPlayerStep(PlayerDirection))
                     {
                         Blob.BumpIntoWall();
+                    }
+                    else
+                    {
+                        Audio.TestAudio();
                     }
                 }
 
@@ -277,6 +279,11 @@ void SGame::Run()
             if (InputState.ZR == EKeyState::Pressed)
             {
                 SpriteDemoState = std::min(5, SpriteDemoState + 1);
+            }
+
+            if (InputState.Accept == EKeyState::Pressed)
+            {
+                Audio.TestAudio();
             }
 
             Blob.Update(Window.DeltaTime);
@@ -335,8 +342,6 @@ void SGame::Run()
     DevTools.Cleanup();
 #endif
     Renderer.Cleanup();
-    Audio::Shutdown();
-    Window.Cleanup();
 }
 
 bool SGame::AttemptPlayerStep(SDirection Direction)
@@ -360,8 +365,6 @@ bool SGame::AttemptPlayerStep(SDirection Direction)
     }
 
     Blob.Step(DirectionVector);
-
-    Audio::TestAudio();
 
     return true;
 }

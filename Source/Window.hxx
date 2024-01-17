@@ -8,9 +8,8 @@ struct SWindow : SWindowData
     SDL_Window* Window{};
     SDL_GLContext Context{};
 
-    void Init();
-
-    void Cleanup() const;
+    SWindow();
+    ~SWindow();
 
     [[nodiscard]] bool IsAnyFullscreen() const;
 
