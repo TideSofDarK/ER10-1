@@ -20,7 +20,7 @@ set(SDL_TEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         SDL
         GIT_REPOSITORY https://github.com/libsdl-org/SDL
-        GIT_TAG 649556befa156201116a4f25089597463d0efd44
+        GIT_TAG main
         GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(SDL)

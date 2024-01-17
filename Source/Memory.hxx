@@ -49,12 +49,12 @@ public:
     explicit TInlineResource(std::pmr::memory_resource* up = std::pmr::new_delete_resource())
         : Upstream(up)
     {
-        Log::Memory("Creating inline resource, total size: %zu bytes, data(): %p", HeapSize, Buffer.data());
+        Log::Memory<ELogLevel::Critical>("Creating inline resource, total size: %zu bytes, data(): %p", HeapSize, Buffer.data());
     }
 
     ~TInlineResource() final
     {
-        Log::Memory("Destroying inline resource, NumberOfBlocks: %zu", NumberOfBlocks());
+        Log::Memory<ELogLevel::Critical>("Destroying inline resource, NumberOfBlocks: %zu", NumberOfBlocks());
     };
 
     size_t NumberOfBlocks()
@@ -110,14 +110,14 @@ public:
                 /* Check if the pointer is within our range. */
                 if (BytePtr < Buffer.data() || BytePtr >= Buffer.data() + Buffer.size())
                 {
-                    Log::Memory("Freeing from upstream at %p", BytePtr);
+                    Log::Memory<ELogLevel::Verbose>("Freeing from upstream at %p", BytePtr);
                     Upstream->deallocate(SrcPtr, Bytes, Alignment);
                     return nullptr;
                 }
 
                 DestroyBlock(AllocationHeader);
 
-                Log::Memory("Freeing %zu bytes at %p", AllocationHeader->Length, BytePtr);
+                Log::Memory<ELogLevel::Verbose>("Freeing %zu bytes at %p", AllocationHeader->Length, BytePtr);
 
                 return nullptr;
             }
@@ -127,14 +127,14 @@ public:
             {
                 if (BytePtr + BytesWithHeader >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock) || !Utility::IsAlignedPtr(SrcPtr, Alignment))
                 {
-                    Log::Memory("Pending reallocation of %zu bytes into %zu at %p", AllocationHeader->Length, Bytes, BytePtr);
+                    Log::Memory<ELogLevel::Verbose>("Pending reallocation of %zu bytes into %zu at %p", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond NextBlock! */
                     ReallocBytes = std::min(AllocationHeader->Length, Bytes);
                     DestroyBlock(AllocationHeader);
                 }
                 else
                 {
-                    Log::Memory("Reallocating %zu bytes at %p", Bytes, BytePtr);
+                    Log::Memory<ELogLevel::Verbose>("Reallocating %zu bytes at %p", Bytes, BytePtr);
                     AllocationHeader->Length = Bytes;
                     return SrcPtr;
                 }
@@ -143,14 +143,14 @@ public:
             {
                 if (BytePtr + BytesWithHeader >= Buffer.data() + Buffer.size() || !Utility::IsAlignedPtr(SrcPtr, Alignment))
                 {
-                    Log::Memory("Pending reallocation of %zu bytes into %zu at %p", AllocationHeader->Length, Bytes, BytePtr);
+                    Log::Memory<ELogLevel::Verbose>("Pending reallocation of %zu bytes into %zu at %p", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond end of the buffer! */
                     ReallocBytes = std::min(AllocationHeader->Length, Bytes);
                     DestroyBlock(AllocationHeader);
                 }
                 else
                 {
-                    Log::Memory("Reallocating %zu bytes at %p", Bytes, BytePtr);
+                    Log::Memory<ELogLevel::Verbose>("Reallocating %zu bytes at %p", Bytes, BytePtr);
                     AllocationHeader->Length = Bytes;
                     return SrcPtr;
                 }
@@ -169,11 +169,11 @@ public:
         {
             NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
 
-            Log::Memory("Allocating %zu bytes from upstream at %p", Bytes, NewPtr);
+            Log::Memory<ELogLevel::Verbose>("Allocating %zu bytes from upstream at %p", Bytes, NewPtr);
 
             if (ReallocBytes != 0)
             {
-                Log::Memory("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
+                Log::Memory<ELogLevel::Verbose>("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
                 std::memcpy(NewPtr, SrcPtr, std::min(ReallocBytes, Bytes));
             }
 
@@ -225,11 +225,11 @@ public:
                             {
                                 NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
 
-                                Log::Memory("Allocating %zu bytes from upstream at %p", Bytes, NewPtr);
+                                Log::Memory<ELogLevel::Verbose>("Allocating %zu bytes from upstream at %p", Bytes, NewPtr);
 
                                 if (ReallocBytes != 0)
                                 {
-                                    Log::Memory("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
+                                    Log::Memory<ELogLevel::Verbose>("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
                                     std::memcpy(NewPtr, SrcPtr, std::min(ReallocBytes, Bytes));
                                 }
 
@@ -250,7 +250,7 @@ public:
 
         if (NewPtr == nullptr)
         {
-            Log::Memory("Failed to allocate %zu bytes", Bytes);
+            Log::Memory<ELogLevel::Verbose>("Failed to allocate %zu bytes", Bytes);
             exit(1);
         }
         else
@@ -260,7 +260,7 @@ public:
 #ifdef EQUINOX_REACH_DEVELOPMENT
             if (ReallocBytes == 0)
             {
-                Log::Memory("Allocating %zu bytes at %p", Bytes, NewPtr);
+                Log::Memory<ELogLevel::Verbose>("Allocating %zu bytes at %p", Bytes, NewPtr);
             }
 #endif
         }
@@ -287,7 +287,7 @@ public:
 
         if (ReallocBytes != 0)
         {
-            Log::Memory("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
+            Log::Memory<ELogLevel::Verbose>("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
             std::memcpy(NewPtr, SrcPtr, std::min(ReallocBytes, Bytes));
         }
 
@@ -308,7 +308,7 @@ protected:
         void*
         do_allocate(size_t Bytes, size_t Align) override
         {
-            Log::Memory("Allocating %d bytes through topmost resource", Bytes);
+            Log::Memory<ELogLevel::Critical>("Allocating %d bytes through topmost resource", Bytes);
             return ::operator new(Bytes, std::align_val_t(Align));
         }
 
@@ -316,7 +316,7 @@ protected:
         do_deallocate(void* Pointer, size_t Bytes, size_t Align) noexcept
             override
         {
-            Log::Memory("Freeing %d bytes through topmost resource", Bytes);
+            Log::Memory<ELogLevel::Critical>("Freeing %d bytes through topmost resource", Bytes);
             ::operator delete(Pointer, Bytes, std::align_val_t(Align));
         }
 

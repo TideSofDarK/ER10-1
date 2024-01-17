@@ -17,14 +17,9 @@ bool SWindow::IsAnyFullscreen() const
 
 SWindow::SWindow()
 {
-    if (Window != nullptr)
-    {
-        exit(1);
-    }
-
     SDL_LogSetAllPriority(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
     SDL_LogSetOutputFunction([](void* Userdata, int Category, SDL_LogPriority Priority, const char* message) {
-        Log::LogInternal("SDL3", "%s", message);
+        Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", message);
     },
         nullptr);
 

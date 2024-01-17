@@ -19,7 +19,6 @@ struct SSoundClip
 
 struct SMusic : SSoundClip
 {
-
 };
 
 class CAudio

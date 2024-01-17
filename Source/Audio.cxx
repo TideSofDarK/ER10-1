@@ -48,25 +48,10 @@ CAudio::CAudio()
 {
     std::memset(Buffer.data(), 0, Buffer.size());
 
-    if (SDL_InitSubSystem(SDL_INIT_AUDIO) == 0)
-    {
-        int i, num_devices;
-        SDL_AudioDeviceID* devices = SDL_GetAudioOutputDevices(&num_devices);
-        if (devices)
-        {
-            for (i = 0; i < num_devices; ++i)
-            {
-                SDL_AudioDeviceID instance_id = devices[i];
-                char* name = SDL_GetAudioDeviceName(instance_id);
-                SDL_Log("AudioDevice %" SDL_PRIu32 ": %s\n", instance_id, name);
-                SDL_free(name);
-            }
-            SDL_free(devices);
-        }
-    }
-    else
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
+        exit(1);
     }
 
     SDL_AudioSpec DestSpec;
@@ -75,6 +60,11 @@ CAudio::CAudio()
     DestSpec.channels = AudioSpec.Channels;
 
     Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &DestSpec, &Callback, this);
+
+    SDL_AudioDeviceID DeviceID = SDL_GetAudioStreamDevice(Stream);
+    char* DeviceName = SDL_GetAudioDeviceName(DeviceID);
+    SDL_Log("Opened an AudioStream at %s\n", DeviceName);
+    SDL_free(DeviceName);
 
     SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(Stream));
 

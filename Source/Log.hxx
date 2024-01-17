@@ -3,39 +3,46 @@
 #include <cstdio>
 #include <iostream>
 
+enum class ELogLevel
+{
+    Critical,
+    Info,
+    Debug,
+    Verbose
+};
+
 namespace Log
 {
-    template <typename... Ps>
-    static inline void LogInternal(const char* Prefix, const char* Fmt, Ps... Args)
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    static constexpr ELogLevel LogLevel = ELogLevel::Debug;
+#else
+    static constexpr ELogLevel LogLevel = ELogLevel::Info;
+#endif
+
+    template <ELogLevel ThisLogLevel, typename... Ps>
+    static constexpr void LogInternal(const char* Prefix, const char* Fmt, Ps... Args)
     {
-        char Entry[1024];
-        char Msg[960];
-        snprintf(Msg, 960, Fmt, Args...);
-        snprintf(Entry, 1024, "[%s] %s", Prefix, Msg);
-        std::cout << Entry << std::endl;
+        if constexpr (ThisLogLevel <= LogLevel)
+        {
+            char Entry[1024]{};
+            char Msg[960]{};
+            snprintf(Msg, 960, Fmt, Args...);
+            snprintf(Entry, 1024, "[%s] %s", Prefix, Msg);
+            std::cout << Entry << std::endl;
+        }
     }
 
-    template <typename... Ps>
-    static inline void Audio(const char* Fmt, Ps... Args)
-    {
-#ifdef EQUINOX_REACH_DEVELOPMENT
-        LogInternal("Audio", Fmt, Args...);
-#endif
+#define LOG_CATEGORY(Name)                                  \
+    template <ELogLevel ThisLogLevel, typename... Ps>       \
+    static constexpr void Name(const char* Fmt, Ps... Args) \
+    {                                                       \
+        LogInternal<ThisLogLevel>(#Name, Fmt, Args...);     \
     }
 
-    template <typename... Ps>
-    static inline void Memory(const char* Fmt, Ps... Args)
-    {
-#ifdef EQUINOX_REACH_DEVELOPMENT
-        LogInternal("Memory", Fmt, Args...);
-#endif
-    }
+    LOG_CATEGORY(Audio)
+    LOG_CATEGORY(Memory)
+    LOG_CATEGORY(Platform)
+    LOG_CATEGORY(Draw)
 
-    template <typename... Ps>
-    static inline void Platform(const char* Fmt, Ps... Args)
-    {
-#ifdef EQUINOX_REACH_DEVELOPMENT
-        LogInternal("Platform", Fmt, Args...);
-#endif
-    }
+#undef LOG_CATEGORY
 }

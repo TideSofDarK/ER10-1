@@ -39,7 +39,8 @@ void SProgram::CheckShader(unsigned int ShaderID)
         GLsizei LengthQuery(0);
         std::vector<GLchar> InfoLog(MaxLength + 1, '\0');
         glGetShaderInfoLog(ShaderID, GLsizei(InfoLog.size()), &LengthQuery, &InfoLog[0]);
-        std::cout << std::string(InfoLog.begin(), InfoLog.end()) << std::endl;
+        auto Error = std::string(InfoLog.begin(), InfoLog.end());
+        Log::Draw<ELogLevel::Critical>("Shader error!\n %s", Error.c_str());
     }
 }
 
@@ -55,7 +56,8 @@ void SProgram::CheckProgram(unsigned int ProgramID)
         GLsizei LengthQuery(0);
         std::vector<GLchar> InfoLog(MaxLength + 1, '\0');
         glGetProgramInfoLog(ProgramID, GLsizei(InfoLog.size()), &LengthQuery, &InfoLog[0]);
-        std::cout << std::string(InfoLog.begin(), InfoLog.end()) << std::endl;
+        auto Error = std::string(InfoLog.begin(), InfoLog.end());
+        Log::Draw<ELogLevel::Critical>("Program error!\n %s", Error.c_str());
     }
 }
 
@@ -133,7 +135,7 @@ void SProgram::Cleanup() const
 {
     glDeleteProgram(ID);
 
-    std::cout << "Deleting SProgram..." << std::endl;
+    Log::Draw<ELogLevel::Debug>("Deleting SProgram", "");
 }
 
 void SProgram::Use() const
@@ -211,7 +213,7 @@ void SGeometry::Cleanup()
     glDeleteBuffers(1, &CBO);
     glDeleteVertexArrays(1, &VAO);
 
-    std::cout << "Deleting SGeometry with ElementCount == " << ElementCount << std::endl;
+    Log::Draw<ELogLevel::Debug>("Deleting SGeometry with ElementCount: %d", ElementCount);
 }
 
 void STileSet::InitPlaceholder()
@@ -391,7 +393,7 @@ void SFrameBuffer::Cleanup()
     glDeleteTextures(1, &ColorID);
     glDeleteTextures(1, &DepthID);
 
-    std::cout << "Deleting SFrameBuffer..." << std::endl;
+    Log::Draw<ELogLevel::Debug>("Deleting SFrameBuffer", "");
 }
 
 void SFrameBuffer::BindForDrawing() const
@@ -951,7 +953,7 @@ void STexture::Cleanup()
 {
     glDeleteTextures(1, &ID);
 
-    std::cout << "Deleting STexture..." << std::endl;
+    Log::Draw<ELogLevel::Debug>("Deleting STexture", "");
 }
 
 void STexture::BindToTextureUnit(int TextureUnit) const
