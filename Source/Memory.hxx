@@ -13,7 +13,7 @@
 static constexpr std::size_t HeapSize = 1024 * 1024 * 16;
 
 template <size_t Size>
-class TInlineResource : public std::pmr::memory_resource
+class TInlineResource final : public std::pmr::memory_resource
 {
 private:
     struct alignas(alignof(std::max_align_t)) SAllocationHeader
@@ -49,8 +49,13 @@ public:
     explicit TInlineResource(std::pmr::memory_resource* up = std::pmr::new_delete_resource())
         : Upstream(up)
     {
-        Log::Memory("Creating inline resource, total size: %zu bytes, data(): %p.", HeapSize, Buffer.data());
+        Log::Memory("Creating inline resource, total size: %zu bytes, data(): %p", HeapSize, Buffer.data());
     }
+
+    ~TInlineResource() final
+    {
+        Log::Memory("Destroying inline resource, NumberOfBlocks: %zu", NumberOfBlocks());
+    };
 
     size_t NumberOfBlocks()
     {
@@ -106,15 +111,13 @@ public:
                 if (BytePtr < Buffer.data() || BytePtr >= Buffer.data() + Buffer.size())
                 {
                     Log::Memory("Freeing from upstream at %p", BytePtr);
-                    Upstream->deallocate(AllocationHeader, Bytes, Alignment);
+                    Upstream->deallocate(SrcPtr, Bytes, Alignment);
                     return nullptr;
                 }
 
                 DestroyBlock(AllocationHeader);
 
                 Log::Memory("Freeing %zu bytes at %p", AllocationHeader->Length, BytePtr);
-
-                std::memset(AllocationHeader, 1, AllocationHeader->Length + sizeof(SAllocationHeader));
 
                 return nullptr;
             }
@@ -165,7 +168,15 @@ public:
         if (FinalAllocationSize > Buffer.size())
         {
             NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
+
             Log::Memory("Allocating %zu bytes from upstream at %p", Bytes, NewPtr);
+
+            if (ReallocBytes != 0)
+            {
+                Log::Memory("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
+                std::memcpy(NewPtr, SrcPtr, std::min(ReallocBytes, Bytes));
+            }
+
             return NewPtr;
         }
         else
@@ -213,7 +224,15 @@ public:
                             if (DataAfterHeader + FinalAllocationSize >= Buffer.data() + Buffer.size())
                             {
                                 NewPtr = static_cast<std::byte*>(Upstream->allocate(Bytes, Alignment));
+
                                 Log::Memory("Allocating %zu bytes from upstream at %p", Bytes, NewPtr);
+
+                                if (ReallocBytes != 0)
+                                {
+                                    Log::Memory("Copying %zu bytes to %p", std::min(ReallocBytes, Bytes), NewPtr);
+                                    std::memcpy(NewPtr, SrcPtr, std::min(ReallocBytes, Bytes));
+                                }
+
                                 return NewPtr;
                             }
                             else
@@ -298,7 +317,7 @@ protected:
             override
         {
             Log::Memory("Freeing %d bytes through topmost resource", Bytes);
-            ::operator delete(Pointer);
+            ::operator delete(Pointer, Bytes, std::align_val_t(Align));
         }
 
         [[nodiscard]] inline bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override
@@ -307,25 +326,26 @@ protected:
         }
     };
 
-    CTopmostResource TopmostResource;
     TInlineResource<HeapSize> InlineResource;
+    CTopmostResource TopmostResource;
     std::pmr::synchronized_pool_resource PoolResource;
 
     explicit CMemory()
-        : InlineResource(
-#ifdef EQUINOX_REACH_DEVELOPMENT
-            std::pmr::null_memory_resource())
-#else
-            &this->TopmostResource)
-#endif
+        : InlineResource(&this->TopmostResource)
         , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, &InlineResource){};
 
-    ~CMemory()
+    static CMemory& Instance()
     {
-        Log::Memory("Deconstructing CMemory, NumberOfBlocks: %zu", NumberOfBlocks());
-    };
+        static CMemory Instance;
+        return Instance;
+    }
 
-    static CMemory& Get();
+    static CMemory& Get()
+    {
+        static std::once_flag Flag;
+        std::call_once(Flag, [] { Instance(); });
+        return Instance();
+    }
 
 public:
     inline static void* Malloc(size_t Bytes)
