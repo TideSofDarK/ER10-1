@@ -316,8 +316,8 @@ protected:
         do_deallocate(void* Pointer, size_t Bytes, size_t Align) noexcept
             override
         {
-            Log::Memory<ELogLevel::Critical>("Freeing %d bytes through topmost resource", Bytes);
-            ::operator delete(Pointer, Bytes, std::align_val_t(Align));
+            Log::Memory<ELogLevel::Critical>("Freeing %p through topmost resource", Pointer);
+            ::operator delete(Pointer, std::align_val_t(Align));
         }
 
         [[nodiscard]] inline bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override
