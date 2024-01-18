@@ -20,11 +20,27 @@ void SDLCALL CAudio::Callback(void* Userdata, struct SDL_AudioStream* Stream, in
     auto Audio = static_cast<CAudio*>(Userdata);
     if (AdditionalAmount > 0)
     {
-        auto Offset = Audio->Buffer.size() - AdditionalAmount;
-        SDL_PutAudioStreamData(Stream, Audio->Buffer.data(), AdditionalAmount);
-
-        std::memcpy(Audio->Buffer.data(), static_cast<const void*>(Audio->Buffer.data() + AdditionalAmount), Offset);
-        std::memset(static_cast<void*>(Audio->Buffer.data() + Offset), 0, AdditionalAmount);
+        auto* Data = SDL_stack_alloc(uint8_t, AdditionalAmount);
+        std::memset(Data, Audio->Silence, AdditionalAmount);
+        for (auto& AudioEntry : Audio->Queue)
+        {
+            if (AudioEntry.IsPlaying())
+            {
+                int MixedTotal = 0;
+                int Remaining = 1;
+                while (MixedTotal < AdditionalAmount && Remaining > 0)
+                {
+                    auto ToMix = AdditionalAmount - MixedTotal;
+                    int Current = AudioEntry.Current;
+                    int Mixed{};
+                    Remaining = AudioEntry.Advance(ToMix, &Mixed);
+                    SDL_MixAudioFormat(Data, AudioEntry.SoundClip->Ptr + Current, SDL_AUDIO_S16, Mixed, SDL_MIX_MAXVOLUME * Audio->Volume);
+                    MixedTotal += Mixed;
+                }
+            }
+        }
+        SDL_PutAudioStreamData(Stream, Data, AdditionalAmount);
+        SDL_stack_free(Data);
     }
 }
 
@@ -60,6 +76,7 @@ CAudio::CAudio()
     DestSpec.channels = AudioSpec.Channels;
 
     Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &DestSpec, &Callback, this);
+    Silence = SDL_GetSilenceValueForFormat(DestSpec.format);
 
     SDL_AudioDeviceID DeviceID = SDL_GetAudioStreamDevice(Stream);
     char* DeviceName = SDL_GetAudioDeviceName(DeviceID);
@@ -70,6 +87,10 @@ CAudio::CAudio()
 
     LoadSoundClip(Asset::Common::Tile_01WAV, TestSoundClip);
     LoadSoundClip(Asset::Common::TestMusicWAV, TestMusic);
+
+    Queue[1].SoundClip = &TestMusic;
+    Queue[1].bLoop = true;
+    Queue[1].Current = 0;
 }
 
 CAudio::~CAudio()
@@ -106,5 +127,7 @@ void CAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
 
 void CAudio::TestAudio()
 {
-    SDL_MixAudioFormat(Buffer.data(), TestSoundClip.Ptr, SDL_AUDIO_S16, SDL_min(Buffer.size(), TestSoundClip.Length), SDL_MIX_MAXVOLUME);
+    Queue[0].SoundClip = &TestSoundClip;
+    Queue[0].bLoop = false;
+    Queue[0].Current = 0;
 }
