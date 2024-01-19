@@ -39,6 +39,8 @@ public:
     SGeometry TestGeometry;
     SGeometry Floor;
 
+    SSoundClip DoorCreek{};
+
     SSpriteHandle NoiseSprite;
     SSpriteHandle RefSprite;
     SSpriteHandle FrameSprite;
@@ -48,6 +50,7 @@ public:
 
     void Run();
 
+    void UpdateInputState();
     bool AttemptPlayerStep(SDirection Direction);
 
     [[nodiscard]] bool IsGameRunning() const;

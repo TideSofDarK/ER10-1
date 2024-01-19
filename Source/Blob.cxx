@@ -1,46 +1,48 @@
 #include "Blob.hxx"
 
+#include "Math.hxx"
+
+constexpr float BlobAnimationSpeedDefault = 3.3f;
+constexpr float BlobAnimationSpeedEnter = 1.25f;
+
 void SBlob::Update(float DeltaTime)
 {
-    AnimationAlpha += DeltaTime * 1.3f; // 3.3f;
-    if (AnimationAlpha >= 1.0f)
-    {
-        AnimationAlpha = 1.0f;
-    }
+    Timeline.Advance(DeltaTime);
     switch (AnimationType)
     {
-        case EPlayerAnimationType::Turn:
-            EyeForwardCurrent = UVec3::Mix(EyeForwardFrom, EyeForwardTarget, AnimationAlpha);
+        case EBlobAnimationType::Turn:
+            EyeForwardCurrent = UVec3::Mix(EyeForwardFrom, EyeForwardTarget, Timeline.Value);
             break;
-        case EPlayerAnimationType::Walk:
-            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, AnimationAlpha);
+        case EBlobAnimationType::Walk:
+            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, Timeline.Value);
             break;
-        case EPlayerAnimationType::Bump:
+        case EBlobAnimationType::Bump:
             EyePositionCurrent = UVec3::Mix(EyePositionTarget, EyePositionFrom,
-                std::sin(AnimationAlpha * Math::PI) * 0.25f);
+                std::sin(Timeline.Value * Math::PI) * 0.25f);
             break;
-        case EPlayerAnimationType::Enter:
-            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, AnimationAlpha);
+        case EBlobAnimationType::Enter:
+            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, Math::EaseInBack(Timeline.Value));
             break;
-        case EPlayerAnimationType::Idle:
+        case EBlobAnimationType::Idle:
         default:
             break;
     }
-    if (AnimationAlpha >= 1.0f)
+    if (Timeline.IsFinishedPlaying())
     {
-        AnimationType = EPlayerAnimationType::Idle;
+        AnimationType = EBlobAnimationType::Idle;
     }
 }
 
 SBlob::SBlob()
 {
+    Timeline.Speed = BlobAnimationSpeedDefault;
     EyePositionCurrent = EyePositionTarget = { (float)Coords.X, EyeHeight, (float)Coords.Y };
     ApplyDirection(true);
 }
 
 void SBlob::Turn(bool bRight)
 {
-    if (AnimationType != EPlayerAnimationType::Idle)
+    if (AnimationType != EBlobAnimationType::Idle)
     {
         return;
     }
@@ -65,26 +67,36 @@ void SBlob::ApplyDirection(bool bImmediate)
 
     if (bImmediate)
     {
-        AnimationType = EPlayerAnimationType::Idle;
-        AnimationAlpha = 1.0f;
+        AnimationType = EBlobAnimationType::Idle;
+        Timeline.Finish();
         EyeForwardCurrent = EyeForwardTarget;
     }
     else
     {
-        AnimationType = EPlayerAnimationType::Turn;
-        AnimationAlpha = 0.0f;
+        AnimationType = EBlobAnimationType::Turn;
+        Timeline.Speed = BlobAnimationSpeedDefault;
+        Timeline.Reset();
         EyeForwardFrom = EyeForwardCurrent;
     }
 }
 
-void SBlob::Step(UVec2Int DirectionVector)
+void SBlob::Step(UVec2Int DirectionVector, bool bEnter)
 {
-    if (AnimationType != EPlayerAnimationType::Idle)
+    if (AnimationType != EBlobAnimationType::Idle)
     {
         return;
     }
-    AnimationType = EPlayerAnimationType::Walk;
-    AnimationAlpha = 0.0f;
+    if (bEnter)
+    {
+        AnimationType = EBlobAnimationType::Enter;
+        Timeline.Speed = BlobAnimationSpeedEnter;
+    }
+    else
+    {
+        AnimationType = EBlobAnimationType::Walk;
+        Timeline.Speed = BlobAnimationSpeedDefault;
+    }
+    Timeline.Reset();
     EyePositionFrom = EyePositionCurrent;
     EyePositionTarget += UVec3{ (float)DirectionVector.X, 0.0f, (float)DirectionVector.Y };
     Coords += DirectionVector;
@@ -92,12 +104,11 @@ void SBlob::Step(UVec2Int DirectionVector)
 
 void SBlob::BumpIntoWall()
 {
-    if (AnimationType != EPlayerAnimationType::Idle)
+    if (AnimationType != EBlobAnimationType::Idle)
     {
         return;
     }
-    AnimationType = EPlayerAnimationType::Bump;
-    AnimationAlpha = 0.0f;
-
+    AnimationType = EBlobAnimationType::Bump;
+    Timeline.Reset();
     EyePositionFrom = EyePositionCurrent + (EyeForwardCurrent / 2.0f);
 }

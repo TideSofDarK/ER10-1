@@ -23,12 +23,12 @@ struct SMusic : SSoundClip
 
 struct SAudioEntry
 {
-    SSoundClip* SoundClip;
-    int Current;
-    bool bLoop;
+    const SSoundClip* SoundClip{};
+    int Current{};
+    bool bLoop{};
 
     [[nodiscard]] inline bool IsPlaying() const { return IsValid() && Current < SoundClip->Length; }
-    [[nodiscard]] inline bool IsValid() const { return SoundClip && SoundClip->Ptr; }
+    [[nodiscard]] inline bool IsValid() const { return SoundClip && SoundClip->Ptr != nullptr; }
     int Advance(int Samples, int* Mixed)
     {
         if (IsValid())
@@ -77,4 +77,5 @@ public:
     static void Callback(void* Userdata, struct SDL_AudioStream* Stream, int AdditionalAmount, int TotalAmount);
     void LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const;
     void TestAudio();
+    void Play(const SSoundClip& SoundClip);
 };

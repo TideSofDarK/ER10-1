@@ -1,9 +1,8 @@
 #pragma once
 
 #include "CommonTypes.hxx"
-#include "Math.hxx"
 
-enum class EPlayerAnimationType
+enum class EBlobAnimationType
 {
     Idle,
     Turn,
@@ -19,8 +18,8 @@ struct SBlob
 
     float InputBufferTime = 0.7f;
 
-    EPlayerAnimationType AnimationType{};
-    float AnimationAlpha{};
+    EBlobAnimationType AnimationType{};
+    STimeline Timeline{};
 
     float EyeHeight = 0.22f;
 
@@ -39,10 +38,10 @@ struct SBlob
 
     void ApplyDirection(bool bImmediate);
 
-    void Step(UVec2Int DirectionVector);
+    void Step(UVec2Int DirectionVector, bool bEnter = false);
 
     void BumpIntoWall();
 
-    [[nodiscard]] bool IsMoving() const { return AnimationType != EPlayerAnimationType::Idle; }
-    [[nodiscard]] bool IsReadyForBuffering() const { return AnimationAlpha > InputBufferTime && AnimationAlpha < 1.0f; }
+    [[nodiscard]] bool IsMoving() const { return AnimationType != EBlobAnimationType::Idle; }
+    [[nodiscard]] bool IsReadyForBuffering() const { return Timeline.Value > InputBufferTime && Timeline.Value < 1.0f; }
 };

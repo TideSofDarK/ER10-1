@@ -336,7 +336,12 @@ public:
 
 struct SDrawLevelState
 {
-    float DoorAnimationAlpha = 1.0f;
+    struct
+    {
+        UVec2Int TileCoords;
+        SDirection Direction{};
+        STimeline Timeline{};
+    } DoorInfo;
 };
 
 struct SRenderer

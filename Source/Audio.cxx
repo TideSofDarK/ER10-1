@@ -127,7 +127,20 @@ void CAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
 
 void CAudio::TestAudio()
 {
-    Queue[0].SoundClip = &TestSoundClip;
-    Queue[0].bLoop = false;
-    Queue[0].Current = 0;
+    Play(TestSoundClip);
+}
+
+void CAudio::Play(const SSoundClip& SoundClip)
+{
+    for (auto& AudioEntry : Queue)
+    {
+        if (!AudioEntry.IsPlaying())
+        {
+            AudioEntry.SoundClip = &SoundClip;
+            AudioEntry.bLoop = false;
+            AudioEntry.Current = 0;
+            return;
+        }
+    }
+    Log::Audio<ELogLevel::Critical>("Attempt to play a SoundClip while the queue is full!", "");
 }

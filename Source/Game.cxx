@@ -15,6 +15,7 @@ namespace Asset::Common
     EXTERN_ASSET(NoisePNG)
     EXTERN_ASSET(QuadOBJ)
     EXTERN_ASSET(PillarOBJ)
+    EXTERN_ASSET(DoorCreekWAV)
 }
 
 namespace Asset::TileSet::Hotel
@@ -120,6 +121,8 @@ SGame::SGame()
     PlayerParty.AddCharacter({ "Juggernaut", 30.0f, 50.0f, 10, 1 });
     PlayerParty.AddCharacter({ "Vulture", 45.0f, 50.0f, 10, 2, false });
     PlayerParty.AddCharacter({ "Mortar", 30.0f, 30.0f, 10, 2, true });
+
+    Audio.LoadSoundClip(Asset::Common::DoorCreekWAV, DoorCreek);
 }
 
 EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t* KeyboardState, const uint8_t Scancode)
@@ -179,30 +182,11 @@ void SGame::Run()
             }
         }
 
+        UpdateInputState();
+
 #ifdef EQUINOX_REACH_DEVELOPMENT
         DevTools.Update();
 #endif
-
-#pragma region InputHandling
-
-        OldInputState = InputState;
-        const Uint8* KeyboardState = SDL_GetKeyboardState(nullptr);
-        InputState.Up = UpdateKeyState(OldInputState.Up, KeyboardState, SDL_SCANCODE_W);
-        InputState.Right = UpdateKeyState(OldInputState.Right, KeyboardState, SDL_SCANCODE_D);
-        InputState.Down = UpdateKeyState(OldInputState.Down, KeyboardState, SDL_SCANCODE_S);
-        InputState.Left = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_A);
-        InputState.L = UpdateKeyState(OldInputState.L, KeyboardState, SDL_SCANCODE_Q);
-        InputState.R = UpdateKeyState(OldInputState.R, KeyboardState, SDL_SCANCODE_E);
-        InputState.ZL = UpdateKeyState(OldInputState.ZL, KeyboardState, SDL_SCANCODE_Z);
-        InputState.ZR = UpdateKeyState(OldInputState.ZR, KeyboardState, SDL_SCANCODE_C);
-        InputState.Accept = UpdateKeyState(OldInputState.Accept, KeyboardState, SDL_SCANCODE_SPACE);
-        InputState.Cancel = UpdateKeyState(OldInputState.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
-        InputState.ToggleFullscreen = UpdateKeyState(OldInputState.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
-#ifdef EQUINOX_REACH_DEVELOPMENT
-        InputState.ToggleLevelEditor = UpdateKeyState(OldInputState.ToggleLevelEditor, KeyboardState, SDL_SCANCODE_F10);
-#endif
-#pragma endregion
-
         if (InputState.Cancel == EKeyState::Pressed)
         {
             Window.bQuit = true;
@@ -224,23 +208,21 @@ void SGame::Run()
         if (IsGameRunning())
         {
 #ifdef EQUINOX_REACH_DEVELOPMENT
-            {
-                SDebugToolsData Data = {
-                    1000.0f / Window.DeltaTime / 1000.0f,
-                    CMemory::NumberOfBlocks(),
-                    Blob.Coords,
-                    Blob.Direction,
-                    &PlayerParty,
-                    false,
-                    &Blob.InputBufferTime
-                };
-                SDevTools::DebugTools(Data);
+            SDebugToolsData Data = {
+                1000.0f / Window.DeltaTime / 1000.0f,
+                CMemory::NumberOfBlocks(),
+                Blob.Coords,
+                Blob.Direction,
+                &PlayerParty,
+                false,
+                &Blob.InputBufferTime
+            };
+            DevTools.DebugTools(Data);
 
-                if (Data.bImportLevel)
-                {
-                    Level = DevTools.Level;
-                    Level.InitWallJoints();
-                }
+            if (Data.bImportLevel)
+            {
+                Level = DevTools.Level;
+                Level.InitWallJoints();
             }
 
             // SDevTools::DrawParty(PlayerParty);
@@ -260,14 +242,12 @@ void SGame::Run()
                     auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCCW();
                     AttemptPlayerStep(PlayerDirection);
-                    Audio.TestAudio();
                 }
                 if (BufferedInputState.R == EKeyState::Held)
                 {
                     auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCW();
                     AttemptPlayerStep(PlayerDirection);
-                    Audio.TestAudio();
                 }
                 if (BufferedInputState.Up == EKeyState::Held)
                 {
@@ -275,10 +255,6 @@ void SGame::Run()
                     if (!AttemptPlayerStep(PlayerDirection))
                     {
                         Blob.BumpIntoWall();
-                    }
-                    else
-                    {
-                        Audio.TestAudio();
                     }
                 }
 
@@ -325,7 +301,7 @@ void SGame::Run()
             Renderer.Draw3D({ -6.0f, 0.0f, -4.0f }, &Floor);
             Renderer.Draw3D({ -7.0f, 0.0f, -4.0f }, &Floor);
 
-            DrawLevelState.DoorAnimationAlpha = std::min(1.0f, DrawLevelState.DoorAnimationAlpha + Window.DeltaTime * 2.0f);
+            DrawLevelState.DoorInfo.Timeline.Advance(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction, DrawLevelState);
 
             switch (SpriteDemoState)
@@ -371,6 +347,26 @@ void SGame::Run()
     Renderer.Cleanup();
 }
 
+void SGame::UpdateInputState()
+{
+    OldInputState = InputState;
+    const Uint8* KeyboardState = SDL_GetKeyboardState(nullptr);
+    InputState.Up = UpdateKeyState(OldInputState.Up, KeyboardState, SDL_SCANCODE_W);
+    InputState.Right = UpdateKeyState(OldInputState.Right, KeyboardState, SDL_SCANCODE_D);
+    InputState.Down = UpdateKeyState(OldInputState.Down, KeyboardState, SDL_SCANCODE_S);
+    InputState.Left = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_A);
+    InputState.L = UpdateKeyState(OldInputState.L, KeyboardState, SDL_SCANCODE_Q);
+    InputState.R = UpdateKeyState(OldInputState.R, KeyboardState, SDL_SCANCODE_E);
+    InputState.ZL = UpdateKeyState(OldInputState.ZL, KeyboardState, SDL_SCANCODE_Z);
+    InputState.ZR = UpdateKeyState(OldInputState.ZR, KeyboardState, SDL_SCANCODE_C);
+    InputState.Accept = UpdateKeyState(OldInputState.Accept, KeyboardState, SDL_SCANCODE_SPACE);
+    InputState.Cancel = UpdateKeyState(OldInputState.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
+    InputState.ToggleFullscreen = UpdateKeyState(OldInputState.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    InputState.ToggleLevelEditor = UpdateKeyState(OldInputState.ToggleLevelEditor, KeyboardState, SDL_SCANCODE_F9);
+#endif
+}
+
 bool SGame::AttemptPlayerStep(SDirection Direction)
 {
     auto CurrentTile = Level.GetTileAt(Blob.Coords);
@@ -393,10 +389,22 @@ bool SGame::AttemptPlayerStep(SDirection Direction)
 
     if (CurrentTile->IsDoorEdge(Direction))
     {
-        DrawLevelState.DoorAnimationAlpha = 0.0f;
-    }
+        DrawLevelState.DoorInfo = {
+            Blob.Coords,
+            Direction,
+            STimeline{ 0.0f, 2.0f }
+        };
 
-    Blob.Step(DirectionVector);
+        Blob.Step(DirectionVector, true);
+
+        Audio.Play(DoorCreek);
+    }
+    else
+    {
+        Blob.Step(DirectionVector);
+
+        Audio.TestAudio();
+    }
 
     return true;
 }

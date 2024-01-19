@@ -1,6 +1,7 @@
 #include "DevTools.hxx"
 
 #include <iostream>
+#include <fstream>
 #include <glad/gl.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_opengl3.h>
@@ -117,6 +118,16 @@ void SDevTools::Update()
             ImGui::EndPopup();
         }
 
+        if (bSaveLevel)
+        {
+            SaveLevelToFile();
+        }
+
+        if (bLoadLevel)
+        {
+            LoadLevelFromFile();
+        }
+
         /* Validate Selected Tile */
         if (SelectedTileCoords.has_value())
         {
@@ -201,6 +212,11 @@ void SDevTools::DebugTools(SDebugToolsData& Data)
         {
             if (ImGui::Button("Import Level From Editor"))
             {
+                Data.bImportLevel = true;
+            }
+            if (ImGui::Button("Import Level From File"))
+            {
+                LoadLevelFromFile();
                 Data.bImportLevel = true;
             }
             ImGui::TreePop();
@@ -706,4 +722,20 @@ void SDevTools::DrawParty(SParty& Party, float Scale, bool bReversed)
 
     PosMin.y += PartyBlockSize.y;
     ImGui::SetCursorScreenPos(PosMin);
+}
+
+void SDevTools::SaveLevelToFile()
+{
+    std::ofstream LevelFile;
+    LevelFile.open("templevel");
+    LevelFile.write(reinterpret_cast<char*>(&Level), sizeof(SLevel));
+    LevelFile.close();
+}
+
+void SDevTools::LoadLevelFromFile()
+{
+    std::ifstream LevelFile;
+    LevelFile.open("templevel");
+    LevelFile.read(reinterpret_cast<char*>(&Level), sizeof(SLevel));
+    LevelFile.close();
 }

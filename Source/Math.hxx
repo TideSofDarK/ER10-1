@@ -39,6 +39,15 @@ struct SVec2
     {
         return { Y, X };
     }
+
+    //    [[nodiscard]] SVec2<T> Cross(const SVec3<T>& Other) const
+    //    {
+    //        SVec3<T> Result{};
+    //        Result.X = Y * Other.Z - Z * Other.Y;
+    //        Result.Y = Z * Other.X - X * Other.Z;
+    //        Result.Z = X * Other.Y - Y * Other.X;
+    //        return Result;
+    //    }
 };
 
 template <typename T>
@@ -179,7 +188,7 @@ struct SMat4x4
         W = X * Vector.X + Y * Vector.Y + Z * Vector.Z + W;
     }
 
-    void Rotate(const float Angle, SVec3<T> Axis)
+    void Rotate(const float Angle, SVec3<T> Axis = SVec3<T>{ 0, 1, 0 })
     {
         T const Cos = std::cos(Angle);
         T const Sin = std::sin(Angle);
@@ -250,6 +259,7 @@ using UMat4x4 = SMat4x4<float>;
 namespace Math
 {
     constexpr float PI = 3.141592653589793f;
+    constexpr float HalfPI = PI / 2.0f;
 
     constexpr float Radians(float Degrees)
     {
@@ -257,9 +267,28 @@ namespace Math
     }
 
     template <typename T>
-    T Mix(T A, T B, T F)
+    constexpr T Mix(T A, T B, T F)
     {
         return A * (1.0 - F) + (B * F);
+    }
+
+    template <typename T>
+    constexpr T EaseInOutCirc(T Value)
+    {
+        if (Value < 0.5)
+        {
+            return (1 - sqrt(1 - 2 * Value)) * 0.5;
+        }
+        else
+        {
+            return (1 + sqrt(2 * Value - 1)) * 0.5;
+        }
+    }
+
+    template <typename T>
+    constexpr T EaseInBack(T Value)
+    {
+        return Value * Value * (2.70158 * Value - 1.70158);
     }
 
     //    template <typename T>

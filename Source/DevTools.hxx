@@ -42,7 +42,7 @@ struct SDevTools
 
     void Update();
 
-    static void DebugTools(SDebugToolsData& Data);
+    void DebugTools(SDebugToolsData& Data);
 
     static void DrawParty(SParty& Party, float Scale, bool bReversed);
 
@@ -71,4 +71,7 @@ private:
             ImGui::EndCombo();
         }
     }
+
+    void SaveLevelToFile();
+    void LoadLevelFromFile();
 };

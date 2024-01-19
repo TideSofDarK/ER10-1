@@ -55,9 +55,14 @@ struct SDirection
         return SDirection{ 3 };
     }
 
+    inline SDirection Side() const
+    {
+        return SDirection{ Index + 1u };
+    }
+
     inline SDirection Inverted() const
     {
-        return SDirection{ (Index + 2u) };
+        return SDirection{ Index + 2u };
     }
 
     template <typename T>
@@ -133,4 +138,31 @@ struct SInputState
     {
         this->Value |= Other.Value;
     }
+};
+
+struct STimeline
+{
+    float Value{};
+    float Speed = 1.0f;
+
+    void Advance(float DeltaTime)
+    {
+        Value += DeltaTime * Speed;
+        if (Value > 1.0f)
+        {
+            Value = 1.0f;
+        }
+    }
+
+    void Reset()
+    {
+        Value = 0.0f;
+    }
+
+    void Finish()
+    {
+        Value = 1.0f;
+    }
+
+    [[nodiscard]] inline bool IsFinishedPlaying() const { return Value >= 1.0f; }
 };
