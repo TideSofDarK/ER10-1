@@ -55,6 +55,26 @@ struct SDirection
         return SDirection{ 3 };
     }
 
+    constexpr static SDirection Forward()
+    {
+        return SDirection{ 0 };
+    }
+
+    constexpr static SDirection Right()
+    {
+        return SDirection{ 1 };
+    }
+
+    constexpr static SDirection Backward()
+    {
+        return SDirection{ 2 };
+    }
+
+    constexpr static SDirection Left()
+    {
+        return SDirection{ 3 };
+    }
+
     inline SDirection Side() const
     {
         return SDirection{ Index + 1u };
@@ -96,6 +116,11 @@ struct SDirection
             default:
                 return 0.0f;
         }
+    }
+
+    bool operator==(const SDirection& Other) const
+    {
+        return Index == Other.Index;
     }
 };
 

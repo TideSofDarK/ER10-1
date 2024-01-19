@@ -2,9 +2,11 @@
 
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_events.h>
+#include "CommonTypes.hxx"
 #include "Constants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
+#include "Draw.hxx"
 #include "Tile.hxx"
 
 namespace Asset::Common
@@ -66,8 +68,8 @@ SGame::SGame()
         Asset::TileSet::Hotel::WallOBJ,
         Asset::TileSet::Hotel::WallJointOBJ,
         Asset::TileSet::Hotel::DoorFrameOBJ,
-        Asset::TileSet::Hotel::DoorOBJ,
-        EDoorAnimationType::TwoDoors);
+        Asset::TileSet::Hotel::DoorOBJ);
+    Renderer.TileSet.DoorAnimationType = EDoorAnimationType::TwoDoors;
     Renderer.TileSet.DoorOffset = 0.22f;
 
     Blob.ApplyDirection(true);
@@ -228,48 +230,7 @@ void SGame::Run()
             // SDevTools::DrawParty(PlayerParty);
 #endif
 
-            if (Blob.IsReadyForBuffering())
-            {
-                BufferedInputState.Buffer(InputState);
-            }
-            if (!Blob.IsMoving())
-            {
-                BufferedInputState.Buffer(InputState);
-
-                /* Moving */
-                if (BufferedInputState.L == EKeyState::Held)
-                {
-                    auto PlayerDirection = Blob.Direction;
-                    PlayerDirection.CycleCCW();
-                    AttemptPlayerStep(PlayerDirection);
-                }
-                if (BufferedInputState.R == EKeyState::Held)
-                {
-                    auto PlayerDirection = Blob.Direction;
-                    PlayerDirection.CycleCW();
-                    AttemptPlayerStep(PlayerDirection);
-                }
-                if (BufferedInputState.Up == EKeyState::Held)
-                {
-                    auto PlayerDirection = Blob.Direction;
-                    if (!AttemptPlayerStep(PlayerDirection))
-                    {
-                        Blob.BumpIntoWall();
-                    }
-                }
-
-                /* Turning */
-                if (BufferedInputState.Left == EKeyState::Held)
-                {
-                    Blob.Turn(false);
-                }
-                else if (BufferedInputState.Right == EKeyState::Held)
-                {
-                    Blob.Turn(true);
-                }
-
-                BufferedInputState.Value = 0;
-            }
+            HandleBlobMovement();
 
             if (InputState.ZL == EKeyState::Pressed)
             {
@@ -345,6 +306,8 @@ void SGame::Run()
     DevTools.Cleanup();
 #endif
     Renderer.Cleanup();
+    /* @TODO: Fix this. */
+    DoorCreek.Free();
 }
 
 void SGame::UpdateInputState()
@@ -367,7 +330,98 @@ void SGame::UpdateInputState()
 #endif
 }
 
-bool SGame::AttemptPlayerStep(SDirection Direction)
+void SGame::HandleBlobMovement()
+{
+    if (Blob.MoveSeq.IsFinished())
+    {
+        if (Blob.IsReadyForBuffering())
+        {
+            BufferedInputState.Buffer(InputState);
+        }
+        if (!Blob.IsMoving())
+        {
+            BufferedInputState.Buffer(InputState);
+
+            /* Moving */
+            if (BufferedInputState.L == EKeyState::Held)
+            {
+                auto PlayerDirection = Blob.Direction;
+                PlayerDirection.CycleCCW();
+                if (!AttemptBlobStep(PlayerDirection))
+                {
+                    Blob.HijackLF();
+                }
+            }
+            if (BufferedInputState.R == EKeyState::Held)
+            {
+                auto PlayerDirection = Blob.Direction;
+                PlayerDirection.CycleCW();
+                if (!AttemptBlobStep(PlayerDirection))
+                {
+                    Blob.HijackRF();
+                }
+            }
+            if (BufferedInputState.Up == EKeyState::Held)
+            {
+                auto PlayerDirection = Blob.Direction;
+                AttemptBlobStep(PlayerDirection);
+            }
+            if (BufferedInputState.Down == EKeyState::Held)
+            {
+                auto PlayerDirection = Blob.Direction;
+                if (!AttemptBlobStep(PlayerDirection.Inverted()))
+                {
+                    Blob.HijackRRF();
+                }
+            }
+
+            /* Turning */
+            if (BufferedInputState.Left == EKeyState::Held)
+            {
+                Blob.Turn(false);
+            }
+            else if (BufferedInputState.Right == EKeyState::Held)
+            {
+                Blob.Turn(true);
+            }
+
+            BufferedInputState.Value = 0;
+        }
+    }
+    else
+    {
+        if (!Blob.IsMoving())
+        {
+            switch (Blob.MoveSeq.GetCurrentDirection().Index)
+            {
+                case SDirection::North().Index:
+                {
+                    AttemptBlobStep(Blob.Direction);
+                }
+                break;
+                case SDirection::East().Index:
+                {
+                    Blob.Turn(true);
+                }
+                break;
+                case SDirection::West().Index:
+                {
+                    Blob.Turn(false);
+                }
+                break;
+                case SDirection::South().Index:
+                default:
+                {
+                    // AttemptPlayerStep(Blob.Direction);
+                }
+                break;
+            }
+            Blob.MoveSeq.Current++;
+        }
+    }
+}
+
+bool SGame::AttemptBlobStep(SDirection Direction)
 {
     auto CurrentTile = Level.GetTileAt(Blob.Coords);
     if (CurrentTile == nullptr)
@@ -377,6 +431,11 @@ bool SGame::AttemptPlayerStep(SDirection Direction)
 
     if (!CurrentTile->IsTraversable(Direction.Index))
     {
+        if (Direction == Blob.Direction)
+        {
+            Blob.BumpIntoWall();
+        }
+
         return false;
     }
 

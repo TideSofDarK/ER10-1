@@ -51,7 +51,8 @@ public:
     void Run();
 
     void UpdateInputState();
-    bool AttemptPlayerStep(SDirection Direction);
+    void HandleBlobMovement();
+    bool AttemptBlobStep(SDirection Direction);
 
     [[nodiscard]] bool IsGameRunning() const;
 };

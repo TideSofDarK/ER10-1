@@ -280,11 +280,8 @@ void STileSet::InitBasic(
     const SAsset& Wall,
     const SAsset& WallJoint,
     const SAsset& DoorFrame,
-    const SAsset& Door,
-    EDoorAnimationType NewDoorAnimationType)
+    const SAsset& Door)
 {
-    DoorAnimationType = NewDoorAnimationType;
-
     auto Positions = CMemory::GetVector<UVec3>();
     auto TexCoords = CMemory::GetVector<UVec2>();
     auto Indices = CMemory::GetVector<unsigned short>();

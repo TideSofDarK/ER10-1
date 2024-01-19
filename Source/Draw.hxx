@@ -153,7 +153,7 @@ enum class EDoorAnimationType
 struct STileSet : SGeometry
 {
     EDoorAnimationType DoorAnimationType{};
-    float DoorOffset;
+    float DoorOffset{};
     std::array<SSubGeometry, ETileGeometryType::Count> TileGeometry;
 
     void InitPlaceholder();
@@ -162,8 +162,7 @@ struct STileSet : SGeometry
         const SAsset& Wall,
         const SAsset& WallJoint,
         const SAsset& DoorFrame,
-        const SAsset& Door,
-        EDoorAnimationType NewDoorAnimationType);
+        const SAsset& Door);
 };
 
 struct SCamera

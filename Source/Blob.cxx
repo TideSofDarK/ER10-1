@@ -112,3 +112,25 @@ void SBlob::BumpIntoWall()
     Timeline.Reset();
     EyePositionFrom = EyePositionCurrent + (EyeForwardCurrent / 2.0f);
 }
+
+void SBlob::HijackRRF()
+{
+    MoveSeq.Moves[0] = SDirection::Right();
+    MoveSeq.Moves[1] = SDirection::Right();
+    MoveSeq.Moves[2] = SDirection::Forward();
+    MoveSeq.ResetAndStart(3);
+}
+
+void SBlob::HijackRF()
+{
+    MoveSeq.Moves[0] = SDirection::Right();
+    MoveSeq.Moves[1] = SDirection::Forward();
+    MoveSeq.ResetAndStart(2);
+}
+
+void SBlob::HijackLF()
+{
+    MoveSeq.Moves[0] = SDirection::Left();
+    MoveSeq.Moves[1] = SDirection::Forward();
+    MoveSeq.ResetAndStart(2);
+}
