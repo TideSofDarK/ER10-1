@@ -19,6 +19,7 @@ struct SDebugToolsData
     SDirection PlayerDirection{ 0 };
     SParty* Party{};
     bool bImportLevel{};
+    float* BufferTime{};
 };
 
 struct SDevTools

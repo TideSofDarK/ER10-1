@@ -89,6 +89,7 @@ namespace Asset::TileSet::Hotel
     DEFINE_ASSET(FloorOBJ, "../Asset/TileSet/Hotel/Floor.obj")
     DEFINE_ASSET(WallOBJ, "../Asset/TileSet/Hotel/Wall.obj")
     DEFINE_ASSET(WallJointOBJ, "../Asset/TileSet/Hotel/WallJoint.obj")
+    DEFINE_ASSET(DoorFrameOBJ, "../Asset/TileSet/Hotel/DoorFrame.obj")
     DEFINE_ASSET(DoorOBJ, "../Asset/TileSet/Hotel/Door.obj")
     DEFINE_ASSET(AtlasPNG, "../Asset/TileSet/Hotel/Atlas.png")
 }

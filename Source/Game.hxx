@@ -29,12 +29,13 @@ public:
 
     CAudio Audio;
     SRenderer Renderer;
-    SInputState OldInputState{}, InputState{};
+    SInputState OldInputState{}, BufferedInputState{}, InputState{};
     SCamera Camera;
     SParty PlayerParty;
     SBlob Blob;
     SBattle Battle;
     SLevel Level;
+    SDrawLevelState DrawLevelState;
     SGeometry TestGeometry;
     SGeometry Floor;
 

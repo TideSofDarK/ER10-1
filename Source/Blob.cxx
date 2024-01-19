@@ -2,7 +2,7 @@
 
 void SBlob::Update(float DeltaTime)
 {
-    AnimationAlpha += DeltaTime * 3.3f;
+    AnimationAlpha += DeltaTime * 1.3f; // 3.3f;
     if (AnimationAlpha >= 1.0f)
     {
         AnimationAlpha = 1.0f;
@@ -18,6 +18,9 @@ void SBlob::Update(float DeltaTime)
         case EPlayerAnimationType::Bump:
             EyePositionCurrent = UVec3::Mix(EyePositionTarget, EyePositionFrom,
                 std::sin(AnimationAlpha * Math::PI) * 0.25f);
+            break;
+        case EPlayerAnimationType::Enter:
+            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, AnimationAlpha);
             break;
         case EPlayerAnimationType::Idle:
         default:

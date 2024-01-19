@@ -134,7 +134,7 @@ namespace ETileGeometryType
         WallJoint,
         Ceil,
         Door,
-        Hole,
+        DoorFrame,
         CustomA,
         CustomB,
         CustomC,
@@ -142,14 +142,28 @@ namespace ETileGeometryType
     };
 }
 
+enum class EDoorAnimationType
+{
+    None,
+    OneDoor,
+    TwoDoors,
+    Curtains
+};
+
 struct STileSet : SGeometry
 {
-    /**  */
-    std::array<SSubGeometry, 5> TileGeometry;
+    EDoorAnimationType DoorAnimationType{};
+    float DoorOffset;
+    std::array<SSubGeometry, ETileGeometryType::Count> TileGeometry;
 
     void InitPlaceholder();
 
-    void InitBasic(const SAsset& Floor, const SAsset& Wall, const SAsset& WallJoint, const SAsset& Door);
+    void InitBasic(const SAsset& Floor,
+        const SAsset& Wall,
+        const SAsset& WallJoint,
+        const SAsset& DoorFrame,
+        const SAsset& Door,
+        EDoorAnimationType NewDoorAnimationType);
 };
 
 struct SCamera
@@ -320,6 +334,11 @@ public:
     void Build();
 };
 
+struct SDrawLevelState
+{
+    float DoorAnimationAlpha = 1.0f;
+};
+
 struct SRenderer
 {
     SRenderQueue<SEntry2D, RENDERER_QUEUE2D_SIZE> Queue2D;
@@ -371,7 +390,7 @@ struct SRenderer
 
     void Draw3D(UVec3 Position, SGeometry* Geometry);
 
-    void Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection);
+    void Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection, const SDrawLevelState& DrawLevelState);
 
 #pragma endregion
 };

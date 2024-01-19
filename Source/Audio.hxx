@@ -69,7 +69,7 @@ protected:
     void Put(const SSoundClip* SoundClip) const;
 
 public:
-    float Volume = 0.5f;
+    float Volume = 0.25f;
 
     CAudio();
     ~CAudio();

@@ -33,6 +33,11 @@ struct STile
         return Edges[Direction] != ETileEdgeType::Wall;
     }
 
+    [[nodiscard]] bool IsDoorEdge(SDirection Direction) const
+    {
+        return Edges[Direction.Index] == ETileEdgeType::Door;
+    }
+
     [[nodiscard]] bool IsWallBasedEdge(SDirection Direction) const
     {
         return Edges[Direction.Index] == ETileEdgeType::Wall || Edges[Direction.Index] == ETileEdgeType::Door;

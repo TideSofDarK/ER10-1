@@ -205,6 +205,11 @@ void SDevTools::DebugTools(SDebugToolsData& Data)
             }
             ImGui::TreePop();
         }
+        if (ImGui::TreeNode("Adjustments"))
+        {
+            ImGui::SliderFloat(" ", Data.BufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
+            ImGui::TreePop();
+        }
         ImGui::End();
     }
 }

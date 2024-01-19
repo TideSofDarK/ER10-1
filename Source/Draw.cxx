@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <numeric>
+#include "Tile.hxx"
 #include "glad/gl.h"
 #include "Level.hxx"
 #include "Constants.hxx"
@@ -273,8 +274,16 @@ void STileSet::InitPlaceholder()
     glBindVertexArray(0);
 }
 
-void STileSet::InitBasic(const SAsset& Floor, const SAsset& Wall, const SAsset& WallJoint, const SAsset& Door)
+void STileSet::InitBasic(
+    const SAsset& Floor,
+    const SAsset& Wall,
+    const SAsset& WallJoint,
+    const SAsset& DoorFrame,
+    const SAsset& Door,
+    EDoorAnimationType NewDoorAnimationType)
 {
+    DoorAnimationType = NewDoorAnimationType;
+
     auto Positions = CMemory::GetVector<UVec3>();
     auto TexCoords = CMemory::GetVector<UVec2>();
     auto Indices = CMemory::GetVector<unsigned short>();
@@ -307,6 +316,7 @@ void STileSet::InitBasic(const SAsset& Floor, const SAsset& Wall, const SAsset& 
     InitGeometry(Floor, ETileGeometryType::Floor);
     InitGeometry(Wall, ETileGeometryType::Wall);
     InitGeometry(WallJoint, ETileGeometryType::WallJoint);
+    InitGeometry(DoorFrame, ETileGeometryType::DoorFrame);
     InitGeometry(Door, ETileGeometryType::Door);
 
     glGenVertexArrays(1, &VAO);
@@ -813,7 +823,7 @@ void SRenderer::Draw3D(UVec3 Position, SGeometry* Geometry)
     Queue3D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection)
+void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection, const SDrawLevelState& DrawLevelState)
 {
     LevelDrawData.Clear();
 
@@ -826,7 +836,10 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
     auto& WallJointDrawCall = LevelDrawData.DrawCalls[2];
     WallJointDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::WallJoint];
 
-    auto& DoorDrawCall = LevelDrawData.DrawCalls[3];
+    auto& DoorFrameDrawCall = LevelDrawData.DrawCalls[3];
+    DoorFrameDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::DoorFrame];
+
+    auto& DoorDrawCall = LevelDrawData.DrawCalls[4];
     DoorDrawCall.SubGeometry = &TileSet.TileGeometry[ETileGeometryType::Door];
 
     if (!Level.IsValidTile(POVOrigin))
@@ -844,11 +857,16 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
     {
         for (int SideCounter = -DrawDistanceSide; SideCounter <= DrawDistanceSide; ++SideCounter)
         {
-            auto X = POVOrigin.X + (POVDirectionVectorForward.X * ForwardCounter) + (POVDirectionVectorSide.X * SideCounter);
-            auto Y = POVOrigin.Y + (POVDirectionVectorForward.Y * ForwardCounter) + (POVDirectionVectorSide.Y * SideCounter);
+            auto RelativeX = (POVDirectionVectorForward.X * ForwardCounter) + (POVDirectionVectorSide.X * SideCounter);
+            auto RelativeY = (POVDirectionVectorForward.Y * ForwardCounter) + (POVDirectionVectorSide.Y * SideCounter);
+
+            auto X = POVOrigin.X + RelativeX;
+            auto Y = POVOrigin.Y + RelativeY;
 
             auto XOffset = (float)X;
             auto YOffset = (float)Y;
+
+            auto TileCoords = UVec2Int{X, Y};
 
             if (Level.bUseWallJoints && Level.IsValidWallJoint({ X, Y }))
             {
@@ -862,11 +880,19 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
                 }
             }
 
-            auto Tile = Level.GetTileAt({ X, Y });
+            auto Tile = Level.GetTileAt(TileCoords);
 
             if (Tile == nullptr)
             {
                 continue;
+            }
+
+            if (TileCoords == POVOrigin + POVDirectionVectorForward)
+            {
+                if (Tile && Tile->Edges[POVDirection.Inverted().Index] != ETileEdgeType::Empty)
+                {
+                    continue;
+                }
             }
 
             if (Tile->Type == ETileType::Floor)
@@ -888,16 +914,69 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
                     Transform.Rotate(SDirection{ Direction }.RotationFromDirection(),
                         { 0.0f, 1.0f, 0.0f });
 
-                    if (TileEdge == ETileEdgeType::Wall)
+                    switch (TileEdge)
                     {
-                        WallDrawCall.Transform[WallDrawCall.Count] = Transform;
-                        WallDrawCall.Count++;
-                    }
+                        case ETileEdgeType::Wall:
+                        {
+                            WallDrawCall.Transform[WallDrawCall.Count] = Transform;
+                            WallDrawCall.Count++;
+                        }
+                        break;
+                        case ETileEdgeType::Door:
+                        {
+                            DoorFrameDrawCall.Transform[DoorFrameDrawCall.Count] = Transform;
+                            DoorFrameDrawCall.Count++;
 
-                    if (TileEdge == ETileEdgeType::Door)
-                    {
-                        DoorDrawCall.Transform[DoorDrawCall.Count] = Transform;
-                        DoorDrawCall.Count++;
+                            switch (TileSet.DoorAnimationType)
+                            {
+                                case EDoorAnimationType::TwoDoors:
+                                {
+                                    auto Temp = SDirection{ Direction }.GetVector<float>();
+                                    UVec3 DirectionalOffset{};
+                                    DirectionalOffset.X = Temp.X;
+                                    DirectionalOffset.Z = Temp.Y;
+
+                                    Transform = UMat4x4::Identity();
+
+                                    Transform.Translate({ XOffset, 0.0f, YOffset });
+                                    Transform.Translate(DirectionalOffset * 0.5f);
+                                    Transform.Translate({ -TileSet.DoorOffset, 0.0f, 0.0f });
+
+                                    if (POVOrigin.X == X && POVOrigin.Y == Y)
+                                    {
+                                        auto A = (std::sin(DrawLevelState.DoorAnimationAlpha * Math::PI)) * 1.5f;
+                                        Transform.Rotate(-A, { 0.0f, 1.0f, 0.0f });
+                                    }
+
+                                    DoorDrawCall.Transform[DoorDrawCall.Count] = Transform;
+                                    DoorDrawCall.Count++;
+
+                                    Transform = UMat4x4::Identity();
+
+                                    Transform.Translate({ XOffset, 0.0f, YOffset });
+                                    Transform.Translate(DirectionalOffset * 0.5f);
+                                    Transform.Translate({ TileSet.DoorOffset, 0.0f, 0.0f });
+
+                                    if (POVOrigin.X == X && POVOrigin.Y == Y)
+                                    {
+                                        auto A = (std::sin(DrawLevelState.DoorAnimationAlpha * Math::PI)) * 1.5f;
+                                        Transform.Rotate(A, { 0.0f, 1.0f, 0.0f });
+                                    }
+
+                                    Transform.Rotate(Math::PI, { 0.0f, 1.0f, 0.0f });
+
+                                    DoorDrawCall.Transform[DoorDrawCall.Count] = Transform;
+                                    DoorDrawCall.Count++;
+                                }
+                                break;
+
+                                default:
+                                    break;
+                            }
+                        }
+                        break;
+                        default:
+                            break;
                     }
                 }
             }
@@ -909,7 +988,7 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
     Entry.Geometry = &TileSet;
     Entry.Model = UMat4x4::Identity();
     Entry.InstancedDrawCall = &LevelDrawData.DrawCalls[0];
-    Entry.InstancedDrawCallCount = 4;
+    Entry.InstancedDrawCallCount = 5;
 
     Entry.Mode = SEntryMode{
         UBER3D_MODE_LEVEL

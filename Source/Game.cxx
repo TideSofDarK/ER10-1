@@ -5,6 +5,7 @@
 #include "Constants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
+#include "Tile.hxx"
 
 namespace Asset::Common
 {
@@ -21,6 +22,7 @@ namespace Asset::TileSet::Hotel
     EXTERN_ASSET(FloorOBJ)
     EXTERN_ASSET(WallOBJ)
     EXTERN_ASSET(WallJointOBJ)
+    EXTERN_ASSET(DoorFrameOBJ)
     EXTERN_ASSET(DoorOBJ)
     EXTERN_ASSET(AtlasPNG)
 }
@@ -59,8 +61,13 @@ SGame::SGame()
         Asset::Common::PillarOBJ));
 
     Renderer.TileSet.InitBasic(
-        Asset::TileSet::Hotel::FloorOBJ, Asset::TileSet::Hotel::WallOBJ,
-        Asset::TileSet::Hotel::WallJointOBJ, Asset::TileSet::Hotel::DoorOBJ);
+        Asset::TileSet::Hotel::FloorOBJ,
+        Asset::TileSet::Hotel::WallOBJ,
+        Asset::TileSet::Hotel::WallJointOBJ,
+        Asset::TileSet::Hotel::DoorFrameOBJ,
+        Asset::TileSet::Hotel::DoorOBJ,
+        EDoorAnimationType::TwoDoors);
+    Renderer.TileSet.DoorOffset = 0.22f;
 
     Blob.ApplyDirection(true);
 
@@ -75,21 +82,25 @@ SGame::SGame()
             STile::WallN(),
             STile::WallNE(),
             STile::WallSW(false),
+
             STile::WallNEW(),
-            STile::WallW(),
+            STile{ { ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Door, ETileEdgeType::Wall }, ETileType::Floor },
             STile::WallS(),
             STile::Floor(),
             STile::WallNE(),
+
             STile::WallWE(),
-            STile::WallWE(),
+            STile{ { ETileEdgeType::Door, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall }, ETileType::Floor },
             STile::WallsNF(),
             STile::WallW(),
             STile::WallE(),
+
             STile::WallWE(),
             STile::WallSWE(),
             STile::WallNW(),
             STile::Floor(),
             STile::WallE(),
+
             STile::WallSW(),
             STile::WallNS(),
             STile::WallS(),
@@ -98,6 +109,10 @@ SGame::SGame()
         }
     };
     Level.InitWallJoints();
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    DevTools.Level = Level;
+#endif
 
     SpriteDemoState = 5;
 
@@ -216,7 +231,8 @@ void SGame::Run()
                     Blob.Coords,
                     Blob.Direction,
                     &PlayerParty,
-                    false
+                    false,
+                    &Blob.InputBufferTime
                 };
                 SDevTools::DebugTools(Data);
 
@@ -225,29 +241,35 @@ void SGame::Run()
                     Level = DevTools.Level;
                     Level.InitWallJoints();
                 }
-
-                // SDevTools::DrawParty(PlayerParty);
             }
+
+            // SDevTools::DrawParty(PlayerParty);
 #endif
 
+            if (Blob.IsReadyForBuffering())
+            {
+                BufferedInputState.Buffer(InputState);
+            }
             if (!Blob.IsMoving())
             {
+                BufferedInputState.Buffer(InputState);
+
                 /* Moving */
-                if (InputState.L == EKeyState::Held)
+                if (BufferedInputState.L == EKeyState::Held)
                 {
                     auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCCW();
                     AttemptPlayerStep(PlayerDirection);
                     Audio.TestAudio();
                 }
-                if (InputState.R == EKeyState::Held)
+                if (BufferedInputState.R == EKeyState::Held)
                 {
                     auto PlayerDirection = Blob.Direction;
                     PlayerDirection.CycleCW();
                     AttemptPlayerStep(PlayerDirection);
                     Audio.TestAudio();
                 }
-                if (InputState.Up == EKeyState::Held)
+                if (BufferedInputState.Up == EKeyState::Held)
                 {
                     auto PlayerDirection = Blob.Direction;
                     if (!AttemptPlayerStep(PlayerDirection))
@@ -261,14 +283,16 @@ void SGame::Run()
                 }
 
                 /* Turning */
-                if (InputState.Left == EKeyState::Held)
+                if (BufferedInputState.Left == EKeyState::Held)
                 {
                     Blob.Turn(false);
                 }
-                else if (InputState.Right == EKeyState::Held)
+                else if (BufferedInputState.Right == EKeyState::Held)
                 {
                     Blob.Turn(true);
                 }
+
+                BufferedInputState.Value = 0;
             }
 
             if (InputState.ZL == EKeyState::Pressed)
@@ -300,7 +324,10 @@ void SGame::Run()
             Renderer.Draw3D({ -5.0f, 0.0f, -4.0f }, &Floor);
             Renderer.Draw3D({ -6.0f, 0.0f, -4.0f }, &Floor);
             Renderer.Draw3D({ -7.0f, 0.0f, -4.0f }, &Floor);
-            Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
+
+            DrawLevelState.DoorAnimationAlpha = std::min(1.0f, DrawLevelState.DoorAnimationAlpha + Window.DeltaTime * 2.0f);
+            Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction, DrawLevelState);
+
             switch (SpriteDemoState)
             {
                 case 0:
@@ -362,6 +389,11 @@ bool SGame::AttemptPlayerStep(SDirection Direction)
     if (NextTile == nullptr || !NextTile->IsWalkable())
     {
         return false;
+    }
+
+    if (CurrentTile->IsDoorEdge(Direction))
+    {
+        DrawLevelState.DoorAnimationAlpha = 0.0f;
     }
 
     Blob.Step(DirectionVector);

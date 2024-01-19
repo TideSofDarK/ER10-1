@@ -55,6 +55,11 @@ struct SDirection
         return SDirection{ 3 };
     }
 
+    inline SDirection Inverted() const
+    {
+        return SDirection{ (Index + 2u) };
+    }
+
     template <typename T>
     constexpr SVec2<T> GetVector() const
     {
@@ -93,26 +98,39 @@ enum class EKeyState : unsigned
 {
     None,
     Pressed,
+    Released,
     Held,
-    Released
 };
 
 struct SInputState
 {
-    EKeyState Up : 2;
-    EKeyState Right : 2;
-    EKeyState Down : 2;
-    EKeyState Left : 2;
-    EKeyState Accept : 2;
-    EKeyState Cancel : 2;
-    EKeyState L : 2;
-    EKeyState ZL : 2;
-    EKeyState R : 2;
-    EKeyState ZR : 2;
+    union
+    {
+        unsigned long Value;
+        struct
+        {
 
-    EKeyState ToggleFullscreen : 2;
+            EKeyState Up : 2;
+            EKeyState Right : 2;
+            EKeyState Down : 2;
+            EKeyState Left : 2;
+            EKeyState Accept : 2;
+            EKeyState Cancel : 2;
+            EKeyState L : 2;
+            EKeyState ZL : 2;
+            EKeyState R : 2;
+            EKeyState ZR : 2;
+
+            EKeyState ToggleFullscreen : 2;
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    EKeyState ToggleLevelEditor : 2;
+            EKeyState ToggleLevelEditor : 2;
 #endif
+        };
+    };
+
+    void Buffer(const SInputState& Other)
+    {
+        this->Value |= Other.Value;
+    }
 };

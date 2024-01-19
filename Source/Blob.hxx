@@ -8,6 +8,7 @@ enum class EPlayerAnimationType
     Idle,
     Turn,
     Walk,
+    Enter,
     Bump
 };
 
@@ -15,6 +16,8 @@ struct SBlob
 {
     SDirection Direction{};
     UVec2Int Coords{};
+
+    float InputBufferTime = 0.7f;
 
     EPlayerAnimationType AnimationType{};
     float AnimationAlpha{};
@@ -41,4 +44,5 @@ struct SBlob
     void BumpIntoWall();
 
     [[nodiscard]] bool IsMoving() const { return AnimationType != EPlayerAnimationType::Idle; }
+    [[nodiscard]] bool IsReadyForBuffering() const { return AnimationAlpha > InputBufferTime && AnimationAlpha < 1.0f; }
 };

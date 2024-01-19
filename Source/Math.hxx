@@ -25,6 +25,16 @@ struct SVec2
         return { -X, -Y };
     }
 
+    SVec2<T> operator*(const T A) const
+    {
+        return { X * A, Y * A };
+    }
+
+    bool operator==(const SVec2<T>& Other) const
+    {
+        return X == Other.X && Y == Other.Y;
+    }
+
     SVec2<T> Swapped() const
     {
         return { Y, X };
@@ -244,6 +254,12 @@ namespace Math
     constexpr float Radians(float Degrees)
     {
         return Degrees * 0.01745329251994329576923690768489f;
+    }
+
+    template <typename T>
+    T Mix(T A, T B, T F)
+    {
+        return A * (1.0 - F) + (B * F);
     }
 
     //    template <typename T>
