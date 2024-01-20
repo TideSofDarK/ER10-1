@@ -402,7 +402,7 @@ void SFrameBuffer::Cleanup()
     glDeleteTextures(1, &ColorID);
     glDeleteTextures(1, &DepthID);
 
-    Log::Draw<ELogLevel::Debug>("Deleting SFrameBuffer", "");
+    Log::Draw<ELogLevel::Debug>("Deleting SFrameBuffer");
 }
 
 void SFrameBuffer::BindForDrawing() const
@@ -642,7 +642,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     {
         auto const& Entry = Queue2D.Entries[Index];
 
-        SProgram2D const* Program = nullptr;
+        SProgram2D const* Program{};
         switch (Entry.Program2DType)
         {
             case EProgram2DType::HUD:
@@ -651,7 +651,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
             case EProgram2DType::Uber2D:
                 Program = &ProgramUber2D;
             default:
-                break;
+                continue;
         }
         glUseProgram(Program->ID);
 
@@ -926,7 +926,6 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
                         continue;
                     }
 
-                    /* @TODO: Optimize transform stuff. */
                     auto Transform = TileTransform;
                     Transform.Rotate(SDirection{ Direction }.RotationFromDirection(),
                         { 0.0f, 1.0f, 0.0f });
@@ -942,15 +941,21 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
                         {
                             DoorFrameDrawCall.Push(Transform);
 
-                            if (TileCoords == POVOrigin && Direction == POVDirectionInverted.Index && TileEdge == ETileEdgeType::Door)
+                            /* Check two adjacent tiles for ongoing door animation.
+                             * Prevents static doors from being drawn if the animation is playing. */
+                            if (DrawLevelState.DoorInfo.Timeline.IsPlaying())
                             {
-                                continue;
+                                if (TileCoords == DrawLevelState.DoorInfo.TileCoords && Direction == DrawLevelState.DoorInfo.Direction.Index)
+                                {
+                                    continue;
+                                }
+                                if (TileCoords == POVOrigin && Direction == POVDirectionInverted.Index)
+                                {
+                                    continue;
+                                }
                             }
 
-                            if (!(!DrawLevelState.DoorInfo.Timeline.IsFinishedPlaying() && DrawLevelState.DoorInfo.TileCoords == TileCoords))
-                            {
-                                Draw3DLevelDoor(DoorDrawCall, TileCoords, SDirection{ Direction }, -1.0f);
-                            }
+                            Draw3DLevelDoor(DoorDrawCall, TileCoords, SDirection{ Direction }, -1.0f);
                         }
                         break;
                         default:
@@ -961,7 +966,7 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
         }
         DrawLevelState.bDirty = false;
 
-        Log::Draw<ELogLevel::Debug>("Regenerated LevelDrawData", "");
+        Log::Draw<ELogLevel::Debug>("Regenerated LevelDrawData");
     }
 
     Draw3DLevelDoor(
@@ -984,7 +989,7 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
     Queue3D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha)
+void SRenderer::Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha) const
 {
     if (TileCoords.X + TileCoords.Y < 0)
     {
@@ -1024,8 +1029,8 @@ void SRenderer::Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int
                 auto A = AnimationAlpha * Math::HalfPI;
 
                 LeftTransform.Rotate(A);
-//                A = std::max(0.0f, A - 0.4f);
-//                A *= 1.35f;
+                //                A = std::max(0.0f, A - 0.4f);
+                //                A *= 1.35f;
                 RightTransform.Rotate(-A);
 
                 DoorDrawCall.PushDynamic(LeftTransform);

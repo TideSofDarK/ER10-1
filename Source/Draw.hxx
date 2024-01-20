@@ -349,7 +349,7 @@ struct SDrawDoorInfo
 {
     UVec2Int TileCoords{};
     SDirection Direction{};
-    STimeline Timeline{0.0f, 2.0f};
+    STimeline Timeline{ 0.0f, 2.0f };
 
     SDrawDoorInfo()
     {
@@ -365,7 +365,7 @@ struct SDrawDoorInfo
 
     void Invalidate()
     {
-        TileCoords = {-1, -1};
+        TileCoords = { -1, -1 };
     }
 };
 
@@ -429,7 +429,7 @@ struct SRenderer
 
     void Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection, SDrawLevelState& DrawLevelState);
 
-    void Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha = 0.0f);
+    void Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha = 0.0f) const;
 
 #pragma endregion
 };

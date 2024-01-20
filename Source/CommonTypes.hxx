@@ -190,4 +190,5 @@ struct STimeline
     }
 
     [[nodiscard]] inline bool IsFinishedPlaying() const { return Value >= 1.0f; }
+    [[nodiscard]] inline bool IsPlaying() const { return Value >= 0.0f && Value < 1.0f; }
 };

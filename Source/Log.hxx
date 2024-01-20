@@ -19,16 +19,25 @@ namespace Log
     static constexpr ELogLevel LogLevel = ELogLevel::Info;
 #endif
 
+    template <ELogLevel ThisLogLevel>
+    static constexpr void LogInternal(const char* Prefix, const char* Fmt)
+    {
+        if constexpr (ThisLogLevel <= LogLevel)
+        {
+            char Entry[1024]{};
+            snprintf(Entry, 1024, "[%s] %s", Prefix, Fmt);
+            std::cout << Entry << std::endl;
+        }
+    }
+
     template <ELogLevel ThisLogLevel, typename... Ps>
     static constexpr void LogInternal(const char* Prefix, const char* Fmt, Ps... Args)
     {
         if constexpr (ThisLogLevel <= LogLevel)
         {
-            char Entry[1024]{};
             char Msg[960]{};
             snprintf(Msg, 960, Fmt, Args...);
-            snprintf(Entry, 1024, "[%s] %s", Prefix, Msg);
-            std::cout << Entry << std::endl;
+            LogInternal<ThisLogLevel>(Prefix, Msg);
         }
     }
 
@@ -37,6 +46,11 @@ namespace Log
     static constexpr void Name(const char* Fmt, Ps... Args) \
     {                                                       \
         LogInternal<ThisLogLevel>(#Name, Fmt, Args...);     \
+    }                                                       \
+    template <ELogLevel ThisLogLevel>                       \
+    static constexpr void Name(const char* Fmt)             \
+    {                                                       \
+        LogInternal<ThisLogLevel>(#Name, Fmt);              \
     }
 
     LOG_CATEGORY(Audio)
