@@ -38,6 +38,7 @@ public:
     SDrawLevelState DrawLevelState;
     SGeometry TestGeometry;
     SGeometry Floor;
+    STileSet TileSet;
 
     SSoundClip DoorCreek{};
 

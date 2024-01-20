@@ -63,14 +63,15 @@ SGame::SGame()
     TestGeometry.InitFromRawMesh(CRawMesh(
         Asset::Common::PillarOBJ));
 
-    Renderer.TileSet.InitBasic(
+    TileSet.InitBasic(
         Asset::TileSet::Hotel::FloorOBJ,
         Asset::TileSet::Hotel::WallOBJ,
         Asset::TileSet::Hotel::WallJointOBJ,
         Asset::TileSet::Hotel::DoorFrameOBJ,
         Asset::TileSet::Hotel::DoorOBJ);
-    Renderer.TileSet.DoorAnimationType = EDoorAnimationType::TwoDoors;
-    Renderer.TileSet.DoorOffset = 0.22f;
+    TileSet.DoorAnimationType = EDoorAnimationType::TwoDoors;
+    TileSet.DoorOffset = 0.22f;
+    Renderer.SetupLevelDrawData(TileSet);
 
     Blob.ApplyDirection(true);
 
@@ -308,6 +309,7 @@ void SGame::Run()
     Renderer.Cleanup();
     /* @TODO: Fix this. */
     DoorCreek.Free();
+    TileSet.Cleanup();
 }
 
 void SGame::UpdateInputState()
@@ -332,13 +334,14 @@ void SGame::UpdateInputState()
 
 void SGame::HandleBlobMovement()
 {
+    const auto BlobWasIdle = !Blob.IsMoving();
     if (Blob.MoveSeq.IsFinished())
     {
         if (Blob.IsReadyForBuffering())
         {
             BufferedInputState.Buffer(InputState);
         }
-        if (!Blob.IsMoving())
+        if (BlobWasIdle)
         {
             BufferedInputState.Buffer(InputState);
 
@@ -390,7 +393,7 @@ void SGame::HandleBlobMovement()
     }
     else
     {
-        if (!Blob.IsMoving())
+        if (BlobWasIdle)
         {
             switch (Blob.MoveSeq.GetCurrentDirection().Index)
             {
@@ -418,6 +421,10 @@ void SGame::HandleBlobMovement()
             }
             Blob.MoveSeq.Current++;
         }
+    }
+    if (BlobWasIdle && Blob.IsMoving())
+    {
+        DrawLevelState.bDirty = true;
     }
 }
 
@@ -448,11 +455,12 @@ bool SGame::AttemptBlobStep(SDirection Direction)
 
     if (CurrentTile->IsDoorEdge(Direction))
     {
-        DrawLevelState.DoorInfo = {
-            Blob.Coords,
-            Direction,
-            STimeline{ 0.0f, 2.0f }
-        };
+        if (Direction.Index != Blob.Direction.Index)
+        {
+            return false;
+        }
+
+        DrawLevelState.DoorInfo.Set(Blob.Coords, Direction);
 
         Blob.Step(DirectionVector, true);
 
@@ -460,6 +468,8 @@ bool SGame::AttemptBlobStep(SDirection Direction)
     }
     else
     {
+        DrawLevelState.DoorInfo.Invalidate();
+
         Blob.Step(DirectionVector);
 
         Audio.TestAudio();

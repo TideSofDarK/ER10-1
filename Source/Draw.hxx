@@ -242,14 +242,26 @@ struct SEntry2D : SEntry
 
 struct SInstancedDrawCall
 {
-    SSubGeometry* SubGeometry{};
+    const SSubGeometry* SubGeometry{};
     std::array<UMat4x4, UBER3D_MODEL_COUNT> Transform{};
     int Count{};
+    int DynamicCount{};
+    void Push(const UMat4x4& NewTransform)
+    {
+        Transform[Count % UBER3D_MODEL_COUNT] = NewTransform;
+        Count++;
+    }
+    void PushDynamic(const UMat4x4& NewTransform)
+    {
+        Transform[(Count + DynamicCount) % UBER3D_MODEL_COUNT] = NewTransform;
+        DynamicCount++;
+    }
 };
 
 template <int Size>
 struct SInstancedDrawData
 {
+    const STileSet* TileSet{};
     std::array<SInstancedDrawCall, Size> DrawCalls;
 
     void Clear()
@@ -264,7 +276,7 @@ struct SInstancedDrawData
 struct SEntry3D : SEntry
 {
     UMat4x4 Model{};
-    SGeometry* Geometry{};
+    const SGeometry* Geometry{};
     SInstancedDrawCall* InstancedDrawCall{};
     int InstancedDrawCallCount{};
 };
@@ -333,14 +345,34 @@ public:
     void Build();
 };
 
+struct SDrawDoorInfo
+{
+    UVec2Int TileCoords{};
+    SDirection Direction{};
+    STimeline Timeline{0.0f, 2.0f};
+
+    SDrawDoorInfo()
+    {
+        Invalidate();
+    }
+
+    void Set(UVec2Int NewTileCoords, SDirection NewDirection)
+    {
+        TileCoords = NewTileCoords;
+        Direction = NewDirection;
+        Timeline.Reset();
+    }
+
+    void Invalidate()
+    {
+        TileCoords = {-1, -1};
+    }
+};
+
 struct SDrawLevelState
 {
-    struct
-    {
-        UVec2Int TileCoords;
-        SDirection Direction{};
-        STimeline Timeline{};
-    } DoorInfo;
+    SDrawDoorInfo DoorInfo;
+    bool bDirty = true;
 };
 
 struct SRenderer
@@ -348,7 +380,6 @@ struct SRenderer
     SRenderQueue<SEntry2D, RENDERER_QUEUE2D_SIZE> Queue2D;
     SRenderQueue<SEntry3D, RENDERER_QUEUE3D_SIZE> Queue3D;
     SAtlas Atlases[3];
-    STileSet TileSet;
 
     SProgram2D ProgramHUD;
     SProgram2D ProgramUber2D;
@@ -362,6 +393,8 @@ struct SRenderer
     void Init(int Width, int Height);
 
     void Cleanup();
+
+    void SetupLevelDrawData(const STileSet& TileSet);
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -394,7 +427,9 @@ struct SRenderer
 
     void Draw3D(UVec3 Position, SGeometry* Geometry);
 
-    void Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection, const SDrawLevelState& DrawLevelState);
+    void Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection, SDrawLevelState& DrawLevelState);
+
+    void Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha = 0.0f);
 
 #pragma endregion
 };

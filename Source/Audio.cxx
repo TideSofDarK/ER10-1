@@ -54,16 +54,9 @@ void CAudio::Clear() const
     SDL_ClearAudioStream(Stream);
 }
 
-void CAudio::Put(const SSoundClip* SoundClip) const
-{
-    SDL_PutAudioStreamData(Stream, SoundClip->Ptr, static_cast<int>(SoundClip->Length));
-}
-
 CAudio::CAudio()
     : AudioSpec({ SDL_AUDIO_S16, 2, 44100 })
 {
-    std::memset(Buffer.data(), 0, Buffer.size());
-
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());

@@ -8,6 +8,11 @@ struct SVec2
     T X{};
     T Y{};
 
+    SVec2<T> operator-(const SVec2<T>& Other) const
+    {
+        return { X - Other.X, Y - Other.Y };
+    }
+
     SVec2<T> operator+(const SVec2<T>& Other) const
     {
         return { X + Other.X, Y + Other.Y };
@@ -33,6 +38,11 @@ struct SVec2
     bool operator==(const SVec2<T>& Other) const
     {
         return X == Other.X && Y == Other.Y;
+    }
+
+    bool operator!=(const SVec2<T>& Other) const
+    {
+        return X != Other.X || Y != Other.Y;
     }
 
     SVec2<T> Swapped() const

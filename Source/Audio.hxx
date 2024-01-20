@@ -58,7 +58,6 @@ class CAudio
 {
 protected:
     std::array<SAudioEntry, 8> Queue{};
-    std::array<uint8_t, 1024 * 1024> Buffer{};
     SAudioSpec AudioSpec;
     int Silence;
     struct SDL_AudioStream* Stream{};
@@ -66,10 +65,9 @@ protected:
     SSoundClip TestMusic{};
 
     void Clear() const;
-    void Put(const SSoundClip* SoundClip) const;
 
 public:
-    float Volume = 0.25f;
+    float Volume = 0.0f;
 
     CAudio();
     ~CAudio();
