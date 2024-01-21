@@ -8,6 +8,7 @@ struct SParty;
 enum class ELevelEditorMode
 {
     Normal,
+    Block,
     ToggleDoor
 };
 
@@ -31,7 +32,9 @@ struct SDevTools
     bool bDrawWallJoints{};
     bool bDrawEdges{};
     bool bDrawGridLines{};
+    bool bResetGridPosition = true;
     std::optional<UVec2Int> SelectedTileCoords{};
+    std::optional<UVec2Int> BlockModeTileCoords{};
     SLevel Level{};
 
     void Init(struct SDL_Window* Window, void* Context);
@@ -49,6 +52,8 @@ struct SDevTools
     void Draw() const;
 
 private:
+    void FitTilemapToWindow();
+
     void DrawLevel();
 
     template <typename E>
@@ -72,6 +77,6 @@ private:
         }
     }
 
-    void SaveLevelToFile();
-    void LoadLevelFromFile();
+    void SaveTilemapToFile();
+    void LoadTilemapFromFile();
 };

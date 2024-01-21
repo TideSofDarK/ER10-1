@@ -1,24 +1,53 @@
 #pragma once
 
 #include <array>
-#include <optional>
+#include <bitset>
+#include "Math.hxx"
 #include "Tile.hxx"
 
 #define MAX_LEVEL_WIDTH 32
 #define MAX_LEVEL_HEIGHT 32
 #define MAX_LEVEL_TILE_COUNT (MAX_LEVEL_WIDTH * MAX_LEVEL_HEIGHT)
 
-struct SLevel
+struct SDrawDoorInfo
 {
-    using UWallJoint = bool;
+    UVec2Int TileCoords{};
+    SDirection Direction{};
+    STimeline Timeline{ 0.0f, 2.0f };
 
-    int Width{};
-    int Height{};
+    SDrawDoorInfo()
+    {
+        Invalidate();
+    }
+
+    void Set(UVec2Int NewTileCoords, SDirection NewDirection)
+    {
+        TileCoords = NewTileCoords;
+        Direction = NewDirection;
+        Timeline.Reset();
+    }
+
+    void Invalidate()
+    {
+        TileCoords = { -1, -1 };
+    }
+};
+
+struct SDrawLevelState
+{
+    SDrawDoorInfo DoorInfo;
+    bool bDirty = true;
+};
+
+struct STilemap
+{
+    uint32_t Width{};
+    uint32_t Height{};
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
-    std::array<UWallJoint, (MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
+    std::bitset<(MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
     bool bUseWallJoints = false;
 
-    [[nodiscard]] STile* GetTileAtMutable(UVec2Int Coords)
+    [[nodiscard]] STile* GetTileAtMutable(const UVec2Int& Coords)
     {
         if (IsValidTile(Coords))
         {
@@ -28,17 +57,22 @@ struct SLevel
         return nullptr;
     }
 
-    [[nodiscard]] UWallJoint* GetWallJointAtMutable(UVec2Int Coords)
+    [[nodiscard]] STile* GetNeighborTileAtMutable(const UVec2Int& Coords, SDirection Direction)
+    {
+        UVec2Int NeighborCoords = Direction.GetVector<int>() + Coords;
+        return GetTileAtMutable(NeighborCoords);
+    }
+
+    void SetWallJoint(const UVec2Int& Coords, bool bValue = true)
     {
         if (IsValidWallJoint(Coords))
         {
             auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
-            return &WallJoints[Index];
+            WallJoints.set(Index, bValue);
         }
-        return nullptr;
     }
 
-    [[nodiscard]] STile const* GetTileAt(UVec2Int Coords) const
+    [[nodiscard]] STile const* GetTileAt(const UVec2Int& Coords) const
     {
         if (IsValidTile(Coords))
         {
@@ -48,7 +82,7 @@ struct SLevel
         return nullptr;
     }
 
-    [[nodiscard]] bool IsValidTile(UVec2Int Coords) const
+    [[nodiscard]] bool IsValidTile(const UVec2Int& Coords) const
     {
         return IsValidTileX(Coords.X) && IsValidTileY(Coords.Y);
     }
@@ -63,12 +97,12 @@ struct SLevel
         return Coord >= 0 && Coord < Height;
     }
 
-    [[nodiscard]] inline int CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
+    [[nodiscard]] inline std::size_t CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
 
-    [[nodiscard]] UWallJoint GetWallJointAt(UVec2Int Coords) const
+    [[nodiscard]] bool IsWallJointAt(UVec2Int Coords) const
     {
         auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
-        return WallJoints[Index];
+        return WallJoints.test(Index);
     }
 
     [[nodiscard]] bool IsValidWallJoint(UVec2Int Coords) const
@@ -86,9 +120,27 @@ struct SLevel
         return Coord >= 0 && Coord < Height + 1;
     }
 
-    [[nodiscard]] inline int WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; }
+    [[nodiscard]] inline std::size_t WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; }
 
     void InitWallJoints();
 
+    void ToggleEdge(const UVec2Int& Coords, SDirection Direction, ETileEdgeType TileEdgeType);
+
     void Excavate(UVec2Int Coords);
+
+    void ExcavateBlock(const URectInt& Rect);
+
+    void Cover(UVec2Int Coords);
+
+    void Serialize();
+};
+
+struct SLevel : STilemap
+{
+    int Z{};
+    SDrawLevelState DrawState;
+
+    void Update(float DeltaTime);
+
+    void MarkDirty();
 };

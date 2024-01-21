@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <algorithm>
 
 template <typename T>
 struct SVec2
@@ -13,7 +14,7 @@ struct SVec2
         return { X - Other.X, Y - Other.Y };
     }
 
-    SVec2<T> operator+(const SVec2<T>& Other) const
+     SVec2<T> operator+(const SVec2<T>& Other) const
     {
         return { X + Other.X, Y + Other.Y };
     }
@@ -184,6 +185,32 @@ using UVec3 = SVec3<float>;
 using UVec3Int = SVec3<int>;
 using UVec3Size = SVec3<size_t>;
 using UVec4 = SVec4<float>;
+
+template <typename T>
+struct SRect
+{
+    SVec2<T> Min{};
+    SVec2<T> Max{};
+
+    static SRect FromTwo(const SVec2<T> A, const SVec2<T> B)
+    {
+        SRect NewRect;
+
+        auto MinX = std::min(A.X, B.X);
+        auto MinY = std::min(A.Y, B.Y);
+
+        auto MaxX = std::max(A.X, B.X);
+        auto MaxY = std::max(A.Y, B.Y);
+
+        NewRect.Min = { MinX, MinY };
+        NewRect.Max = { MaxX, MaxY };
+
+        return NewRect;
+    }
+};
+
+using URect = SRect<float>;
+using URectInt = SRect<int>;
 
 template <typename T>
 struct SMat4x4

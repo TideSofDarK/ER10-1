@@ -1,6 +1,5 @@
 #include "Draw.hxx"
 
-#include <iostream>
 #include <algorithm>
 #include <numeric>
 #include "CommonTypes.hxx"
@@ -832,14 +831,17 @@ void SRenderer::Draw3D(UVec3 Position, SGeometry* Geometry)
     Queue3D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection, SDrawLevelState& DrawLevelState)
+void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection)
 {
     auto constexpr DrawDistanceForward = 3;
     auto constexpr DrawDistanceSide = 2;
 
     auto& DoorDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Door];
 
+    /* @TODO: Generic CleanDynamic method? */
     DoorDrawCall.DynamicCount = 0;
+
+    auto& DrawLevelState = Level.DrawState;
 
     if (DrawLevelState.bDirty)
     {
@@ -883,7 +885,7 @@ void SRenderer::Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, cons
                 /* @TODO: Draw joints in separate loop. */
                 if (Level.bUseWallJoints && Level.IsValidWallJoint({ X, Y }))
                 {
-                    auto bWallJoint = Level.GetWallJointAt({ X, Y });
+                    auto bWallJoint = Level.IsWallJointAt({ X, Y });
                     if (bWallJoint)
                     {
                         WallJointDrawCall.Push(TileTransform);

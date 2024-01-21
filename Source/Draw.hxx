@@ -345,36 +345,6 @@ public:
     void Build();
 };
 
-struct SDrawDoorInfo
-{
-    UVec2Int TileCoords{};
-    SDirection Direction{};
-    STimeline Timeline{ 0.0f, 2.0f };
-
-    SDrawDoorInfo()
-    {
-        Invalidate();
-    }
-
-    void Set(UVec2Int NewTileCoords, SDirection NewDirection)
-    {
-        TileCoords = NewTileCoords;
-        Direction = NewDirection;
-        Timeline.Reset();
-    }
-
-    void Invalidate()
-    {
-        TileCoords = { -1, -1 };
-    }
-};
-
-struct SDrawLevelState
-{
-    SDrawDoorInfo DoorInfo;
-    bool bDirty = true;
-};
-
 struct SRenderer
 {
     SRenderQueue<SEntry2D, RENDERER_QUEUE2D_SIZE> Queue2D;
@@ -427,7 +397,7 @@ struct SRenderer
 
     void Draw3D(UVec3 Position, SGeometry* Geometry);
 
-    void Draw3DLevel(const SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection, SDrawLevelState& DrawLevelState);
+    void Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection);
 
     void Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha = 0.0f) const;
 

@@ -1,14 +1,19 @@
 #include "DevTools.hxx"
 
-#include <iostream>
+#include <cstdint>
+#include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <glad/gl.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl3.h>
+#include "CommonTypes.hxx"
 #include "Constants.hxx"
 #include "GameSystem.hxx"
 #include "AssetTools.hxx"
+#include "Math.hxx"
+#include "Utility.hxx"
 
 #define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
 #define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
@@ -17,6 +22,7 @@
 #define FLOOR_COLOR (ImGui::GetColorU32(IM_COL32(5, 105, 205, 255)))
 #define SELECTION_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 98, 255)))
 #define SELECTION_MODIFY_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 200, 255)))
+#define BLOCK_SELECTION_COLOR (ImGui::GetColorU32(IM_COL32(215, 205, 35, 255)))
 
 #define PARTY_SLOT_COLOR (ImGui::GetColorU32(IM_COL32(100, 75, 230, 200)))
 #define HPBAR_COLOR (ImGui::GetColorU32(IM_COL32(255, 19, 25, 255)))
@@ -41,7 +47,7 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     ImFontConfig FontConfig;
     FontConfig.SizePixels = 40.0f;
     FontConfig.FontDataOwnedByAtlas = false;
-    io.Fonts->AddFontFromMemoryTTF(Asset::Common::DroidSansTTF.AsVoidPtr(), Asset::Common::DroidSansTTF.Length, 16.0f, &FontConfig);
+    io.Fonts->AddFontFromMemoryTTF(Asset::Common::DroidSansTTF.AsVoidPtr(), (int)Asset::Common::DroidSansTTF.Length, 16.0f, &FontConfig);
 
     bLevelEditorActive = false;
     LevelEditorMode = ELevelEditorMode::Normal;
@@ -77,11 +83,11 @@ void SDevTools::Update()
         {
             if (ImGui::BeginMenu("File"))
             {
-                ImGui::MenuItem("New Level", nullptr, &bNewLevel);
-                ImGui::MenuItem("Load Level", nullptr, &bLoadLevel);
-                ImGui::MenuItem("Save Level", nullptr, &bSaveLevel);
+                ImGui::MenuItem("New Level", "Ctrl+N", &bNewLevel);
+                ImGui::MenuItem("Load Level", "Ctrl+L", &bLoadLevel);
+                ImGui::MenuItem("Save Level", "Ctrl+S", &bSaveLevel);
                 ImGui::Separator();
-                ImGui::MenuItem("Level Properties", nullptr, &bLevelProperties);
+                ImGui::MenuItem("Level Properties", "F5", &bLevelProperties);
                 ImGui::EndMenu();
             }
 
@@ -95,7 +101,7 @@ void SDevTools::Update()
 
             ImGui::Separator();
 
-            const char* EditorModes[] = { "Normal", "Toggle Door" };
+            const char* EditorModes[] = { "Normal", "Block Selection", "Toggle Door" };
             ImGui::Text("Current Mode: %s", EditorModes[(int)LevelEditorMode]);
 
             ImGui::EndMainMenuBar();
@@ -112,7 +118,8 @@ void SDevTools::Update()
             ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
             if (ImGui::Button("Accept"))
             {
-                Level = SLevel{ NewLevelSize.X, NewLevelSize.Y };
+                Level = SLevel{ (uint32_t)NewLevelSize.X, (uint32_t)NewLevelSize.Y };
+                FitTilemapToWindow();
                 ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
@@ -120,12 +127,12 @@ void SDevTools::Update()
 
         if (bSaveLevel)
         {
-            SaveLevelToFile();
+            SaveTilemapToFile();
         }
 
         if (bLoadLevel)
         {
-            LoadLevelFromFile();
+            LoadTilemapFromFile();
         }
 
         /* Validate Selected Tile */
@@ -216,7 +223,7 @@ void SDevTools::DebugTools(SDebugToolsData& Data)
             }
             if (ImGui::Button("Import Level From File"))
             {
-                LoadLevelFromFile();
+                LoadTilemapFromFile();
                 Data.bImportLevel = true;
             }
             ImGui::TreePop();
@@ -248,11 +255,16 @@ void SDevTools::ProcessEvent(const SDL_Event* Event)
     ImGui_ImplSDL3_ProcessEvent(Event);
 }
 
+void SDevTools::FitTilemapToWindow()
+{
+    auto Viewport = ImGui::GetMainViewport();
+    LevelEditorCellSize = std::min((float)Viewport->Size.x / (float)Level.Width, (float)Viewport->Size.y / (float)Level.Height) * 0.8f;
+    bResetGridPosition = true;
+}
+
 void SDevTools::DrawLevel()
 {
     ImGuiIO& IO = ImGui::GetIO();
-    ImGui::SetNextWindowPos(ImVec2(IO.DisplaySize.x * 0.5f, IO.DisplaySize.y * 0.5f), ImGuiCond_Once,
-        ImVec2(0.5f, 0.5f));
     const float WindowPadding = (float)LevelEditorCellSize * 0.1f;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
     if (ImGui::Begin("Grid", nullptr,
@@ -265,7 +277,7 @@ void SDevTools::DrawLevel()
         ImVec2 PosMax = ImVec2(PosMin.x + GridSize.x,
             PosMin.y + GridSize.y);
 
-        /* Draw background */
+        /* Draw background. */
         DrawList->AddRectFilled(PosMin, PosMax,
             BG_COLOR);
 
@@ -282,7 +294,7 @@ void SDevTools::DrawLevel()
             }
         }
 
-        /* Draw tiles */
+        /* Draw tiles. */
         for (int X = 0; X <= Level.Width; X += 1)
         {
             for (int Y = 0; Y <= Level.Height; Y += 1)
@@ -335,7 +347,7 @@ void SDevTools::DrawLevel()
             }
         }
 
-        /* Draw edges */
+        /* Draw edges. */
         const float EdgeThickness = (float)LevelEditorCellSize * 0.03f;
         const float EdgeOffset = (float)LevelEditorCellSize * 0.049f;
         const float DoorOffsetX = (float)LevelEditorCellSize * 0.15f;
@@ -501,7 +513,7 @@ void SDevTools::DrawLevel()
             }
         }
 
-        /* Draw grid lines */
+        /* Draw grid lines. */
         if (bDrawGridLines)
         {
             for (int X = 0; X <= (int)GridSize.x; X += (int)LevelEditorCellSize)
@@ -521,7 +533,11 @@ void SDevTools::DrawLevel()
         {
             if (ImGui::IsWindowFocused())
             {
-                if (LevelEditorMode == ELevelEditorMode::Normal)
+                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+                {
+                    LevelEditorMode = ELevelEditorMode::Normal;
+                }
+                else if (LevelEditorMode == ELevelEditorMode::Normal || LevelEditorMode == ELevelEditorMode::Block)
                 {
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
                     {
@@ -533,55 +549,92 @@ void SDevTools::DrawLevel()
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
                     {
-                        SelectedTileCoords->Y = std::min(Level.Height - 1, SelectedTileCoords->Y + 1);
+                        SelectedTileCoords->Y = std::min((int)(Level.Height - 1), SelectedTileCoords->Y + 1);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
                     {
-                        SelectedTileCoords->X = std::min(Level.Width - 1, SelectedTileCoords->X + 1);
+                        SelectedTileCoords->X = std::min((int)(Level.Width - 1), SelectedTileCoords->X + 1);
                     }
+                }
+                if (LevelEditorMode == ELevelEditorMode::Block)
+                {
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
+                    {
+                        Level.ExcavateBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords));
+                        LevelEditorMode = ELevelEditorMode::Normal;
+                    }
+                }
+                else if (LevelEditorMode == ELevelEditorMode::Normal)
+                {
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
                     {
                         Level.Excavate(*SelectedTileCoords);
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
+                    {
+                        Level.Cover(*SelectedTileCoords);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D)))
                     {
                         LevelEditorMode = ELevelEditorMode::ToggleDoor;
                     }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_V)))
+                    {
+                        LevelEditorMode = ELevelEditorMode::Block;
+                        BlockModeTileCoords.emplace(*SelectedTileCoords);
+                    }
                 }
                 else if (LevelEditorMode == ELevelEditorMode::ToggleDoor)
                 {
                     auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
-                    auto ToggleDoor = [this](ETileEdgeType* TileEdgeType) {
-                        if (*TileEdgeType == ETileEdgeType::Door)
-                        {
-                            *TileEdgeType = ETileEdgeType::Wall;
-                        }
-                        else
-                        {
-                            *TileEdgeType = ETileEdgeType::Door;
-                        }
+                    auto ToggleDoor = [this](SDirection Direction) {
+                        Level.ToggleEdge(*SelectedTileCoords, Direction, ETileEdgeType::Door);
                         LevelEditorMode = ELevelEditorMode::Normal;
                     };
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
                     {
-                        ToggleDoor(&SelectedTile->Edges[SDirection::North().Index]);
+                        ToggleDoor(SDirection::North());
                     }
                     else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
                     {
-                        ToggleDoor(&SelectedTile->Edges[SDirection::West().Index]);
+                        ToggleDoor(SDirection::West());
                     }
                     else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
                     {
-                        ToggleDoor(&SelectedTile->Edges[SDirection::South().Index]);
+                        ToggleDoor(SDirection::South());
                     }
                     else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
                     {
-                        ToggleDoor(&SelectedTile->Edges[SDirection::East().Index]);
+                        ToggleDoor(SDirection::East());
                     }
                 }
             }
 
-            /* Outline Selected Tile */
+            /* Outline block selection. */
+            if (LevelEditorMode == ELevelEditorMode::Block && BlockModeTileCoords.has_value())
+            {
+                auto MinTileX = std::min(BlockModeTileCoords->X, SelectedTileCoords->X);
+                auto MinTileY = std::min(BlockModeTileCoords->Y, SelectedTileCoords->Y);
+
+                auto MaxTileX = std::max(BlockModeTileCoords->X, SelectedTileCoords->X);
+                auto MaxTileY = std::max(BlockModeTileCoords->Y, SelectedTileCoords->Y);
+
+                auto BlockWidth = MaxTileX - MinTileX + 1;
+                auto BlockHeight = MaxTileY - MinTileY + 1;
+
+                auto SelectedTilePosMin = ImVec2(
+                    PosMin.x + ((float)MinTileX * LevelEditorCellSize),
+                    PosMin.y + ((float)MinTileY * LevelEditorCellSize));
+                auto SelectedTilePosMax = ImVec2(
+                    SelectedTilePosMin.x + ((float)LevelEditorCellSize * (float)BlockWidth),
+                    SelectedTilePosMin.y + ((float)LevelEditorCellSize * (float)BlockHeight));
+
+                auto Thickness = (float)LevelEditorCellSize * 0.04f;
+
+                DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
+                    BLOCK_SELECTION_COLOR, 0.0f, 0, Thickness);
+            }
+            else /* Outline single tile. */
             {
                 auto SelectedTilePosMin = ImVec2(PosMin.x + ((float)SelectedTileCoords->X * LevelEditorCellSize),
                     PosMin.y + ((float)SelectedTileCoords->Y * LevelEditorCellSize));
@@ -602,14 +655,24 @@ void SDevTools::DrawLevel()
             }
         }
 
-        ImGui::Dummy(ImVec2(1 + GridSize.x,
-            1 + GridSize.y));
+        ImGui::Dummy(ImVec2(1 + GridSize.x, 1 + GridSize.y));
 
-        //        if (!ImGui::IsWindowFocused()) {
-        //            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        //                SelectedTileCoords.reset();
-        //            }
-        //        }
+        // if (!ImGui::IsWindowFocused())
+        // {
+        //     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        //     {
+        //         SelectedTileCoords.reset();
+        //     }
+        // }
+
+        if (bResetGridPosition)
+        {
+            ImGui::SetWindowPos(
+                ImVec2(
+                    IO.DisplaySize.x * 0.5f - GridSize.x * 0.5f,
+                    IO.DisplaySize.y * 0.5f - GridSize.y * 0.5f));
+            bResetGridPosition = false;
+        }
 
         ImGui::End();
     }
@@ -711,7 +774,7 @@ void SDevTools::DrawParty(SParty& Party, float Scale, bool bReversed)
                 LabelPos.y -= ImGui::GetFontSize();
                 ImGui::SetCursorScreenPos(LabelPos);
                 ImGui::Text("%s", Char.Name);
-                //                    DrawList->AddText(LabelPos, ImGui::GetColorU32({255,255,255,255}),  "Test", LabelPos);
+                // DrawList->AddText(LabelPos, ImGui::GetColorU32({255,255,255,255}), "Test", LabelPos);
             }
         }
     }
@@ -724,18 +787,26 @@ void SDevTools::DrawParty(SParty& Party, float Scale, bool bReversed)
     ImGui::SetCursorScreenPos(PosMin);
 }
 
-void SDevTools::SaveLevelToFile()
+void SDevTools::SaveTilemapToFile()
 {
-    std::ofstream LevelFile;
-    LevelFile.open("templevel");
-    LevelFile.write(reinterpret_cast<char*>(&Level), sizeof(SLevel));
-    LevelFile.close();
+    const auto& Tilemap = Level;
+
+    uint32_t Test = 33;
+    uint32_t Test2 = Utility::HtoNL(Test);
+    uint32_t Test3 = Utility::NtoHL(Test2);
+
+    std::cout << Test << " vs " << Test2 << " vs " << Test3 << std::endl;
+
+    std::ofstream TilemapFile;
+    TilemapFile.open("templevel", std::ofstream::binary);
+    TilemapFile.write(reinterpret_cast<char*>(&Level), sizeof(SLevel));
+    TilemapFile.close();
 }
 
-void SDevTools::LoadLevelFromFile()
+void SDevTools::LoadTilemapFromFile()
 {
-    std::ifstream LevelFile;
-    LevelFile.open("templevel");
-    LevelFile.read(reinterpret_cast<char*>(&Level), sizeof(SLevel));
-    LevelFile.close();
+    std::ifstream TilemapFile;
+    TilemapFile.open("templevel", std::ifstream::binary);
+    TilemapFile.read(reinterpret_cast<char*>(&Level), sizeof(SLevel));
+    TilemapFile.close();
 }

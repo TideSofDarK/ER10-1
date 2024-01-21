@@ -35,9 +35,7 @@ public:
     SBlob Blob;
     SBattle Battle;
     SLevel Level;
-    SDrawLevelState DrawLevelState;
-    SGeometry TestGeometry;
-    SGeometry Floor;
+    // SGeometry TestGeometry;
     STileSet TileSet;
 
     SSoundClip DoorCreek{};

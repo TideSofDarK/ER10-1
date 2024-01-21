@@ -57,11 +57,8 @@ SGame::SGame()
         Asset::TileSet::Hotel::AtlasPNG);
     PrimaryAtlas3D.Build();
 
-    auto FloorMesh = CRawMesh(
-        Asset::TileSet::Hotel::FloorOBJ);
-    Floor.InitFromRawMesh(FloorMesh);
-    TestGeometry.InitFromRawMesh(CRawMesh(
-        Asset::Common::PillarOBJ));
+    // TestGeometry.InitFromRawMesh(CRawMesh(
+    //     Asset::Common::PillarOBJ));
 
     TileSet.InitBasic(
         Asset::TileSet::Hotel::FloorOBJ,
@@ -190,10 +187,10 @@ void SGame::Run()
 #ifdef EQUINOX_REACH_DEVELOPMENT
         DevTools.Update();
 #endif
-        if (InputState.Cancel == EKeyState::Pressed)
-        {
-            Window.bQuit = true;
-        }
+        // if (InputState.Cancel == EKeyState::Pressed)
+        // {
+        //     Window.bQuit = true;
+        // }
 
         if (InputState.ToggleFullscreen == EKeyState::Pressed)
         {
@@ -207,7 +204,6 @@ void SGame::Run()
         }
 #endif
 
-#pragma region GameLoop
         if (IsGameRunning())
         {
 #ifdef EQUINOX_REACH_DEVELOPMENT
@@ -255,16 +251,10 @@ void SGame::Run()
             Camera.Update();
 
             Renderer.UploadProjectionAndViewFromCamera(Camera);
-            //        Renderer.Draw3D({0.0f, 0.0f, 0.0f}, &LevelGeometry);
-            //        Renderer.Draw3D({4.0f, 0.0f, -2.0f}, &Renderer.Tileset);
-            Renderer.Draw3D({ -3.0f, 0.0f, -3.0f }, &TestGeometry);
-            Renderer.Draw3D({ -4.0f, 0.0f, -4.0f }, &Floor);
-            Renderer.Draw3D({ -5.0f, 0.0f, -4.0f }, &Floor);
-            Renderer.Draw3D({ -6.0f, 0.0f, -4.0f }, &Floor);
-            Renderer.Draw3D({ -7.0f, 0.0f, -4.0f }, &Floor);
+            // Renderer.Draw3D({ -7.0f, 0.0f, -4.0f }, &Floor);
 
-            DrawLevelState.DoorInfo.Timeline.Advance(Window.DeltaTime);
-            Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction, DrawLevelState);
+            Level.Update(Window.DeltaTime);
+            Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
 
             switch (SpriteDemoState)
             {
@@ -289,12 +279,11 @@ void SGame::Run()
                     break;
             }
 
-            //            Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
-            //            Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
+            // Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
+            // Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
 
             Renderer.Flush(Window);
         }
-#pragma endregion
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
         DevTools.Draw();
@@ -424,7 +413,7 @@ void SGame::HandleBlobMovement()
     }
     if (BlobWasIdle && Blob.IsMoving())
     {
-        DrawLevelState.bDirty = true;
+        Level.MarkDirty();
     }
 }
 
@@ -460,7 +449,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
             return false;
         }
 
-        DrawLevelState.DoorInfo.Set(Blob.Coords, Direction);
+        Level.DrawState.DoorInfo.Set(Blob.Coords, Direction);
 
         Blob.Step(DirectionVector, true);
 
@@ -468,7 +457,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
     }
     else
     {
-        DrawLevelState.DoorInfo.Invalidate();
+        Level.DrawState.DoorInfo.Invalidate();
 
         Blob.Step(DirectionVector);
 

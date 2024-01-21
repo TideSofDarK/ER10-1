@@ -1,16 +1,17 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include "CommonTypes.hxx"
 
-enum class ETileEdgeType
+enum class ETileEdgeType : uint32_t
 {
     Empty,
     Wall,
     Door
 };
 
-enum class ETileType
+enum class ETileType : uint32_t
 {
     Empty,
     Floor,
