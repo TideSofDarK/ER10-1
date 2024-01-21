@@ -1,6 +1,7 @@
 #include "Level.hxx"
 
 #include "Tile.hxx"
+#include "Utility.hxx"
 
 void STilemap::InitWallJoints()
 {
@@ -149,9 +150,10 @@ void STilemap::Cover(UVec2Int Coords)
     }
 }
 
-void STilemap::Serialize()
+void STilemap::Serialize(STilemap& Tilemap) const
 {
-
+    Tilemap.Width = Utility::HtoNL(Width);
+    Tilemap.Height = Utility::HtoNL(Height);
 }
 
 void SLevel::Update(float DeltaTime)

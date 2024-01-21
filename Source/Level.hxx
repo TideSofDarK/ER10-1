@@ -132,7 +132,7 @@ struct STilemap
 
     void Cover(UVec2Int Coords);
 
-    void Serialize();
+    void Serialize(STilemap& Tilemap) const;
 };
 
 struct SLevel : STilemap

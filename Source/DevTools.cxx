@@ -793,9 +793,11 @@ void SDevTools::SaveTilemapToFile()
 
     uint32_t Test = 33;
     uint32_t Test2 = Utility::HtoNL(Test);
-    uint32_t Test3 = Utility::NtoHL(Test2);
+    uint32_t Test4 = Utility::HtoNL(Test2);
+    uint32_t Test5 = Utility::NtoHL(Test4);
 
-    std::cout << Test << " vs " << Test2 << " vs " << Test3 << std::endl;
+    std::cout << "IsBigEndian(): " << Utility::IsBigEndian() << std::endl;
+    std::cout << Test << " vs " << Test2 << " vs " << Test4 << " vs " << Test5 << std::endl;
 
     std::ofstream TilemapFile;
     TilemapFile.open("templevel", std::ofstream::binary);
