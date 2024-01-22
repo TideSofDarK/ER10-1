@@ -883,6 +883,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                 TileTransform.Translate(UVec3{ XOffset, 0.0f, YOffset });
 
                 /* @TODO: Draw joints in separate loop. */
+                /* @TODO: Maybe don't store them at all? */
                 if (Level.bUseWallJoints && Level.IsValidWallJoint({ X, Y }))
                 {
                     auto bWallJoint = Level.IsWallJointAt({ X, Y });

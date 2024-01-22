@@ -1,12 +1,16 @@
 #include "Level.hxx"
 
+#include <iostream>
+#include <fstream>
 #include "Tile.hxx"
-#include "Utility.hxx"
 
-void STilemap::InitWallJoints()
+void STilemap::PostProcess()
 {
     WallJoints.reset();
-    bUseWallJoints = true;
+    if (!bUseWallJoints)
+    {
+        return;
+    }
     UVec2Int Coords{};
     for (; Coords.X < Width; ++Coords.X)
     {
@@ -150,10 +154,30 @@ void STilemap::Cover(UVec2Int Coords)
     }
 }
 
-void STilemap::Serialize(STilemap& Tilemap) const
+void STilemap::Serialize(std::ofstream& Stream) const
 {
-    Tilemap.Width = Utility::HtoNL(Width);
-    Tilemap.Height = Utility::HtoNL(Height);
+    Serialization::Write32(Stream, Width);
+    Serialization::Write32(Stream, Height);
+
+    for (auto& Tile : Tiles) {
+        Tile.Serialize(Stream);
+    }
+
+    Serialization::Write32(Stream, bUseWallJoints);
+}
+
+void STilemap::Deserialize(std::ifstream& Stream)
+{
+    Serialization::Read32(Stream, Width);
+    Serialization::Read32(Stream, Height);
+
+    for (auto& Tile : Tiles) {
+        Tile.Deserialize(Stream);
+    }
+
+    Serialization::Read32(Stream, bUseWallJoints);
+
+    PostProcess();
 }
 
 void SLevel::Update(float DeltaTime)

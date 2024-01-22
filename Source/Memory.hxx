@@ -45,6 +45,21 @@ private:
         }
     }
 
+    static constexpr std::size_t DoAlign(std::size_t Num, std::size_t Alignment)
+    {
+        return (Num + (Alignment - 1)) & ~(Alignment - 1);
+    }
+
+    static inline void* AlignPtr(void* Ptr, std::size_t Alignment)
+    {
+        return (void*)(DoAlign((size_t)Ptr, Alignment));
+    }
+
+    static constexpr bool IsAlignedPtr(void* Ptr, std::size_t Alignment)
+    {
+        return ((std::size_t)Ptr & (Alignment - 1)) == 0;
+    }
+
 public:
     explicit TInlineResource(std::pmr::memory_resource* up = std::pmr::new_delete_resource())
         : Upstream(up)
@@ -125,7 +140,7 @@ public:
             /* Reallocating. */
             if (AllocationHeader->NextBlock != nullptr)
             {
-                if (BytePtr + BytesWithHeader >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock) || !Utility::IsAlignedPtr(SrcPtr, Alignment))
+                if (BytePtr + BytesWithHeader >= reinterpret_cast<std::byte*>(AllocationHeader->NextBlock) || !IsAlignedPtr(SrcPtr, Alignment))
                 {
                     Log::Memory<ELogLevel::Verbose>("Pending reallocation of %zu bytes into %zu at %p", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond NextBlock! */
@@ -141,7 +156,7 @@ public:
             }
             else
             {
-                if (BytePtr + BytesWithHeader >= Buffer.data() + Buffer.size() || !Utility::IsAlignedPtr(SrcPtr, Alignment))
+                if (BytePtr + BytesWithHeader >= Buffer.data() + Buffer.size() || !IsAlignedPtr(SrcPtr, Alignment))
                 {
                     Log::Memory<ELogLevel::Verbose>("Pending reallocation of %zu bytes into %zu at %p", AllocationHeader->Length, Bytes, BytePtr);
                     /* Can't go beyond end of the buffer! */
@@ -256,7 +271,7 @@ public:
         else
         {
             /* Shift pointer to point to allocated data. */
-            NewPtr = static_cast<std::byte*>(Utility::AlignPtr(NewPtr + sizeof(SAllocationHeader), Alignment));
+            NewPtr = static_cast<std::byte*>(AlignPtr(NewPtr + sizeof(SAllocationHeader), Alignment));
 #ifdef EQUINOX_REACH_DEVELOPMENT
             if (ReallocBytes == 0)
             {

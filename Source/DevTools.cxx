@@ -787,28 +787,21 @@ void SDevTools::DrawParty(SParty& Party, float Scale, bool bReversed)
     ImGui::SetCursorScreenPos(PosMin);
 }
 
-void SDevTools::SaveTilemapToFile()
+void SDevTools::SaveTilemapToFile() const
 {
     const auto& Tilemap = Level;
 
-    uint32_t Test = 33;
-    uint32_t Test2 = Utility::HtoNL(Test);
-    uint32_t Test4 = Utility::HtoNL(Test2);
-    uint32_t Test5 = Utility::NtoHL(Test4);
-
-    std::cout << "IsBigEndian(): " << Utility::IsBigEndian() << std::endl;
-    std::cout << Test << " vs " << Test2 << " vs " << Test4 << " vs " << Test5 << std::endl;
-
     std::ofstream TilemapFile;
     TilemapFile.open("templevel", std::ofstream::binary);
-    TilemapFile.write(reinterpret_cast<char*>(&Level), sizeof(SLevel));
+    Tilemap.Serialize(TilemapFile);
     TilemapFile.close();
 }
 
 void SDevTools::LoadTilemapFromFile()
 {
+    auto& Tilemap = Level;
     std::ifstream TilemapFile;
     TilemapFile.open("templevel", std::ifstream::binary);
-    TilemapFile.read(reinterpret_cast<char*>(&Level), sizeof(SLevel));
+    Tilemap.Deserialize(TilemapFile);
     TilemapFile.close();
 }

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <optional>
+#include "Serialization.hxx"
 #include "CommonTypes.hxx"
 
 enum class ETileEdgeType : uint32_t
@@ -124,5 +125,25 @@ struct STile
     {
         return STile{ { ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall },
             ETileType::Floor };
+    }
+
+    void Serialize(std::ofstream& Stream) const
+    {
+        Serialization::Write32(Stream, (uint32_t)Edges[0]);
+        Serialization::Write32(Stream, (uint32_t)Edges[1]);
+        Serialization::Write32(Stream, (uint32_t)Edges[2]);
+        Serialization::Write32(Stream, (uint32_t)Edges[3]);
+
+        Serialization::Write32(Stream, (uint32_t)Type);
+    }
+
+    void Deserialize(std::ifstream& Stream)
+    {
+        Serialization::Read32(Stream, Edges[0]);
+        Serialization::Read32(Stream, Edges[1]);
+        Serialization::Read32(Stream, Edges[2]);
+        Serialization::Read32(Stream, Edges[3]);
+
+        Serialization::Read32(Stream, Type);
     }
 };

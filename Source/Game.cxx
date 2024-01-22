@@ -107,9 +107,10 @@ SGame::SGame()
             STile::WallS(),
             STile::WallS(),
             STile::WallSE(),
-        }
+        },
+        true
     };
-    Level.InitWallJoints();
+    Level.PostProcess();
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Level = Level;
@@ -221,7 +222,7 @@ void SGame::Run()
             if (Data.bImportLevel)
             {
                 Level = DevTools.Level;
-                Level.InitWallJoints();
+                Level.PostProcess();
             }
 
             // SDevTools::DrawParty(PlayerParty);

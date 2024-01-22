@@ -77,6 +77,6 @@ private:
         }
     }
 
-    void SaveTilemapToFile();
+    void SaveTilemapToFile() const;
     void LoadTilemapFromFile();
 };

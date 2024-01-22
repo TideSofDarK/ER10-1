@@ -45,7 +45,7 @@ struct STilemap
     uint32_t Height{};
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
     std::bitset<(MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
-    bool bUseWallJoints = false;
+    uint32_t bUseWallJoints = true;
 
     [[nodiscard]] STile* GetTileAtMutable(const UVec2Int& Coords)
     {
@@ -122,7 +122,7 @@ struct STilemap
 
     [[nodiscard]] inline std::size_t WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; }
 
-    void InitWallJoints();
+    void PostProcess();
 
     void ToggleEdge(const UVec2Int& Coords, SDirection Direction, ETileEdgeType TileEdgeType);
 
@@ -132,7 +132,9 @@ struct STilemap
 
     void Cover(UVec2Int Coords);
 
-    void Serialize(STilemap& Tilemap) const;
+    void Serialize(std::ofstream& Stream) const;
+
+    void Deserialize(std::ifstream& Stream);
 };
 
 struct SLevel : STilemap
