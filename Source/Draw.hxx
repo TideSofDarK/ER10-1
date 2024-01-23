@@ -1,10 +1,9 @@
 #pragma once
 
 #include <array>
-
 #include "CommonTypes.hxx"
 #include "AssetTools.hxx"
-#include "ShaderConstants.hxx"
+#include "SharedConstants.hxx"
 #include "Math.hxx"
 
 #define RENDERER_QUEUE2D_SIZE 16
@@ -15,6 +14,7 @@
 #define TEXTURE_UNIT_ATLAS_PRIMARY2D 2
 #define TEXTURE_UNIT_ATLAS_PRIMARY3D 3
 #define TEXTURE_UNIT_MAIN_FRAMEBUFFER 7
+#define TEXTURE_UNIT_MAP_FRAMEBUFFER 8
 
 #define ATLAS_COUNT 4
 #define ATLAS_MAX_SPRITE_COUNT 16
@@ -76,6 +76,15 @@ public:
     int UniformUVRectID{};
     int UniformCommonAtlasID{};
     int UniformPrimaryAtlasID{};
+};
+
+struct SProgramHUD : SProgram2D
+{
+protected:
+    void InitUniforms() override;
+
+public:
+    int UniformMap{};
 };
 
 struct SProgram3D : SProgram
@@ -200,12 +209,13 @@ struct STexture
 struct SUniformBlock
 {
     unsigned UBO{};
+    int Binding{};
 
     void Init(int Size);
 
     void Cleanup();
 
-    void Bind() const;
+    void Bind(int BindingPoint) const;
 
     void SetMatrix(int Position, const UMat4x4& Value) const;
 
@@ -330,7 +340,7 @@ struct SSprite
 struct SAtlas : STexture
 {
 private:
-    static std::array<int, ATLAS_MAX_SPRITE_COUNT> SortingIndices;
+    static inline std::array<int, ATLAS_MAX_SPRITE_COUNT> SortingIndices;
     static constexpr int WidthAndHeight = ATLAS_SIZE;
     int CurrentIndex{};
     int TextureUnitID{};
@@ -351,12 +361,15 @@ struct SRenderer
     SRenderQueue<SEntry3D, RENDERER_QUEUE3D_SIZE> Queue3D;
     SAtlas Atlases[3];
 
-    SProgram2D ProgramHUD;
+    SUniformBlock MapUniformBlock;
+
+    SProgramHUD ProgramHUD;
     SProgram2D ProgramUber2D;
     SProgram3D ProgramUber3D;
     SProgramPostProcess ProgramPostProcess;
 
     SFrameBuffer MainFrameBuffer;
+    SFrameBuffer MapFrameBuffer;
     SGeometry Quad2D;
     SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;
 
@@ -373,6 +386,8 @@ struct SRenderer
 #pragma region Queue_2D_API
 
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
+
+    void DrawHUDMap(UVec3 Position, UVec2Int Size, const SLevel& Level, const UVec2Int& POVOrigin);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

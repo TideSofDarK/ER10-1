@@ -4,10 +4,7 @@
 #include <bitset>
 #include "Math.hxx"
 #include "Tile.hxx"
-
-#define MAX_LEVEL_WIDTH 32
-#define MAX_LEVEL_HEIGHT 32
-#define MAX_LEVEL_TILE_COUNT (MAX_LEVEL_WIDTH * MAX_LEVEL_HEIGHT)
+#include "SharedConstants.hxx"
 
 struct SDrawDoorInfo
 {
