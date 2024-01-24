@@ -85,13 +85,13 @@ SGame::SGame()
             STile::WallSW(false),
 
             STile::WallNEW(),
-            STile{ { ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Door, ETileEdgeType::Wall }, ETileType::Floor },
+            STile::WallWDoorS(),
             STile::WallS(),
             STile::Floor(),
             STile::WallNE(),
 
             STile::WallWE(),
-            STile{ { ETileEdgeType::Door, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall }, ETileType::Floor },
+            STile::WallEWDoorN(),
             STile::WallsNF(),
             STile::WallW(),
             STile::WallE(),
@@ -427,7 +427,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
         return false;
     }
 
-    if (!CurrentTile->IsTraversable(Direction.Index))
+    if (!CurrentTile->IsTraversable(Direction))
     {
         if (Direction == Blob.Direction)
         {

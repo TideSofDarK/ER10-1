@@ -750,7 +750,7 @@ void SRenderer::DrawHUDMap(UVec3 Position, UVec2Int Size, const SLevel& Level, c
         int32_t Height{};
         int32_t POVX{};
         int32_t POVY{};
-        UVec4 Tile[MAX_LEVEL_TILE_COUNT];
+        std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles;
     };
 
     SShaderMapData ShaderMapData{};
@@ -760,16 +760,7 @@ void SRenderer::DrawHUDMap(UVec3 Position, UVec2Int Size, const SLevel& Level, c
     ShaderMapData.POVX = POVOrigin.X;
     ShaderMapData.POVY = POVOrigin.Y;
 
-    std::size_t Index = 0;
-    for (int Y = 0; Y < Level.Height; Y++)
-    {
-        for (int X = 0; X < Level.Width; X++)
-        {
-            auto Tile = Level.GetTileAt({X, Y});
-            ShaderMapData.Tile[Index].X = Tile->Type == ETileType::Floor ? 1.0f : 0.0f;
-            Index++;
-        }
-    }
+    ShaderMapData.Tiles = Level.Tiles;
 
     glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderMapData), &ShaderMapData);
@@ -966,31 +957,29 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                     continue;
                 }
 
-                if (SideCounter < 0 & ForwardCounter == 0 && Tile->Edges[POVDirection.Side().Inverted().Index] != ETileEdgeType::Empty)
+                if (SideCounter < 0 & ForwardCounter == 0 && !Tile->IsEdgeEmpty(POVDirection.Side().Inverted()))
                 {
                     continue;
                 }
 
-                if (SideCounter > 0 & ForwardCounter == 0 && Tile->Edges[POVDirection.Side().Index] != ETileEdgeType::Empty)
+                if (SideCounter > 0 & ForwardCounter == 0 && !Tile->IsEdgeEmpty(POVDirection.Side()))
                 {
                     continue;
                 }
 
-                if (SideCounter == 0 && ForwardCounter >= 1 && Tile->Edges[POVDirection.Inverted().Index] != ETileEdgeType::Empty)
+                if (SideCounter == 0 && ForwardCounter >= 1 && !Tile->IsEdgeEmpty(POVDirection.Inverted()))
                 {
                     break;
                 }
 
-                if (Tile->Type == ETileType::Floor)
+                if (Tile->CheckFlag(TILE_FLOOR_BIT))
                 {
                     FloorDrawCall.Push(TileTransform);
                 }
 
                 for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
                 {
-                    auto& TileEdge = Tile->Edges[Direction];
-
-                    if (TileEdge == ETileEdgeType::Empty)
+                    if (Tile->IsEdgeEmpty(SDirection{ Direction }))
                     {
                         continue;
                     }
@@ -999,36 +988,30 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                     Transform.Rotate(SDirection{ Direction }.RotationFromDirection(),
                         { 0.0f, 1.0f, 0.0f });
 
-                    switch (TileEdge)
+                    if (Tile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection{ Direction }))
                     {
-                        case ETileEdgeType::Wall:
-                        {
-                            WallDrawCall.Push(Transform);
-                        }
-                        break;
-                        case ETileEdgeType::Door:
-                        {
-                            DoorFrameDrawCall.Push(Transform);
+                        WallDrawCall.Push(Transform);
+                    }
 
-                            /* Check two adjacent tiles for ongoing door animation.
-                             * Prevents static doors from being drawn if the animation is playing. */
-                            if (DrawLevelState.DoorInfo.Timeline.IsPlaying())
+                    if (Tile->CheckEdgeFlag(TILE_EDGE_DOOR_BIT, SDirection{ Direction }))
+                    {
+                        DoorFrameDrawCall.Push(Transform);
+
+                        /* Check two adjacent tiles for ongoing door animation.
+                         * Prevents static doors from being drawn if the animation is playing. */
+                        if (DrawLevelState.DoorInfo.Timeline.IsPlaying())
+                        {
+                            if (TileCoords == DrawLevelState.DoorInfo.TileCoords && Direction == DrawLevelState.DoorInfo.Direction.Index)
                             {
-                                if (TileCoords == DrawLevelState.DoorInfo.TileCoords && Direction == DrawLevelState.DoorInfo.Direction.Index)
-                                {
-                                    continue;
-                                }
-                                if (TileCoords == POVOrigin && Direction == POVDirectionInverted.Index)
-                                {
-                                    continue;
-                                }
+                                continue;
                             }
-
-                            Draw3DLevelDoor(DoorDrawCall, TileCoords, SDirection{ Direction }, -1.0f);
+                            if (TileCoords == POVOrigin && Direction == POVDirectionInverted.Index)
+                            {
+                                continue;
+                            }
                         }
-                        break;
-                        default:
-                            break;
+
+                        Draw3DLevelDoor(DoorDrawCall, TileCoords, SDirection{ Direction }, -1.0f);
                     }
                 }
             }

@@ -121,7 +121,7 @@ struct STilemap
 
     void PostProcess();
 
-    void ToggleEdge(const UVec2Int& Coords, SDirection Direction, ETileEdgeType TileEdgeType);
+    void ToggleEdge(const UVec2Int& Coords, SDirection Direction, uint32_t NorthEdgeBit);
 
     void Excavate(UVec2Int Coords);
 

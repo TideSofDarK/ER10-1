@@ -40,3 +40,8 @@ float getFogFactor(float d)
 
     return clamp(fogAmount, 0.0, 1.0);
 }
+
+float bitMask(uint flags, uint flag)
+{
+    return float(clamp(flags & flag, 0u, 1u));
+}

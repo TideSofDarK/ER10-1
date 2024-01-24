@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include "CommonTypes.hxx"
 #include "Tile.hxx"
 
 void STilemap::PostProcess()
@@ -41,7 +42,7 @@ void STilemap::PostProcess()
     }
 }
 
-void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, ETileEdgeType TileEdgeType)
+void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, uint32_t NorthEdgeBit)
 {
     auto Tile = GetTileAtMutable(Coords);
     if (Tile == nullptr)
@@ -49,8 +50,8 @@ void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, ETileEdg
         return;
     }
 
-    auto& TileEdge = Tile->Edges[Direction.Index];
-    TileEdge = TileEdge == TileEdgeType ? ETileEdgeType::Wall : TileEdgeType;
+    auto& EdgeFlags = Tile->EdgeFlags;
+    EdgeFlags = EdgeFlags ^ STile::DirectionBit(NorthEdgeBit, Direction);
 
     auto NeighborTile = GetNeighborTileAtMutable(Coords, Direction);
     if (NeighborTile == nullptr)
@@ -58,8 +59,8 @@ void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, ETileEdg
         return;
     }
 
-    auto& NeighborTileEdge = NeighborTile->Edges[Direction.Inverted().Index];
-    NeighborTileEdge = NeighborTileEdge == TileEdgeType ? ETileEdgeType::Wall : TileEdgeType;
+    auto& NeighborEdgeFlags = NeighborTile->EdgeFlags;
+    NeighborEdgeFlags = NeighborEdgeFlags ^ STile::DirectionBit(NorthEdgeBit, Direction.Inverted());
 }
 
 void STilemap::Excavate(UVec2Int Coords)
@@ -69,33 +70,32 @@ void STilemap::Excavate(UVec2Int Coords)
         return;
     }
     auto Tile = GetTileAtMutable(Coords);
-    Tile->Type = ETileType::Floor;
+    Tile->Flags |= TILE_FLOOR_BIT;
 
     for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
     {
-        auto& TileEdge = Tile->Edges[Direction];
+        auto& EdgeFlags = Tile->EdgeFlags;
 
         auto NeighborTile = GetTileAtMutable(Coords + SDirection{ Direction }.GetVector<int>());
         if (NeighborTile != nullptr)
         {
             auto NeighborDirection = SDirection{ Direction }.Inverted();
 
-            if (NeighborTile->Type == ETileType::Floor)
+            if (NeighborTile->CheckFlag(TILE_FLOOR_BIT))
             {
-                TileEdge = ETileEdgeType::Empty;
-
-                NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Empty;
+                Tile->ClearEdgeFlags(SDirection{ Direction });
+                NeighborTile->ClearEdgeFlags(NeighborDirection);
             }
             else
             {
-                TileEdge = ETileEdgeType::Wall;
-
-                NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Wall;
+                Tile->SetWall(SDirection{ Direction });
+                NeighborTile->SetWall(NeighborDirection);
             }
         }
         else
         {
-            TileEdge = ETileEdgeType::Wall;
+
+            Tile->SetWall(SDirection{ Direction });
         }
     }
 }
@@ -118,40 +118,40 @@ void STilemap::ExcavateBlock(const URectInt& Rect)
 
 void STilemap::Cover(UVec2Int Coords)
 {
-    if (!IsValidTile(Coords))
-    {
-        return;
-    }
-    auto Tile = GetTileAtMutable(Coords);
-    Tile->Type = ETileType::Empty;
-
-    for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
-    {
-        auto& TileEdge = Tile->Edges[Direction];
-
-        auto NeighborTile = GetTileAtMutable(Coords + SDirection{ Direction }.GetVector<int>());
-        if (NeighborTile != nullptr)
-        {
-            auto NeighborDirection = SDirection{ Direction }.Inverted();
-
-            if (NeighborTile->Type == ETileType::Floor)
-            {
-                TileEdge = ETileEdgeType::Wall;
-
-                NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Wall;
-            }
-            else
-            {
-                TileEdge = ETileEdgeType::Empty;
-
-                NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Empty;
-            }
-        }
-        else
-        {
-            TileEdge = ETileEdgeType::Wall;
-        }
-    }
+    // if (!IsValidTile(Coords))
+    // {
+    //     return;
+    // }
+    // auto Tile = GetTileAtMutable(Coords);
+    // Tile->Type = ETileType::Empty;
+    //
+    // for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
+    // {
+    //     auto& TileEdge = Tile->Edges[Direction];
+    //
+    //     auto NeighborTile = GetTileAtMutable(Coords + SDirection{ Direction }.GetVector<int>());
+    //     if (NeighborTile != nullptr)
+    //     {
+    //         auto NeighborDirection = SDirection{ Direction }.Inverted();
+    //
+    //         if (NeighborTile->Type == ETileType::Floor)
+    //         {
+    //             TileEdge = ETileEdgeType::Wall;
+    //
+    //             NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Wall;
+    //         }
+    //         else
+    //         {
+    //             TileEdge = ETileEdgeType::Empty;
+    //
+    //             NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Empty;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         TileEdge = ETileEdgeType::Wall;
+    //     }
+    // }
 }
 
 void STilemap::Serialize(std::ofstream& Stream) const
@@ -159,7 +159,8 @@ void STilemap::Serialize(std::ofstream& Stream) const
     Serialization::Write32(Stream, Width);
     Serialization::Write32(Stream, Height);
 
-    for (auto& Tile : Tiles) {
+    for (auto& Tile : Tiles)
+    {
         Tile.Serialize(Stream);
     }
 
@@ -171,7 +172,8 @@ void STilemap::Deserialize(std::ifstream& Stream)
     Serialization::Read32(Stream, Width);
     Serialization::Read32(Stream, Height);
 
-    for (auto& Tile : Tiles) {
+    for (auto& Tile : Tiles)
+    {
         Tile.Deserialize(Stream);
     }
 

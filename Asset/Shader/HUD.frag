@@ -1,10 +1,3 @@
-struct LevelData
-{
-    float tileFlags;
-    float testa;
-    float testb;
-};
-
 /* Binding Point: 0 */
 layout (std140) uniform ub_common
 {
@@ -12,13 +5,21 @@ layout (std140) uniform ub_common
     float u_time;
 };
 
+struct TileData
+{
+    uint flags;
+    uint specialFlags;
+    uint edgeFlags;
+    uint specialEdgeFlags;
+};
+
 /* Binding Point: 1 */
 layout (std140) uniform ub_map {
-    int width;
-    int height;
-    int povX;
-    int povY;
-    vec4 tile[MAX_LEVEL_TILE_COUNT];
+    uint width;
+    uint height;
+    uint povX;
+    uint povY;
+    TileData[MAX_LEVEL_TILE_COUNT] tile;
 } u_map;
 
 uniform int u_mode;
@@ -73,7 +74,7 @@ void main()
         float povMask = (1.0 - min(abs(tileX - u_map.povX), 1.0)) * (1.0 - min(abs(tileY - u_map.povY), 1.0));
         vec3 pov = vec3(1.0, 1.0, 1.0);
 
-        float floorTileMask = u_map.tile[index].x;
+        float floorTileMask = bitMask(u_map.tile[index].flags, TILE_FLOOR_BIT);
         vec3 floorTile = vec3(0.0, 0.0, 1.0);
 
         vec3 finalColor = floorTile * floorTileMask;

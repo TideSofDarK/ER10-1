@@ -1,149 +1,221 @@
 #pragma once
 
-#include <array>
+#include <cstdint>
 #include <optional>
 #include "Serialization.hxx"
 #include "CommonTypes.hxx"
-
-enum class ETileEdgeType : uint32_t
-{
-    Empty,
-    Wall,
-    Door
-};
-
-enum class ETileType : uint32_t
-{
-    Empty,
-    Floor,
-    Hole
-};
+#include "SharedConstants.hxx"
 
 struct STile
 {
-    std::array<ETileEdgeType, SDirection::Count> Edges{};
+    uint32_t Flags{};
+    uint32_t SpecialFlags{};
+    uint32_t EdgeFlags{};
+    uint32_t SpecialEdgeFlags{};
 
-    ETileType Type{ ETileType::Empty };
-
-    [[nodiscard]] bool IsWalkable() const
+    [[nodiscard]] static constexpr uint32_t DirectionBit(uint32_t NorthBit, SDirection Direction)
     {
-        return Type != ETileType::Empty;
+        return NorthBit << Direction.Index;
     }
 
-    [[nodiscard]] bool IsTraversable(unsigned Direction) const
+    [[nodiscard]] inline bool CheckFlag(uint32_t Flag) const
     {
-        return Edges[Direction] != ETileEdgeType::Wall;
+        return Flags & Flag;
     }
 
-    [[nodiscard]] bool IsDoorEdge(SDirection Direction) const
+    [[nodiscard]] inline bool CheckEdgeFlag(uint32_t NorthBit, SDirection Direction) const
     {
-        return Edges[Direction.Index] == ETileEdgeType::Door;
+        return EdgeFlags & DirectionBit(NorthBit, Direction);
+    }
+
+    [[nodiscard]] inline bool IsEdgeEmpty(SDirection Direction) const
+    {
+        return !(EdgeFlags & DirectionBit(TILE_EDGE_NORTH_BITS, Direction));
+    }
+
+    inline void ClearEdgeFlags(SDirection Direction)
+    {
+        EdgeFlags &= ~DirectionBit(TILE_EDGE_NORTH_BITS, Direction);
+    }
+
+    inline void SetWall(SDirection Direction)
+    {
+        EdgeFlags |= DirectionBit(TILE_EDGE_WALL_BIT, Direction);
+    }
+
+    inline void SetEdge(uint32_t EdgeBit, SDirection Direction)
+    {
+        ClearEdgeFlags(Direction);
+        EdgeFlags |= DirectionBit(EdgeBit, Direction);
+    }
+
+    [[nodiscard]] inline bool IsWalkable() const
+    {
+        return Flags & TILE_FLOOR_BIT;
+    }
+
+    [[nodiscard]] inline bool IsTraversable(SDirection Direction) const
+    {
+        return !(EdgeFlags & DirectionBit(TILE_EDGE_WALL_BIT, Direction));
+    }
+
+    [[nodiscard]] inline bool IsDoorEdge(SDirection Direction) const
+    {
+        return CheckEdgeFlag(TILE_EDGE_DOOR_BIT, Direction);
     }
 
     [[nodiscard]] bool IsWallBasedEdge(SDirection Direction) const
     {
-        return Edges[Direction.Index] == ETileEdgeType::Wall || Edges[Direction.Index] == ETileEdgeType::Door;
+        return CheckEdgeFlag(TILE_EDGE_WALL_BIT, Direction) || CheckEdgeFlag(TILE_EDGE_DOOR_BIT, Direction);
     }
 
     static STile Floor()
     {
         STile Tile;
-        Tile.Type = ETileType::Floor;
+        Tile.Flags = TILE_FLOOR_BIT;
         return Tile;
     }
 
     static STile WallsNF()
     {
-        return STile{ { ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall },
-            ETileType::Empty };
+        STile Tile;
+        Tile.EdgeFlags = TILE_EDGE_WALL_BIT | TILE_EDGE_WALL_EAST_BIT | TILE_EDGE_WALL_SOUTH_BIT | TILE_EDGE_WALL_WEST_BIT;
+        return Tile;
     }
 
-    static STile WallN() { return STile{ { ETileEdgeType::Wall }, ETileType::Floor }; };
+    static STile WallN()
+    {
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_BIT;
+        return Tile;
+    };
 
-    static STile WallE() { return STile{ { ETileEdgeType::Empty, ETileEdgeType::Wall }, ETileType::Floor }; };
+    static STile WallE()
+    {
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_EAST_BIT;
+        return Tile;
+    };
 
     static STile WallS()
     {
-        return STile{ { ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall }, ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_SOUTH_BIT;
+        return Tile;
     };
 
     static STile WallW()
     {
-        return STile{ { ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_WEST_BIT;
+        return Tile;
     }
 
     static STile WallWE()
     {
-        return STile{ { ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_WEST_BIT | TILE_EDGE_WALL_EAST_BIT;
+        return Tile;
     }
 
     static STile WallNS()
     {
-        return STile{ { ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Empty },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_BIT | TILE_EDGE_WALL_SOUTH_BIT;
+        return Tile;
     }
 
     static STile WallNW()
     {
-        return STile{ { ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_BIT | TILE_EDGE_WALL_WEST_BIT;
+        return Tile;
     }
 
     static STile WallNE()
     {
-        return STile{ { ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Empty },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_BIT | TILE_EDGE_WALL_EAST_BIT;
+        return Tile;
     }
 
     static STile WallSW(bool bHasFloor = true)
     {
-        return STile{ { ETileEdgeType::Empty, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall },
-            bHasFloor ? ETileType::Floor : ETileType::Empty };
+        STile Tile;
+        Tile.Flags = bHasFloor ? TILE_FLOOR_BIT : 0;
+        Tile.EdgeFlags = TILE_EDGE_WALL_SOUTH_BIT | TILE_EDGE_WALL_WEST_BIT;
+        return Tile;
     }
 
     static STile WallSE()
     {
-        return STile{ { ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_SOUTH_BIT | TILE_EDGE_WALL_EAST_BIT;
+        return Tile;
     }
 
     static STile WallNWS()
     {
-        return STile{ { ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_SOUTH_BIT | TILE_EDGE_WALL_BIT | TILE_EDGE_WALL_WEST_BIT;
+        return Tile;
     }
 
     static STile WallSWE()
     {
-        return STile{ { ETileEdgeType::Empty, ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Wall },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_SOUTH_BIT | TILE_EDGE_WALL_WEST_BIT | TILE_EDGE_WALL_EAST_BIT;
+        return Tile;
     }
 
     static STile WallNEW()
     {
-        return STile{ { ETileEdgeType::Wall, ETileEdgeType::Wall, ETileEdgeType::Empty, ETileEdgeType::Wall },
-            ETileType::Floor };
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_WEST_BIT | TILE_EDGE_WALL_BIT | TILE_EDGE_WALL_EAST_BIT;
+        return Tile;
+    }
+
+    static STile WallWDoorS()
+    {
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_WEST_BIT | TILE_EDGE_DOOR_SOUTH_BIT;
+        return Tile;
+    }
+
+    static STile WallEWDoorN()
+    {
+        STile Tile;
+        Tile.Flags = TILE_FLOOR_BIT;
+        Tile.EdgeFlags = TILE_EDGE_WALL_WEST_BIT | TILE_EDGE_WALL_EAST_BIT | TILE_EDGE_DOOR_BIT;
+        return Tile;
     }
 
     void Serialize(std::ofstream& Stream) const
     {
-        Serialization::Write32(Stream, (uint32_t)Edges[0]);
-        Serialization::Write32(Stream, (uint32_t)Edges[1]);
-        Serialization::Write32(Stream, (uint32_t)Edges[2]);
-        Serialization::Write32(Stream, (uint32_t)Edges[3]);
-
-        Serialization::Write32(Stream, (uint32_t)Type);
+        Serialization::Write32(Stream, Flags);
+        Serialization::Write32(Stream, SpecialFlags);
+        Serialization::Write32(Stream, EdgeFlags);
+        Serialization::Write32(Stream, SpecialEdgeFlags);
     }
 
     void Deserialize(std::ifstream& Stream)
     {
-        Serialization::Read32(Stream, Edges[0]);
-        Serialization::Read32(Stream, Edges[1]);
-        Serialization::Read32(Stream, Edges[2]);
-        Serialization::Read32(Stream, Edges[3]);
-
-        Serialization::Read32(Stream, Type);
+        Serialization::Read32(Stream, Flags);
+        Serialization::Read32(Stream, SpecialFlags);
+        Serialization::Read32(Stream, EdgeFlags);
+        Serialization::Read32(Stream, SpecialEdgeFlags);
     }
 };

@@ -124,6 +124,12 @@ struct SDirection
     }
 };
 
+struct SCoordsAndDirection
+{
+    UVec2Int Coords;
+    SDirection Direction{};
+};
+
 enum class EKeyState : unsigned
 {
     None,
