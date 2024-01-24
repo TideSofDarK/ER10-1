@@ -40,5 +40,6 @@ SHARED_CONST(HUD_MODE_MAP, 2)
 #define SHARED_CONSTANTS_GUARD 1
 #endif
 
-#undef SHARED_CONST
 #endif
+
+#undef SHARED_CONST
