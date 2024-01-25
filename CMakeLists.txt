@@ -37,6 +37,7 @@ file(GLOB_RECURSE ASSET_FILES
         "Asset/*.frag"
         "Asset/*.ttf"
         "Asset/*.wav"
+        "Asset/*.erm"
 )
 list(JOIN ASSET_FILES "\;" ASSET_FILES)
 set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSET_FILES})

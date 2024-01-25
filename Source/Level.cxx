@@ -167,7 +167,7 @@ void STilemap::Serialize(std::ofstream& Stream) const
     Serialization::Write32(Stream, bUseWallJoints);
 }
 
-void STilemap::Deserialize(std::ifstream& Stream)
+void STilemap::Deserialize(std::istream& Stream)
 {
     Serialization::Read32(Stream, Width);
     Serialization::Read32(Stream, Height);

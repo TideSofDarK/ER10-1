@@ -127,8 +127,8 @@ namespace Serialization
         Stream.write(reinterpret_cast<char*>(&Temp32), 4);
     }
 
-    template<typename T>
-    static inline void Read16(std::ifstream& Stream, T& Value)
+    template <typename T>
+    static inline void Read16(std::istream& Stream, T& Value)
     {
         char Temp[2]{};
 
@@ -136,12 +136,30 @@ namespace Serialization
         Value = static_cast<T>(HtoBE16(*reinterpret_cast<uint16_t*>(&Temp[0])));
     }
 
-    template<typename T>
-    static inline void Read32(std::ifstream& Stream, T& Value)
+    template <typename T>
+    static inline void Read32(std::istream& Stream, T& Value)
     {
         char Temp[4]{};
 
         Stream.read(Temp, 4);
         Value = static_cast<T>(HtoBE32(*reinterpret_cast<uint32_t*>(&Temp[0])));
     }
+
+    struct MemoryBuf : std::streambuf
+    {
+        MemoryBuf(char const* Base, std::size_t Size)
+        {
+            char* P(const_cast<char*>(Base));
+            this->setg(P, P, P + Size);
+        }
+    };
+
+    struct MemoryStream : virtual MemoryBuf, std::istream
+    {
+        MemoryStream(char const* Base, std::size_t Size)
+            : MemoryBuf(Base, Size)
+            , std::istream(static_cast<std::streambuf*>(this))
+        {
+        }
+    };
 }

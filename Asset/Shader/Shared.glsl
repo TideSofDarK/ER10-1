@@ -1,3 +1,7 @@
+#ifndef HALF_PI
+#define HALF_PI 1.5707963267948966
+#endif
+
 vec2 convertUV(in vec2 normalizedUV, in vec4 uvRect) {
     return vec2(mix(uvRect.x, uvRect.z, normalizedUV.x), mix(uvRect.y, uvRect.w, normalizedUV.y));
 }
@@ -14,9 +18,17 @@ vec2 clampUV(in vec2 uv, in vec4 uvRect) {
     return clamp(uv, vec2(uvRect.x, uvRect.y), vec2(uvRect.z, vec2(uvRect.w)));
 }
 
-#ifndef HALF_PI
-#define HALF_PI 1.5707963267948966
-#endif
+float saturate(float value) {
+    return clamp(value, 0.0, 1.0);
+}
+
+vec2 saturate(vec2 value) {
+    return clamp(value, 0.0, 1.0);
+}
+
+float map1to1(float value) {
+    return value * 2.0 - 1.0;
+}
 
 float sineIn(float t) {
     return sin((t - 1.0) * HALF_PI) + 1.0;
@@ -44,4 +56,10 @@ float getFogFactor(float d)
 float bitMask(uint flags, uint flag)
 {
     return float(clamp(flags & flag, 0u, 1u));
+}
+
+vec3 overlay(vec3 original, vec3 toAdd, float mask)
+{
+    mask = saturate(mask);
+    return original * (1.0 - mask) + (mask * toAdd);
 }

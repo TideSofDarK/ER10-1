@@ -211,7 +211,7 @@ struct STile
         Serialization::Write32(Stream, SpecialEdgeFlags);
     }
 
-    void Deserialize(std::ifstream& Stream)
+    void Deserialize(std::istream& Stream)
     {
         Serialization::Read32(Stream, Flags);
         Serialization::Read32(Stream, SpecialFlags);

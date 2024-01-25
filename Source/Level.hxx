@@ -131,7 +131,7 @@ struct STilemap
 
     void Serialize(std::ofstream& Stream) const;
 
-    void Deserialize(std::ifstream& Stream);
+    void Deserialize(std::istream& Stream);
 };
 
 struct SLevel : STilemap

@@ -85,6 +85,11 @@ namespace Asset::Shader
     DEFINE_ASSET(PostProcessFRAG, "../Asset/Shader/PostProcess.frag")
 }
 
+namespace Asset::Map
+{
+    DEFINE_ASSET(TestMapERM, "../Asset/Map/TestMap.erm")
+}
+
 namespace Asset::TileSet::Hotel
 {
     DEFINE_ASSET(FloorOBJ, "../Asset/TileSet/Hotel/Floor.obj")

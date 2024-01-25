@@ -7,6 +7,7 @@
 #include "AssetTools.hxx"
 #include "Audio.hxx"
 #include "Draw.hxx"
+#include "Serialization.hxx"
 #include "Tile.hxx"
 
 namespace Asset::Common
@@ -28,6 +29,11 @@ namespace Asset::TileSet::Hotel
     EXTERN_ASSET(DoorFrameOBJ)
     EXTERN_ASSET(DoorOBJ)
     EXTERN_ASSET(AtlasPNG)
+}
+
+namespace Asset::Map
+{
+    EXTERN_ASSET(TestMapERM)
 }
 
 SGame::SGame()
@@ -70,47 +76,49 @@ SGame::SGame()
     TileSet.DoorOffset = 0.22f;
     Renderer.SetupLevelDrawData(TileSet);
 
+    Blob.Direction = SDirection::East();
     Blob.ApplyDirection(true);
 
     Camera.RegenerateProjection();
 
-    Level = SLevel{
-        5,
-        5,
-        {
-            STile::WallNWS(),
-            STile::WallN(),
-            STile::WallN(),
-            STile::WallNE(),
-            STile::WallSW(false),
-
-            STile::WallNEW(),
-            STile::WallWDoorS(),
-            STile::WallS(),
-            STile::Floor(),
-            STile::WallNE(),
-
-            STile::WallWE(),
-            STile::WallEWDoorN(),
-            STile::WallsNF(),
-            STile::WallW(),
-            STile::WallE(),
-
-            STile::WallWE(),
-            STile::WallSWE(),
-            STile::WallNW(),
-            STile::Floor(),
-            STile::WallE(),
-
-            STile::WallSW(),
-            STile::WallNS(),
-            STile::WallS(),
-            STile::WallS(),
-            STile::WallSE(),
-        },
-        true
-    };
-    Level.PostProcess();
+    // Level = SLevel{
+    //     5,
+    //     5,
+    //     {
+    //         STile::WallNWS(),
+    //         STile::WallN(),
+    //         STile::WallN(),
+    //         STile::WallNE(),
+    //         STile::WallSW(false),
+    //
+    //         STile::WallNEW(),
+    //         STile::WallWDoorS(),
+    //         STile::WallS(),
+    //         STile::Floor(),
+    //         STile::WallNE(),
+    //
+    //         STile::WallWE(),
+    //         STile::WallEWDoorN(),
+    //         STile::WallsNF(),
+    //         STile::WallW(),
+    //         STile::WallE(),
+    //
+    //         STile::WallWE(),
+    //         STile::WallSWE(),
+    //         STile::WallNW(),
+    //         STile::Floor(),
+    //         STile::WallE(),
+    //
+    //         STile::WallSW(),
+    //         STile::WallNS(),
+    //         STile::WallS(),
+    //         STile::WallS(),
+    //         STile::WallSE(),
+    //     },
+    //     true
+    // };
+    Serialization::MemoryStream LevelStream(Asset::Map::TestMapERM.AsSignedCharPtr(), Asset::Map::TestMapERM.Length);
+    Level.Deserialize(LevelStream);
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Level = Level;
@@ -256,7 +264,7 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap({0.5f, 0.0f}, {128, 128}, Level, Blob.Coords);
+            Renderer.DrawHUDMap({(float)SCREEN_WIDTH - 128.0f, 10.0f}, {108, 108}, Level, Blob.Coords);
 
             switch (SpriteDemoState)
             {
