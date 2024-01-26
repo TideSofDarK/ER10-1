@@ -93,7 +93,7 @@ void main()
         const float tileSize = 12.0;
 
         texCoord = texCoordOriginal + vec2(1.0 / u_sizeScreenSpace.x * tileSize * (povX + 0.5), 1.0 / u_sizeScreenSpace.y * tileSize * (povY + 0.5)); // POV offset
-        texCoord *= (u_sizeScreenSpace / vec2(levelWidth * tileSize, levelHeight * tileSize));
+        texCoord *= (u_sizeScreenSpace / vec2(levelWidth * tileSize, levelHeight * tileSize)); // Aspect ratio fix
 
         float tileX = floor(texCoord.x * levelWidth);
         float tileY = floor(texCoord.y * levelHeight);
@@ -149,12 +149,10 @@ void main()
         finalColor = overlay(finalColor, wallColor, doorMasks);
 
         // Grid
-        const float gridMaskSize = 0.045;
+        const float gridMaskSize = 0.075;
         northMask = floor((1.0 - tileV) + gridMaskSize);
-        southMask = floor(tileV + gridMaskSize);
-        eastMask = floor(tileU + gridMaskSize);
         westMask = floor((1.0 - tileU) + gridMaskSize);
-        float gridMasks = northMask + southMask + eastMask + westMask;
+        float gridMasks = northMask + westMask;
         float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_time * 0.25)) * 2.0) - 1.0));
         gridPulseX = pow(gridPulseX, 4);
         float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_time * 0.15)) * 2.0) - 1.0));

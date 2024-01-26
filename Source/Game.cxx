@@ -51,11 +51,6 @@ SGame::SGame()
         Asset::Common::NoisePNG);
     RefSprite = CommonAtlas2D.AddSprite(
         Asset::Common::RefPNG);
-    for (int i = 0; i < 8; i++)
-    {
-        CommonAtlas2D.AddSprite(
-            Asset::Common::RefPNG);
-    }
     CommonAtlas2D.Build();
 
     auto& PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
@@ -270,7 +265,7 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 108, 108 }, Blob.Coords);
+            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 84, 84 }, Blob.Coords);
 
             switch (SpriteDemoState)
             {
