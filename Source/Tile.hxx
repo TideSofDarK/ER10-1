@@ -33,6 +33,16 @@ struct STile
         return !(EdgeFlags & DirectionBit(TILE_EDGE_NORTH_BITS, Direction));
     }
 
+    inline void SetSpecialFlag(uint32_t Flag)
+    {
+        SpecialFlags |= Flag;
+    }
+
+    inline void ClearSpecialFlag(uint32_t Flag)
+    {
+        SpecialFlags &= ~Flag;
+    }
+
     inline void ClearEdgeFlags(SDirection Direction)
     {
         EdgeFlags &= ~DirectionBit(TILE_EDGE_NORTH_BITS, Direction);

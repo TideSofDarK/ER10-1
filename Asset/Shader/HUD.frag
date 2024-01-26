@@ -112,9 +112,10 @@ void main()
 
         // Floor
         float floorTileMask = bitMask(tile.flags, TILE_FLOOR_BIT) * validTileMask;
-        vec3 floorTile = vec3(0.0, 0.0, 1.0);
         float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
-        finalColor = overlay(finalColor, floorTile - vec3(checkerMask * 0.2), floorTileMask);
+        float visitedMask = bitMask(tile.specialFlags, TILE_SPECIAL_VISITED_BIT);
+        vec3 floorTile = vec3(0.0, 0.0, 1.0 - ((visitedMask) * checkerMask * 0.2) - ((1.0 - visitedMask) * 0.8));
+        finalColor = overlay(finalColor, floorTile, floorTileMask);
 
         // Current POV
         float povTileMask = (1.0 - min(abs(tileX - povX), 1.0)) * (1.0 - min(abs(tileY - povY), 1.0));

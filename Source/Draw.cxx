@@ -542,7 +542,6 @@ void SRenderer::Init(int Width, int Height)
 
     /** Initialize framebuffers */
     MainFrameBuffer.Init(TEXTURE_UNIT_MAIN_FRAMEBUFFER, Width, Height, WINDOW_CLEAR_COLOR);
-    MapFrameBuffer.Init(TEXTURE_UNIT_MAP_FRAMEBUFFER, 128, 128, { 0.5f, 0.5f, 0.5f });
 
     /** Initialize atlases */
     Atlases[ATLAS_COMMON].Init(TEXTURE_UNIT_ATLAS_COMMON);
@@ -598,7 +597,7 @@ void SRenderer::SetupLevelDrawData(const STileSet& TileSet)
     }
 }
 
-void SRenderer::UploadLevelMapData(const SLevel& Level)
+void SRenderer::UploadLevelMapData(const SLevel& Level) const
 {
     SShaderMapData ShaderMapData{};
 
@@ -762,9 +761,20 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawHUDMap(UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin)
+void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
+
+    if (Level.DirtyFlags | ELevelDirtyFlags::POVChanged)
+    {
+        uint32_t POVIndex = Level.CoordsToIndex(POVOrigin.X, POVOrigin.Y);
+        auto Tile = Level.GetTileAt(POVOrigin);
+
+        glBufferSubData(GL_UNIFORM_BUFFER, 16u + (POVIndex * sizeof(STile)), sizeof(STile), Tile);
+
+        Level.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
+    }
+
     glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -902,7 +912,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
 
     auto& DrawLevelState = Level.DrawState;
 
-    if (DrawLevelState.bDirty)
+    if (Level.DirtyFlags & ELevelDirtyFlags::DrawSet)
     {
         LevelDrawData.Clear();
 
@@ -1018,7 +1028,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                 }
             }
         }
-        DrawLevelState.bDirty = false;
+        Level.DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
 
         Log::Draw<ELogLevel::Debug>("Regenerated LevelDrawData");
     }

@@ -52,6 +52,7 @@ public:
     void UpdateInputState();
     void HandleBlobMovement();
     bool AttemptBlobStep(SDirection Direction);
+    void OnBlobMoved();
     void ChangeLevel();
     void ChangeLevel(const SLevel& NewLevel);
     void ChangeLevel(const SAsset& LevelAsset);

@@ -33,7 +33,6 @@ struct SDrawDoorInfo
 struct SDrawLevelState
 {
     SDrawDoorInfo DoorInfo;
-    bool bDirty = true;
 };
 
 struct STilemap
@@ -136,12 +135,24 @@ struct STilemap
     void Deserialize(std::istream& Stream);
 };
 
+namespace ELevelDirtyFlags
+{
+    using Type = uint32_t;
+    enum : Type
+    {
+        All = 1 << 0,
+        POVChanged = 1 << 1,
+        DrawSet = 1 << 2
+    };
+}
+
 struct SLevel : STilemap
 {
     int Z{};
+    uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
     SDrawLevelState DrawState;
 
     void Update(float DeltaTime);
 
-    void MarkDirty();
+    void MarkDirty(ELevelDirtyFlags::Type NewDirtyFlags = 0);
 };

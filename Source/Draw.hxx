@@ -369,7 +369,6 @@ struct SRenderer
     SProgramPostProcess ProgramPostProcess;
 
     SFrameBuffer MainFrameBuffer;
-    SFrameBuffer MapFrameBuffer;
     SGeometry Quad2D;
     SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;
 
@@ -379,7 +378,7 @@ struct SRenderer
 
     void SetupLevelDrawData(const STileSet& TileSet);
 
-    void UploadLevelMapData(const SLevel& Level);
+    void UploadLevelMapData(const SLevel& Level) const;
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -389,7 +388,7 @@ struct SRenderer
 
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
-    void DrawHUDMap(UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin);
+    void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

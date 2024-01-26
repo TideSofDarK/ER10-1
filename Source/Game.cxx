@@ -4,6 +4,8 @@
 #include <SDL3/SDL_events.h>
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
+#include "Level.hxx"
+#include "SharedConstants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
 #include "Draw.hxx"
@@ -268,7 +270,7 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap({ (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 108, 108 }, Blob.Coords);
+            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 108, 108 }, Blob.Coords);
 
             switch (SpriteDemoState)
             {
@@ -337,14 +339,14 @@ void SGame::UpdateInputState()
 
 void SGame::HandleBlobMovement()
 {
-    const auto BlobWasIdle = !Blob.IsMoving();
+    const auto bBlobWasIdle = !Blob.IsMoving();
     if (Blob.MoveSeq.IsFinished())
     {
         if (Blob.IsReadyForBuffering())
         {
             BufferedInputState.Buffer(InputState);
         }
-        if (BlobWasIdle)
+        if (bBlobWasIdle)
         {
             BufferedInputState.Buffer(InputState);
 
@@ -396,7 +398,7 @@ void SGame::HandleBlobMovement()
     }
     else
     {
-        if (BlobWasIdle)
+        if (bBlobWasIdle)
         {
             switch (Blob.MoveSeq.GetCurrentDirection().Index)
             {
@@ -425,9 +427,9 @@ void SGame::HandleBlobMovement()
             Blob.MoveSeq.Current++;
         }
     }
-    if (BlobWasIdle && Blob.IsMoving())
+    if (bBlobWasIdle && Blob.IsMoving())
     {
-        Level.MarkDirty();
+        OnBlobMoved();
     }
 }
 
@@ -481,10 +483,22 @@ bool SGame::AttemptBlobStep(SDirection Direction)
     return true;
 }
 
+void SGame::OnBlobMoved()
+{
+    auto CurrentTile = Level.GetTileAtMutable(Blob.Coords);
+    if (CurrentTile != nullptr)
+    {
+        CurrentTile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
+    }
+
+    Level.MarkDirty(ELevelDirtyFlags::DrawSet | ELevelDirtyFlags::POVChanged);
+}
+
 void SGame::ChangeLevel()
 {
     Level.PostProcess();
     Renderer.UploadLevelMapData(Level);
+    OnBlobMoved();
 }
 
 void SGame::ChangeLevel(const SLevel& NewLevel)
