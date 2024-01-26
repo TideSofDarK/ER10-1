@@ -541,6 +541,11 @@ void SDevTools::DrawLevel()
                         Level.ExcavateBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords));
                         LevelEditorMode = ELevelEditorMode::Normal;
                     }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
+                    {
+                        Level.CoverBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords));
+                        LevelEditorMode = ELevelEditorMode::Normal;
+                    }
                 }
                 else if (LevelEditorMode == ELevelEditorMode::Normal)
                 {

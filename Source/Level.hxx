@@ -129,6 +129,8 @@ struct STilemap
 
     void Cover(UVec2Int Coords);
 
+    void CoverBlock(const URectInt& Rect);
+
     void Serialize(std::ofstream& Stream) const;
 
     void Deserialize(std::istream& Stream);

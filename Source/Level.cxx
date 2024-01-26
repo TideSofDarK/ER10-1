@@ -118,40 +118,54 @@ void STilemap::ExcavateBlock(const URectInt& Rect)
 
 void STilemap::Cover(UVec2Int Coords)
 {
-    // if (!IsValidTile(Coords))
-    // {
-    //     return;
-    // }
-    // auto Tile = GetTileAtMutable(Coords);
-    // Tile->Type = ETileType::Empty;
-    //
-    // for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
-    // {
-    //     auto& TileEdge = Tile->Edges[Direction];
-    //
-    //     auto NeighborTile = GetTileAtMutable(Coords + SDirection{ Direction }.GetVector<int>());
-    //     if (NeighborTile != nullptr)
-    //     {
-    //         auto NeighborDirection = SDirection{ Direction }.Inverted();
-    //
-    //         if (NeighborTile->Type == ETileType::Floor)
-    //         {
-    //             TileEdge = ETileEdgeType::Wall;
-    //
-    //             NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Wall;
-    //         }
-    //         else
-    //         {
-    //             TileEdge = ETileEdgeType::Empty;
-    //
-    //             NeighborTile->Edges[NeighborDirection.Index] = ETileEdgeType::Empty;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         TileEdge = ETileEdgeType::Wall;
-    //     }
-    // }
+    if (!IsValidTile(Coords))
+    {
+        return;
+    }
+    auto Tile = GetTileAtMutable(Coords);
+    Tile->Flags &= ~TILE_FLOOR_BIT;
+
+    for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
+    {
+        auto& EdgeFlags = Tile->EdgeFlags;
+
+        auto NeighborTile = GetTileAtMutable(Coords + SDirection{ Direction }.GetVector<int>());
+        if (NeighborTile != nullptr)
+        {
+            auto NeighborDirection = SDirection{ Direction }.Inverted();
+
+            if (NeighborTile->CheckFlag(TILE_FLOOR_BIT))
+            {
+                Tile->SetWall(SDirection{ Direction });
+                NeighborTile->SetWall(NeighborDirection);
+            }
+            else
+            {
+                Tile->ClearEdgeFlags(SDirection{ Direction });
+                NeighborTile->ClearEdgeFlags(NeighborDirection);
+            }
+        }
+        else
+        {
+            Tile->ClearEdgeFlags(SDirection{ Direction });
+        }
+    }
+}
+
+void STilemap::CoverBlock(const URectInt& Rect)
+{
+    if (Rect.Min == Rect.Max)
+    {
+        Cover(Rect.Max);
+    }
+
+    for (auto X = Rect.Min.X; X <= Rect.Max.X; ++X)
+    {
+        for (auto Y = Rect.Min.Y; Y <= Rect.Max.Y; ++Y)
+        {
+            Cover({ X, Y });
+        }
+    }
 }
 
 void STilemap::Serialize(std::ofstream& Stream) const

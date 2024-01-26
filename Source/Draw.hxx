@@ -379,6 +379,8 @@ struct SRenderer
 
     void SetupLevelDrawData(const STileSet& TileSet);
 
+    void UploadLevelMapData(const SLevel& Level);
+
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
     void Flush(const SWindowData& WindowData);
@@ -387,7 +389,7 @@ struct SRenderer
 
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
-    void DrawHUDMap(UVec3 Position, UVec2Int Size, const SLevel& Level, const UVec2Int& POVOrigin);
+    void DrawHUDMap(UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

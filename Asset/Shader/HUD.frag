@@ -1,3 +1,4 @@
+
 /* Binding Point: 0 */
 layout (std140) uniform ub_common
 {
@@ -14,7 +15,8 @@ struct TileData
 };
 
 /* Binding Point: 1 */
-layout (std140) uniform ub_map {
+layout (std140) uniform ub_map
+{
     uint width;
     uint height;
     uint povX;
@@ -23,8 +25,12 @@ layout (std140) uniform ub_map {
 } u_map;
 
 uniform int u_mode;
+uniform vec4 u_modeControlA;
+uniform vec4 u_modeControlB;
+uniform vec4 u_uvRect;// minX, minY, maxX, maxY
 uniform vec2 u_sizeScreenSpace;
-uniform sampler2D u_colorTexture;
+uniform sampler2D u_commonAtlas;
+uniform sampler2D u_primaryAtlas;
 
 in vec2 f_texCoord;
 
@@ -44,7 +50,8 @@ void main()
     float borderX = clamp(abs((texCoordNDC.x * u_sizeScreenSpace.x))  - (u_sizeScreenSpace.x - borderSize), 0.0, 1.0);
     float borderY = clamp(abs((texCoordNDC.y * u_sizeScreenSpace.y))  - (u_sizeScreenSpace.y - borderSize), 0.0, 1.0);
 
-    if (u_mode == HUD_MODE_BORDER_DASHED) {
+    if (u_mode == HUD_MODE_BORDER_DASHED)
+    {
         // Border dash
         float borderDashSize = 8.0;
         float borderDashSpeed = u_time * 10.0;
@@ -59,14 +66,14 @@ void main()
         borderColor = borderMask * mix(vec3(0.4, 0.1, 0.7), vec3(0.5, 0.2, 0.3), (f_texCoord.x + f_texCoord.y) / 2.0);
     }
 
-    if (u_mode == HUD_MODE_BUTTON) {
+    if (u_mode == HUD_MODE_BUTTON)
+    {
         float borderMask = clamp(borderX + borderY, 0.0, 1.0);
         borderColor = borderMask * vec3(1.0, 1.0, 1.0);
     }
 
-    if (u_mode == HUD_MODE_MAP) {
-        const float tileSize = 12.0;
-
+    if (u_mode == HUD_MODE_MAP)
+    {
         vec3 finalColor = vec3(0.03, 0.03, 0.02);
 
         float levelWidth = float(u_map.width);
@@ -79,12 +86,20 @@ void main()
 
         vec2 texCoord = f_texCoord;
         texCoord += vec2(-0.5, -0.5); // Center offset
-        texCoord += vec2(1.0 / u_sizeScreenSpace.x * tileSize * (povX + 0.5), 1.0 / u_sizeScreenSpace.y * tileSize * (povY + 0.5)); // POV offset
+        vec2 texCoordOriginal = texCoord;
+
+        // texCoordOriginal = cartesianToIsometric(texCoord);
+        // const float tileSize = 12.0;
+        const float tileSize = 12.0;
+
+        texCoord = texCoordOriginal + vec2(1.0 / u_sizeScreenSpace.x * tileSize * (povX + 0.5), 1.0 / u_sizeScreenSpace.y * tileSize * (povY + 0.5)); // POV offset
         texCoord *= (u_sizeScreenSpace / vec2(levelWidth * tileSize, levelHeight * tileSize));
+
         float tileX = floor(texCoord.x * levelWidth);
         float tileY = floor(texCoord.y * levelHeight);
         float tileU = fract(texCoord.x * levelWidth);
         float tileV = fract(texCoord.y * levelHeight);
+
         int index = int(clamp(tileY * levelWidth + tileX, 0.0, float(levelTileCount - 1.0)));
 
         float validTileMask = max(0.0, sign(tileX + 1));
@@ -98,8 +113,8 @@ void main()
         // Floor
         float floorTileMask = bitMask(tile.flags, TILE_FLOOR_BIT) * validTileMask;
         vec3 floorTile = vec3(0.0, 0.0, 1.0);
-
-        finalColor = overlay(finalColor, floorTile, floorTileMask);
+        float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
+        finalColor = overlay(finalColor, floorTile - vec3(checkerMask * 0.2), floorTileMask);
 
         // Current POV
         float povTileMask = (1.0 - min(abs(tileX - povX), 1.0)) * (1.0 - min(abs(tileY - povY), 1.0));
@@ -119,15 +134,15 @@ void main()
         float eastWallMask = eastMask * bitMask(tile.edgeFlags, TILE_EDGE_WALL_EAST_BIT);
         float westMask = floor((1.0 - tileU) + edgeMaskSize);
         float westWallMask = westMask * bitMask(tile.edgeFlags, TILE_EDGE_WALL_WEST_BIT);
-        float wallMasks = saturate(northWallMask + southWallMask + eastWallMask + westWallMask) * validTileMask;
+        float wallMasks = saturate(northWallMask + southWallMask + eastWallMask + westWallMask) * validTileMask * floorTileMask;
         finalColor = overlay(finalColor, vec3(0.95, 0.95, 0.95), wallMasks);
 
-        float northDoorMask = northMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_BIT);
-        float southDoorMask = southMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT);
-        float eastDoorMask = eastMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_EAST_BIT);
-        float westDoorMask = westMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_WEST_BIT);
+        float northDoorMask = northMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_BIT) * round(abs(map1to1(tileU)) + 0.2);
+        float southDoorMask = southMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) * round(abs(map1to1(tileU)) + 0.2);
+        float eastDoorMask = eastMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_EAST_BIT) * round(abs(map1to1(tileV)) + 0.2);
+        float westDoorMask = westMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_WEST_BIT) * round(abs(map1to1(tileV)) + 0.2);
         float doorMasks = saturate(northDoorMask + southDoorMask + eastDoorMask + westDoorMask) * validTileMask;
-        finalColor = overlay(finalColor, vec3(1.0, 1.0, 0.0), doorMasks);
+        finalColor = overlay(finalColor, vec3(1.0, 1.0, 1.0), doorMasks);
 
         // Grid
         const float gridMaskSize = 0.045;
@@ -136,14 +151,14 @@ void main()
         eastMask = floor(tileU + gridMaskSize);
         westMask = floor((1.0 - tileU) + gridMaskSize);
         float gridMasks = northMask + southMask + eastMask + westMask;
-        float gridPulseX = saturate(abs((fract(f_texCoord.x + (u_time * 0.25)) * 2.0) - 1.0));
-        gridPulseX = pow(gridPulseX, 10);
-        float gridPulseY = saturate(abs((fract(f_texCoord.y + (u_time * 0.15)) * 2.0) - 1.0));
-        gridPulseY = pow(gridPulseY, 10);
+        float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_time * 0.25)) * 2.0) - 1.0));
+        gridPulseX = pow(gridPulseX, 4);
+        float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_time * 0.15)) * 2.0) - 1.0));
+        gridPulseY = pow(gridPulseY, 4);
         float gridPulse = (max(gridPulseX, gridPulseY) * 0.5) + 0.5;
-        gridPulse *= 1.0 - floorTileMask;
+        gridPulse *= (1.0 - floorTileMask);
         vec3 grid = vec3(0.05, 0.15, 0.6) * gridPulse;
-        finalColor = overlay(finalColor, grid, gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks));
+        finalColor = overlay(finalColor, grid, gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks) * (1.0 - floorTileMask));
 
         color = vec4(finalColor, 1.0);
     }

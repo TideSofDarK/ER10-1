@@ -30,6 +30,15 @@ namespace Asset::Shader
     EXTERN_ASSET(PostProcessFRAG)
 }
 
+struct SShaderMapData
+{
+    int32_t Width{};
+    int32_t Height{};
+    int32_t POVX{};
+    int32_t POVY{};
+    std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles;
+};
+
 void SProgram::CheckShader(unsigned int ShaderID)
 {
     int Success;
@@ -589,12 +598,26 @@ void SRenderer::SetupLevelDrawData(const STileSet& TileSet)
     }
 }
 
+void SRenderer::UploadLevelMapData(const SLevel& Level)
+{
+    SShaderMapData ShaderMapData{};
+
+    ShaderMapData.Width = (int)Level.Width;
+    ShaderMapData.Height = (int)Level.Height;
+
+    ShaderMapData.Tiles = Level.Tiles;
+
+    glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderMapData), &ShaderMapData);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
 void SRenderer::Flush(const SWindowData& WindowData)
 {
-    /** Begin Draw */
+    /* Begin Draw */
     MainFrameBuffer.BindForDrawing();
 
-    /** Draw 3D */
+    /* Draw 3D */
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glViewport(SCENE_OFFSET, SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
@@ -603,7 +626,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
 
     ProgramUber3D.Use();
 
-    //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     for (int Index = 0; Index < Queue3D.CurrentIndex; ++Index)
     {
         const auto& Entry = Queue3D.Entries[Index];
@@ -639,7 +662,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     }
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    /** Draw 2D */
+    /* Draw 2D */
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -700,7 +723,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
         glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
     }
 
-    /** Display everything */
+    /* Display everything */
     glDisable(GL_BLEND);
 
     MainFrameBuffer.BindForReading();
@@ -713,9 +736,6 @@ void SRenderer::Flush(const SWindowData& WindowData)
 
     ProgramPostProcess.Use();
     glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
-
-    // MapFrameBuffer.BindForReading();
-    // glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
 
     Queue2D.Reset();
     Queue3D.Reset();
@@ -742,28 +762,10 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawHUDMap(UVec3 Position, UVec2Int Size, const SLevel& Level, const UVec2Int& POVOrigin)
+void SRenderer::DrawHUDMap(UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin)
 {
-    struct SShaderMapData
-    {
-        int32_t Width{};
-        int32_t Height{};
-        int32_t POVX{};
-        int32_t POVY{};
-        std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles;
-    };
-
-    SShaderMapData ShaderMapData{};
-
-    ShaderMapData.Width = (int)Level.Width;
-    ShaderMapData.Height = (int)Level.Height;
-    ShaderMapData.POVX = POVOrigin.X;
-    ShaderMapData.POVY = POVOrigin.Y;
-
-    ShaderMapData.Tiles = Level.Tiles;
-
     glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderMapData), &ShaderMapData);
+    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     SEntry2D Entry;

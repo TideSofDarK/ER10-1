@@ -6,6 +6,8 @@
 template <typename T>
 struct SVec2
 {
+    using Type = T;
+
     T X{};
     T Y{};
 

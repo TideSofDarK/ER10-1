@@ -49,6 +49,11 @@ SGame::SGame()
         Asset::Common::NoisePNG);
     RefSprite = CommonAtlas2D.AddSprite(
         Asset::Common::RefPNG);
+    for (int i = 0; i < 8; i++)
+    {
+        CommonAtlas2D.AddSprite(
+            Asset::Common::RefPNG);
+    }
     CommonAtlas2D.Build();
 
     auto& PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
@@ -117,8 +122,8 @@ SGame::SGame()
     //     },
     //     true
     // };
-    Serialization::MemoryStream LevelStream(Asset::Map::TestMapERM.AsSignedCharPtr(), Asset::Map::TestMapERM.Length);
-    Level.Deserialize(LevelStream);
+
+    ChangeLevel(Asset::Map::TestMapERM);
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Level = Level;
@@ -229,8 +234,7 @@ void SGame::Run()
 
             if (Data.bImportLevel)
             {
-                Level = DevTools.Level;
-                Level.PostProcess();
+                ChangeLevel(DevTools.Level);
             }
 
             // SDevTools::DrawParty(PlayerParty);
@@ -264,7 +268,7 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap({(float)SCREEN_WIDTH - 128.0f, 10.0f}, {108, 108}, Level, Blob.Coords);
+            Renderer.DrawHUDMap({ (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 108, 108 }, Blob.Coords);
 
             switch (SpriteDemoState)
             {
@@ -475,6 +479,25 @@ bool SGame::AttemptBlobStep(SDirection Direction)
     }
 
     return true;
+}
+
+void SGame::ChangeLevel()
+{
+    Level.PostProcess();
+    Renderer.UploadLevelMapData(Level);
+}
+
+void SGame::ChangeLevel(const SLevel& NewLevel)
+{
+    Level = NewLevel;
+    ChangeLevel();
+}
+
+void SGame::ChangeLevel(const SAsset& LevelAsset)
+{
+    Serialization::MemoryStream LevelStream(LevelAsset.AsSignedCharPtr(), LevelAsset.Length);
+    Level.Deserialize(LevelStream);
+    ChangeLevel();
 }
 
 bool SGame::IsGameRunning() const
