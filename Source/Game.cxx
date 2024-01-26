@@ -491,7 +491,24 @@ void SGame::OnBlobMoved()
         CurrentTile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
     }
 
-    Level.MarkDirty(ELevelDirtyFlags::DrawSet | ELevelDirtyFlags::POVChanged);
+    UVec2Size DirtyRange{};
+    for (auto X = Blob.Coords.X - Blob.GetExploreRadius(); X <= Blob.Coords.X + Blob.GetExploreRadius(); ++X)
+    {
+        for (auto Y = Blob.Coords.Y - Blob.GetExploreRadius(); Y <= Blob.Coords.Y + Blob.GetExploreRadius(); ++Y)
+        {
+            CurrentTile = Level.GetTileAtMutable(UVec2Int{X, Y});
+            if (CurrentTile != nullptr)
+            {
+                CurrentTile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
+                std::size_t Index = Level.CoordsToIndex(X, Y);
+                DirtyRange.X = std::min(DirtyRange.X, Index);
+                DirtyRange.Y = std::max(DirtyRange.Y, Index);
+            }
+        }
+    }
+
+    Level.DrawState.DirtyFlags = ELevelDirtyFlags::DrawSet | ELevelDirtyFlags::POVChanged;
+    Level.DrawState.DirtyRange = DirtyRange;
 }
 
 void SGame::ChangeLevel()

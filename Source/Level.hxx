@@ -30,8 +30,22 @@ struct SDrawDoorInfo
     }
 };
 
+namespace ELevelDirtyFlags
+{
+    using Type = uint32_t;
+    enum : Type
+    {
+        All = 1 << 0,
+        POVChanged = 1 << 1,
+        DrawSet = 1 << 2
+    };
+}
+
 struct SDrawLevelState
 {
+    uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
+    SVec2<std::size_t> DirtyRange{};
+
     SDrawDoorInfo DoorInfo;
 };
 
@@ -78,6 +92,15 @@ struct STilemap
         return nullptr;
     }
 
+    [[nodiscard]] STile const* GetTile(const std::size_t Index) const
+    {
+        if (Index >= 0 && Index < MAX_LEVEL_TILE_COUNT)
+        {
+            return &Tiles[Index];
+        }
+        return nullptr;
+    }
+
     [[nodiscard]] bool IsValidTile(const UVec2Int& Coords) const
     {
         return IsValidTileX(Coords.X) && IsValidTileY(Coords.Y);
@@ -94,6 +117,8 @@ struct STilemap
     }
 
     [[nodiscard]] inline std::size_t CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
+
+    [[nodiscard]] inline std::size_t CoordsToIndex(const UVec2Int& Coords) const { return CoordsToIndex(Coords.X, Coords.Y); }
 
     [[nodiscard]] bool IsWallJointAt(UVec2Int Coords) const
     {
@@ -135,24 +160,10 @@ struct STilemap
     void Deserialize(std::istream& Stream);
 };
 
-namespace ELevelDirtyFlags
-{
-    using Type = uint32_t;
-    enum : Type
-    {
-        All = 1 << 0,
-        POVChanged = 1 << 1,
-        DrawSet = 1 << 2
-    };
-}
-
 struct SLevel : STilemap
 {
     int Z{};
-    uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
     SDrawLevelState DrawState;
 
     void Update(float DeltaTime);
-
-    void MarkDirty(ELevelDirtyFlags::Type NewDirtyFlags = 0);
 };

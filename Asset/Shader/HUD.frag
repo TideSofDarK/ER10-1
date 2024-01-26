@@ -89,7 +89,7 @@ void main()
         vec2 texCoordOriginal = texCoord;
 
         // texCoordOriginal = cartesianToIsometric(texCoord);
-        // const float tileSize = 12.0;
+        // const float tileSize = 16.0;
         const float tileSize = 12.0;
 
         texCoord = texCoordOriginal + vec2(1.0 / u_sizeScreenSpace.x * tileSize * (povX + 0.5), 1.0 / u_sizeScreenSpace.y * tileSize * (povY + 0.5)); // POV offset
@@ -101,6 +101,7 @@ void main()
         float tileV = fract(texCoord.y * levelHeight);
 
         int index = int(clamp(tileY * levelWidth + tileX, 0.0, float(levelTileCount - 1.0)));
+        TileData tile = u_map.tiles[index];
 
         float validTileMask = max(0.0, sign(tileX + 1));
         validTileMask = min(validTileMask, sign(tileY + 1));
@@ -108,7 +109,8 @@ void main()
         validTileMask = min(validTileMask, 1.0 - saturate(trunc(tileY / levelHeight)));
         validTileMask = saturate(validTileMask);
 
-        TileData tile = u_map.tiles[index];
+        float exploredMask = bitMask(tile.specialFlags, TILE_SPECIAL_EXPLORED_BIT);
+        validTileMask *= exploredMask;
 
         // Floor
         float floorTileMask = bitMask(tile.flags, TILE_FLOOR_BIT) * validTileMask;
@@ -136,14 +138,15 @@ void main()
         float westMask = floor((1.0 - tileU) + edgeMaskSize);
         float westWallMask = westMask * bitMask(tile.edgeFlags, TILE_EDGE_WALL_WEST_BIT);
         float wallMasks = saturate(northWallMask + southWallMask + eastWallMask + westWallMask) * validTileMask * floorTileMask;
-        finalColor = overlay(finalColor, vec3(0.95, 0.95, 0.95), wallMasks);
+        vec3 wallColor = vec3(0.95, 0.95, 0.95) - vec3((1.0 - visitedMask) * 0.25);
+        finalColor = overlay(finalColor, wallColor, wallMasks);
 
         float northDoorMask = northMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_BIT) * round(abs(map1to1(tileU)) + 0.2);
         float southDoorMask = southMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) * round(abs(map1to1(tileU)) + 0.2);
         float eastDoorMask = eastMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_EAST_BIT) * round(abs(map1to1(tileV)) + 0.2);
         float westDoorMask = westMask * bitMask(tile.edgeFlags, TILE_EDGE_DOOR_WEST_BIT) * round(abs(map1to1(tileV)) + 0.2);
-        float doorMasks = saturate(northDoorMask + southDoorMask + eastDoorMask + westDoorMask) * validTileMask;
-        finalColor = overlay(finalColor, vec3(1.0, 1.0, 1.0), doorMasks);
+        float doorMasks = saturate(northDoorMask + southDoorMask + eastDoorMask + westDoorMask) * validTileMask * floorTileMask;
+        finalColor = overlay(finalColor, wallColor, doorMasks);
 
         // Grid
         const float gridMaskSize = 0.045;

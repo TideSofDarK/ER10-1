@@ -185,6 +185,7 @@ using UVec2 = SVec2<float>;
 using UVec2Int = SVec2<int>;
 using UVec3 = SVec3<float>;
 using UVec3Int = SVec3<int>;
+using UVec2Size = SVec2<size_t>;
 using UVec3Size = SVec3<size_t>;
 using UVec4 = SVec4<float>;
 

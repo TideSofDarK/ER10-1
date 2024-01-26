@@ -71,6 +71,7 @@ struct SBlob
     void HijackRF();
     void HijackLF();
 
+    [[nodiscard]] int GetExploreRadius() const { return 2; }
     [[nodiscard]] bool IsMoving() const { return AnimationType != EBlobAnimationType::Idle; }
     [[nodiscard]] bool IsReadyForBuffering() const { return Timeline.Value > InputBufferTime && Timeline.Value < 1.0f; }
 };

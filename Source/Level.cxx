@@ -200,8 +200,3 @@ void SLevel::Update(float DeltaTime)
 {
     DrawState.DoorInfo.Timeline.Advance(DeltaTime);
 }
-
-void SLevel::MarkDirty(ELevelDirtyFlags::Type NewDirtyFlags)
-{
-    DirtyFlags = NewDirtyFlags;
-}

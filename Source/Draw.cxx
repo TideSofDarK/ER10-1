@@ -763,20 +763,22 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
 
 void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin)
 {
-    glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
-
-    if (Level.DirtyFlags | ELevelDirtyFlags::POVChanged)
+    if (Level.DrawState.DirtyFlags & ELevelDirtyFlags::POVChanged)
     {
-        uint32_t POVIndex = Level.CoordsToIndex(POVOrigin.X, POVOrigin.Y);
-        auto Tile = Level.GetTileAt(POVOrigin);
+        glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
 
-        glBufferSubData(GL_UNIFORM_BUFFER, 16u + (POVIndex * sizeof(STile)), sizeof(STile), Tile);
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
 
-        Level.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
+        auto FirstTile = Level.GetTile(Level.DrawState.DirtyRange.X);
+        auto Count = Level.DrawState.DirtyRange.Y - Level.DrawState.DirtyRange.X;
+
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DrawState.DirtyRange.X * sizeof(STile)), Count * sizeof(STile), FirstTile);
+
+        Level.DrawState.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
+        Level.DrawState.DirtyRange = {};
+
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
-
-    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::HUD;
@@ -912,7 +914,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
 
     auto& DrawLevelState = Level.DrawState;
 
-    if (Level.DirtyFlags & ELevelDirtyFlags::DrawSet)
+    if (Level.DrawState.DirtyFlags & ELevelDirtyFlags::DrawSet)
     {
         LevelDrawData.Clear();
 
@@ -1028,7 +1030,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                 }
             }
         }
-        Level.DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
+        Level.DrawState.DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
 
         Log::Draw<ELogLevel::Debug>("Regenerated LevelDrawData");
     }
