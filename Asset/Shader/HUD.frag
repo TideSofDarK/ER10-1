@@ -74,7 +74,7 @@ void main()
 
     if (u_mode == HUD_MODE_MAP)
     {
-        vec3 finalColor = vec3(0.03, 0.03, 0.02);
+        vec3 finalColor = mix(vec3(0.0, 0.0, 0.0), vec3(0.03, 0.03, 0.08), 1.0 - f_texCoord.y);
 
         float levelWidth = float(u_map.width);
         float levelHeight = float(u_map.height);
@@ -88,14 +88,27 @@ void main()
         vec2 texCoordOriginal = texCoord;
         texCoord *= u_sizeScreenSpace;
 
+// #define ISOMETRIC 1
+#ifdef ISOMETRIC
+        const float tileSize = 16.0;
+
+        texCoord = cartesianToIsometric(texCoord);
+        texCoordOriginal = cartesianToIsometric(texCoordOriginal);
+
+        vec2 sizeIso = round(cartesianToIsometric(u_sizeScreenSpace / 2.0));
+
+        float centerOffsetX = round(sizeIso.x - (povX + 0.5) * tileSize);
+        float centerOffsetY = round(sizeIso.y - (povY + 0.5) * tileSize);
+
+        texCoord -= vec2(centerOffsetX, centerOffsetY);
+#else
         const float tileSize = 12.0;
 
         float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize);
         float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize);
 
-        texCoord += vec2(-centerOffsetX, -centerOffsetY); // Center offset
-
-        // texCoord = cartesianToIsometric(texCoord);
+        texCoord += vec2(-centerOffsetX, -centerOffsetY);
+#endif
 
         float tileX = floor(texCoord.x / tileSize);
         float tileY = floor(texCoord.y / tileSize);
