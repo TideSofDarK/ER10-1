@@ -85,20 +85,22 @@ void main()
         vec2 pov = vec2(povX, povY);
 
         vec2 texCoord = f_texCoord;
-        texCoord += vec2(-0.5, -0.5); // Center offset
         vec2 texCoordOriginal = texCoord;
+        texCoord *= u_sizeScreenSpace;
 
-        // texCoordOriginal = cartesianToIsometric(texCoord);
-        // const float tileSize = 16.0;
         const float tileSize = 12.0;
 
-        texCoord = texCoordOriginal + vec2(1.0 / u_sizeScreenSpace.x * tileSize * (povX + 0.5), 1.0 / u_sizeScreenSpace.y * tileSize * (povY + 0.5)); // POV offset
-        texCoord *= (u_sizeScreenSpace / vec2(levelWidth * tileSize, levelHeight * tileSize)); // Aspect ratio fix
+        float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize);
+        float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize);
 
-        float tileX = floor(texCoord.x * levelWidth);
-        float tileY = floor(texCoord.y * levelHeight);
-        float tileU = fract(texCoord.x * levelWidth);
-        float tileV = fract(texCoord.y * levelHeight);
+        texCoord += vec2(-centerOffsetX, -centerOffsetY); // Center offset
+
+        // texCoord = cartesianToIsometric(texCoord);
+
+        float tileX = floor(texCoord.x / tileSize);
+        float tileY = floor(texCoord.y / tileSize);
+        float tileU = (texCoord.x - (tileX * tileSize)) / tileSize;
+        float tileV = (texCoord.y - (tileY * tileSize)) / tileSize;
 
         int index = int(clamp(tileY * levelWidth + tileX, 0.0, levelTileCount - 1.0));
         TileData tile = u_map.tiles[index];

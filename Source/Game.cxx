@@ -265,7 +265,7 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 84, 84 }, Blob.Coords);
+            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 109, 85 }, Blob.Coords);
 
             switch (SpriteDemoState)
             {
