@@ -1,12 +1,11 @@
 #pragma once
 
-#include <SDL3/SDL_video.h>
 #include "CommonTypes.hxx"
 
 struct SWindow : SWindowData
 {
-    SDL_Window* Window{};
-    SDL_GLContext Context{};
+    struct SDL_Window* Window{};
+    void* Context{};
 
     SWindow();
     ~SWindow();

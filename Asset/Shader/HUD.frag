@@ -100,7 +100,7 @@ void main()
         float tileU = fract(texCoord.x * levelWidth);
         float tileV = fract(texCoord.y * levelHeight);
 
-        int index = int(clamp(tileY * levelWidth + tileX, 0.0, float(levelTileCount - 1.0)));
+        int index = int(clamp(tileY * levelWidth + tileX, 0.0, levelTileCount - 1.0));
         TileData tile = u_map.tiles[index];
 
         float validTileMask = max(0.0, sign(tileX + 1));
@@ -127,8 +127,7 @@ void main()
         finalColor = overlay(finalColor, povColor, povMask * validTileMask);
 
         // Edges
-        const float edgeMaskSize = 0.075;
-        const float halfEdgeMaskSize = edgeMaskSize / 2.0;
+        const float edgeMaskSize = 1.0 / tileSize;
         float northMask = floor((1.0 - tileV) + edgeMaskSize);
         float northWallMask = northMask * bitMask(tile.edgeFlags, TILE_EDGE_WALL_BIT);
         float southMask = floor(tileV + edgeMaskSize);
@@ -149,7 +148,7 @@ void main()
         finalColor = overlay(finalColor, wallColor, doorMasks);
 
         // Grid
-        const float gridMaskSize = 0.075;
+        const float gridMaskSize = 1.0 / tileSize;
         northMask = floor((1.0 - tileV) + gridMaskSize);
         westMask = floor((1.0 - tileU) + gridMaskSize);
         float gridMasks = northMask + westMask;

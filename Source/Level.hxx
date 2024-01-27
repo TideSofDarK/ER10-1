@@ -57,6 +57,8 @@ struct STilemap
     std::bitset<(MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
     uint32_t bUseWallJoints = true;
 
+    [[nodiscard]] uint32_t TileCount() const { return Width * Height; }
+
     [[nodiscard]] STile* GetTileAtMutable(const UVec2Int& Coords)
     {
         if (IsValidTile(Coords))
@@ -94,7 +96,7 @@ struct STilemap
 
     [[nodiscard]] STile const* GetTile(const std::size_t Index) const
     {
-        if (Index >= 0 && Index < MAX_LEVEL_TILE_COUNT)
+        if (Index < MAX_LEVEL_TILE_COUNT)
         {
             return &Tiles[Index];
         }

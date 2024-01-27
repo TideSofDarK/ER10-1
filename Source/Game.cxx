@@ -491,7 +491,7 @@ void SGame::OnBlobMoved()
     {
         for (auto Y = Blob.Coords.Y - Blob.GetExploreRadius(); Y <= Blob.Coords.Y + Blob.GetExploreRadius(); ++Y)
         {
-            CurrentTile = Level.GetTileAtMutable(UVec2Int{X, Y});
+            CurrentTile = Level.GetTileAtMutable(UVec2Int{ X, Y });
             if (CurrentTile != nullptr)
             {
                 CurrentTile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);

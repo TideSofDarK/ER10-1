@@ -16,7 +16,7 @@ struct SVec2
         return { X - Other.X, Y - Other.Y };
     }
 
-     SVec2<T> operator+(const SVec2<T>& Other) const
+    SVec2<T> operator+(const SVec2<T>& Other) const
     {
         return { X + Other.X, Y + Other.Y };
     }

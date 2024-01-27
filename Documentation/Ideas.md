@@ -1,5 +1,8 @@
 # Level Navigation
 
+## Lighting?
+- A room could be dark forcing you to look for a switch
+
 ## Tiles
 - Floor Hole
 - Conveyor

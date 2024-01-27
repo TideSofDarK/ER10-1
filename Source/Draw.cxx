@@ -11,6 +11,8 @@
 #include "Utility.hxx"
 #include "Math.hxx"
 
+#define SIZE_OF_VECTOR_ELEMENT(Vector) ((GLsizeiptr)sizeof(decltype(Vector)::value_type))
+
 static std::string const SharedConstants{
 #define SHARED_CONSTANTS_LITERAL
 #include "SharedConstants.hxx"
@@ -196,7 +198,7 @@ void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(RawMesh.Positions.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.Positions)),
+        (GLsizeiptr)RawMesh.Positions.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.Positions),
         &RawMesh.Positions[0],
         GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -205,7 +207,7 @@ void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
     glGenBuffers(1, &CBO);
     glBindBuffer(GL_ARRAY_BUFFER, CBO);
     glBufferData(GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(RawMesh.TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.TexCoords)),
+        (GLsizeiptr)RawMesh.TexCoords.size() * SIZE_OF_VECTOR_ELEMENT(RawMesh.TexCoords),
         &RawMesh.TexCoords[0], GL_STATIC_DRAW);
     glVertexAttribPointer(
         1,
@@ -219,7 +221,7 @@ void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(ElementCount * SIZE_OF_VECTOR_ELEMENT(RawMesh.Indices)), &RawMesh.Indices[0],
+        ElementCount * SIZE_OF_VECTOR_ELEMENT(RawMesh.Indices), &RawMesh.Indices[0],
         GL_STATIC_DRAW);
 
     glBindVertexArray(0);
@@ -277,7 +279,7 @@ void STileSet::InitPlaceholder()
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, (long long)(TempVertices.size() * sizeof(UVec3)), &TempVertices[0],
+    glBufferData(GL_ARRAY_BUFFER, TempVertices.size() * (GLsizeiptr)sizeof(UVec3), &TempVertices[0],
         GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -286,7 +288,7 @@ void STileSet::InitPlaceholder()
     ElementCount = (int)Indices.size();
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(ElementCount * sizeof(unsigned short)), &Indices[0],
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ElementCount * (GLsizeiptr)sizeof(unsigned short), &Indices[0],
         GL_STATIC_DRAW);
 
     glBindVertexArray(0);
@@ -340,7 +342,7 @@ void STileSet::InitBasic(
     glEnableVertexAttribArray(0);
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(Positions.size() * sizeof(UVec3)), &Positions[0],
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)Positions.size() * (GLsizeiptr)sizeof(UVec3), &Positions[0],
         GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -361,7 +363,7 @@ void STileSet::InitBasic(
     ElementCount = (int)Indices.size();
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(ElementCount * sizeof(unsigned short)), &Indices[0],
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ElementCount * (GLsizeiptr)sizeof(unsigned short), &Indices[0],
         GL_STATIC_DRAW);
 
     glBindVertexArray(0);
@@ -659,7 +661,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
             glDrawElements(GL_TRIANGLES, Entry.Geometry->ElementCount, GL_UNSIGNED_SHORT, nullptr);
         }
     }
-    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     /* Draw 2D */
     glEnable(GL_BLEND);
@@ -678,7 +680,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     {
         auto const& Entry = Queue2D.Entries[Index];
 
-        SProgram2D const* Program{};
+        SProgram2D const* Program;
         switch (Entry.Program2DType)
         {
             case EProgram2DType::HUD:
@@ -686,6 +688,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
                 break;
             case EProgram2DType::Uber2D:
                 Program = &ProgramUber2D;
+                break;
             default:
                 continue;
         }
@@ -770,9 +773,9 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
         glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
 
         auto FirstTile = Level.GetTile(Level.DrawState.DirtyRange.X);
-        auto Count = Level.DrawState.DirtyRange.Y - Level.DrawState.DirtyRange.X;
+        auto Count = (GLsizeiptr)(Level.DrawState.DirtyRange.Y - Level.DrawState.DirtyRange.X);
 
-        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DrawState.DirtyRange.X * sizeof(STile)), Count * sizeof(STile), FirstTile);
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DrawState.DirtyRange.X * sizeof(STile)), Count * (GLsizeiptr)sizeof(STile), FirstTile);
 
         Level.DrawState.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
         Level.DrawState.DirtyRange = {};
