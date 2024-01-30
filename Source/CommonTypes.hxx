@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include "Math.hxx"
 
 struct SWindowData
@@ -75,12 +76,18 @@ struct SDirection
         return SDirection{ 3 };
     }
 
-    inline SDirection Side() const
+    static const std::array<SDirection, 4>& All()
+    {
+        static std::array<SDirection, Count> Directions = { SDirection::North(), SDirection::East(), SDirection::South(), SDirection::West() };
+        return Directions;
+    }
+
+    [[nodiscard]] inline SDirection Side() const
     {
         return SDirection{ Index + 1u };
     }
 
-    inline SDirection Inverted() const
+    [[nodiscard]] inline SDirection Inverted() const
     {
         return SDirection{ Index + 2u };
     }

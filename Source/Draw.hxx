@@ -139,6 +139,7 @@ namespace ETileGeometryType
     enum
     {
         Floor,
+        Hole,
         Wall,
         WallJoint,
         Ceil,
@@ -159,7 +160,7 @@ enum class EDoorAnimationType
     Curtains
 };
 
-struct STileSet : SGeometry
+struct STileset : SGeometry
 {
     EDoorAnimationType DoorAnimationType{};
     float DoorOffset{};
@@ -167,7 +168,9 @@ struct STileSet : SGeometry
 
     void InitPlaceholder();
 
-    void InitBasic(const SAsset& Floor,
+    void InitBasic(
+        const SAsset& Floor,
+        const SAsset& Hole,
         const SAsset& Wall,
         const SAsset& WallJoint,
         const SAsset& DoorFrame,
@@ -271,7 +274,7 @@ struct SInstancedDrawCall
 template <int Size>
 struct SInstancedDrawData
 {
-    const STileSet* TileSet{};
+    const STileset* TileSet{};
     std::array<SInstancedDrawCall, Size> DrawCalls;
 
     void Clear()
@@ -376,7 +379,7 @@ struct SRenderer
 
     void Cleanup();
 
-    void SetupLevelDrawData(const STileSet& TileSet);
+    void SetupLevelDrawData(const STileset& TileSet);
 
     void UploadLevelMapData(const SLevel& Level) const;
 

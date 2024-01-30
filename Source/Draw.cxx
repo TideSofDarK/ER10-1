@@ -237,7 +237,7 @@ void SGeometry::Cleanup()
     Log::Draw<ELogLevel::Debug>("Deleting SGeometry with ElementCount: %d", ElementCount);
 }
 
-void STileSet::InitPlaceholder()
+void STileset::InitPlaceholder()
 {
     std::array<UVec3, 8> TempVertices{};
     std::array<unsigned short, 12> Indices{};
@@ -294,8 +294,9 @@ void STileSet::InitPlaceholder()
     glBindVertexArray(0);
 }
 
-void STileSet::InitBasic(
+void STileset::InitBasic(
     const SAsset& Floor,
+    const SAsset& Hole,
     const SAsset& Wall,
     const SAsset& WallJoint,
     const SAsset& DoorFrame,
@@ -331,6 +332,7 @@ void STileSet::InitBasic(
     };
 
     InitGeometry(Floor, ETileGeometryType::Floor);
+    InitGeometry(Hole, ETileGeometryType::Hole);
     InitGeometry(Wall, ETileGeometryType::Wall);
     InitGeometry(WallJoint, ETileGeometryType::WallJoint);
     InitGeometry(DoorFrame, ETileGeometryType::DoorFrame);
@@ -589,7 +591,7 @@ void SRenderer::Cleanup()
     Queue3D.Cleanup();
 }
 
-void SRenderer::SetupLevelDrawData(const STileSet& TileSet)
+void SRenderer::SetupLevelDrawData(const STileset& TileSet)
 {
     LevelDrawData.TileSet = &TileSet;
     for (int TileTypeIndex = 0; TileTypeIndex < ETileGeometryType::Count; TileTypeIndex++)
@@ -772,10 +774,12 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
 
         glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
 
-        auto FirstTile = Level.GetTile(Level.DrawState.DirtyRange.X);
-        auto Count = (GLsizeiptr)(Level.DrawState.DirtyRange.Y - Level.DrawState.DirtyRange.X);
-
-        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DrawState.DirtyRange.X * sizeof(STile)), Count * (GLsizeiptr)sizeof(STile), FirstTile);
+        auto DirtyCount = (GLsizeiptr)(Level.DrawState.DirtyRange.Y - Level.DrawState.DirtyRange.X);
+        if (DirtyCount > 0)
+        {
+            auto FirstTile = Level.GetTile(Level.DrawState.DirtyRange.X);
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DrawState.DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
+        }
 
         Level.DrawState.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
         Level.DrawState.DirtyRange = {};
@@ -907,7 +911,7 @@ void SRenderer::Draw3D(UVec3 Position, SGeometry* Geometry)
 
 void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection)
 {
-    auto constexpr DrawDistanceForward = 3;
+    auto constexpr DrawDistanceForward = 4;
     auto constexpr DrawDistanceSide = 2;
 
     auto& DoorDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Door];
@@ -922,6 +926,8 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
         LevelDrawData.Clear();
 
         auto& FloorDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Floor];
+
+        auto& HoleDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Hole];
 
         auto& WallDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::Wall];
 
@@ -993,24 +999,28 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                 {
                     FloorDrawCall.Push(TileTransform);
                 }
-
-                for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
+                else if (Tile->CheckFlag(TILE_HOLE_BIT))
                 {
-                    if (Tile->IsEdgeEmpty(SDirection{ Direction }))
+                    HoleDrawCall.Push(TileTransform);
+                }
+
+                for (auto& Direction : SDirection::All())
+                {
+                    if (Tile->IsEdgeEmpty(Direction))
                     {
                         continue;
                     }
 
                     auto Transform = TileTransform;
-                    Transform.Rotate(SDirection{ Direction }.RotationFromDirection(),
+                    Transform.Rotate(Direction.RotationFromDirection(),
                         { 0.0f, 1.0f, 0.0f });
 
-                    if (Tile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection{ Direction }))
+                    if (Tile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, Direction))
                     {
                         WallDrawCall.Push(Transform);
                     }
 
-                    if (Tile->CheckEdgeFlag(TILE_EDGE_DOOR_BIT, SDirection{ Direction }))
+                    if (Tile->CheckEdgeFlag(TILE_EDGE_DOOR_BIT, Direction))
                     {
                         DoorFrameDrawCall.Push(Transform);
 
@@ -1018,17 +1028,17 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                          * Prevents static doors from being drawn if the animation is playing. */
                         if (DrawLevelState.DoorInfo.Timeline.IsPlaying())
                         {
-                            if (TileCoords == DrawLevelState.DoorInfo.TileCoords && Direction == DrawLevelState.DoorInfo.Direction.Index)
+                            if (TileCoords == DrawLevelState.DoorInfo.TileCoords && Direction == DrawLevelState.DoorInfo.Direction)
                             {
                                 continue;
                             }
-                            if (TileCoords == POVOrigin && Direction == POVDirectionInverted.Index)
+                            if (TileCoords == POVOrigin && Direction == POVDirectionInverted)
                             {
                                 continue;
                             }
                         }
 
-                        Draw3DLevelDoor(DoorDrawCall, TileCoords, SDirection{ Direction }, -1.0f);
+                        Draw3DLevelDoor(DoorDrawCall, TileCoords, Direction, -1.0f);
                     }
                 }
             }

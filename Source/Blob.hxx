@@ -31,20 +31,26 @@ enum class EBlobAnimationType
     Turn,
     Walk,
     Enter,
-    Bump
+    Bump,
+    Fall
 };
 
 struct SBlob
 {
+private:
+    STimeline Timeline{};
+    EBlobAnimationType AnimationType{};
+    bool bAnimationEndHandled = true;
+
+    void PlayAnimation(EBlobAnimationType InAnimationType);
+
+public:
     SDirection Direction{};
     UVec2Int Coords{};
 
     SBlobMoveSeq MoveSeq;
 
     float InputBufferTime = 0.7f;
-
-    EBlobAnimationType AnimationType{};
-    STimeline Timeline{};
 
     float EyeHeight = 0.22f;
 
@@ -63,7 +69,7 @@ struct SBlob
 
     void ApplyDirection(bool bImmediate);
 
-    void Step(UVec2Int DirectionVector, bool bEnter = false);
+    void Step(UVec2Int DirectionVector, EBlobAnimationType InAnimationType = EBlobAnimationType::Walk);
 
     void BumpIntoWall();
 
@@ -71,7 +77,13 @@ struct SBlob
     void HijackRF();
     void HijackLF();
 
-    [[nodiscard]] int GetExploreRadius() const { return 2; }
+    void ResetEye();
+
+    EBlobAnimationType HandleAnimationEnd();
+
+    [[nodiscard]] UVec2Int UnreliableCoords() const { return UVec2Int{ static_cast<int>(std::rint(EyePositionCurrent.X)), static_cast<int>(std::rint(EyePositionCurrent.Z)) }; }
+    [[nodiscard]] int ExploreRadius() const { return 2; }
     [[nodiscard]] bool IsMoving() const { return AnimationType != EBlobAnimationType::Idle; }
     [[nodiscard]] bool IsReadyForBuffering() const { return Timeline.Value > InputBufferTime && Timeline.Value < 1.0f; }
+    [[nodiscard]] bool ShouldHandleAnimationEnd() const { return !bAnimationEndHandled && Timeline.IsFinishedPlaying(); }
 };

@@ -538,12 +538,17 @@ void SDevTools::DrawLevel()
                 {
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
                     {
-                        Level.ExcavateBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords));
+                        Level.EditBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_FLOOR_BIT);
                         LevelEditorMode = ELevelEditorMode::Normal;
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
                     {
-                        Level.CoverBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords));
+                        Level.EditBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), 0);
+                        LevelEditorMode = ELevelEditorMode::Normal;
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
+                    {
+                        Level.EditBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_HOLE_BIT);
                         LevelEditorMode = ELevelEditorMode::Normal;
                     }
                 }
@@ -551,11 +556,15 @@ void SDevTools::DrawLevel()
                 {
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
                     {
-                        Level.Excavate(*SelectedTileCoords);
+                        Level.Edit(*SelectedTileCoords, TILE_FLOOR_BIT);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
                     {
-                        Level.Cover(*SelectedTileCoords);
+                        Level.Edit(*SelectedTileCoords, 0);
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
+                    {
+                        Level.Edit(*SelectedTileCoords, TILE_HOLE_BIT);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D)))
                     {

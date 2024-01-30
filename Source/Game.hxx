@@ -36,7 +36,7 @@ public:
     SBattle Battle;
     SLevel Level;
     // SGeometry TestGeometry;
-    STileSet TileSet;
+    STileset Tileset;
 
     SSoundClip DoorCreek{};
 

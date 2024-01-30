@@ -42,7 +42,7 @@ void STilemap::PostProcess()
     }
 }
 
-void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, uint32_t NorthEdgeBit)
+void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit)
 {
     auto Tile = GetTileAtMutable(Coords);
     if (Tile == nullptr)
@@ -63,107 +63,59 @@ void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, uint32_t
     NeighborEdgeFlags = NeighborEdgeFlags ^ STile::DirectionBit(NorthEdgeBit, Direction.Inverted());
 }
 
-void STilemap::Excavate(UVec2Int Coords)
+void STilemap::Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
 {
     if (!IsValidTile(Coords))
     {
         return;
     }
     auto Tile = GetTileAtMutable(Coords);
-    Tile->Flags |= TILE_FLOOR_BIT;
+    Tile->Flags = Flag;
 
-    for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
-    {
-        auto& EdgeFlags = Tile->EdgeFlags;
-
-        auto NeighborTile = GetTileAtMutable(Coords + SDirection{ Direction }.GetVector<int>());
-        if (NeighborTile != nullptr)
-        {
-            auto NeighborDirection = SDirection{ Direction }.Inverted();
-
-            if (NeighborTile->CheckFlag(TILE_FLOOR_BIT))
-            {
-                Tile->ClearEdgeFlags(SDirection{ Direction });
-                NeighborTile->ClearEdgeFlags(NeighborDirection);
-            }
-            else
-            {
-                Tile->SetWall(SDirection{ Direction });
-                NeighborTile->SetWall(NeighborDirection);
-            }
-        }
-        else
-        {
-
-            Tile->SetWall(SDirection{ Direction });
-        }
-    }
-}
-
-void STilemap::ExcavateBlock(const URectInt& Rect)
-{
-    if (Rect.Min == Rect.Max)
-    {
-        Excavate(Rect.Max);
-    }
-
-    for (auto X = Rect.Min.X; X <= Rect.Max.X; ++X)
-    {
-        for (auto Y = Rect.Min.Y; Y <= Rect.Max.Y; ++Y)
-        {
-            Excavate({ X, Y });
-        }
-    }
-}
-
-void STilemap::Cover(UVec2Int Coords)
-{
-    if (!IsValidTile(Coords))
+    if (!bHandleEdges)
     {
         return;
     }
-    auto Tile = GetTileAtMutable(Coords);
-    Tile->Flags &= ~TILE_FLOOR_BIT;
 
-    for (SDirection::Type Direction = 0; Direction < SDirection::Count; ++Direction)
+    for (auto& Direction : SDirection::All())
     {
         auto& EdgeFlags = Tile->EdgeFlags;
 
-        auto NeighborTile = GetTileAtMutable(Coords + SDirection{ Direction }.GetVector<int>());
+        auto NeighborTile = GetTileAtMutable(Coords + Direction.GetVector<int>());
         if (NeighborTile != nullptr)
         {
-            auto NeighborDirection = SDirection{ Direction }.Inverted();
+            auto NeighborDirection = Direction.Inverted();
 
-            if (NeighborTile->CheckFlag(TILE_FLOOR_BIT))
+            if (NeighborTile->CheckFlag(Flag) || (NeighborTile->Flags == 0 && Flag == 0) || (NeighborTile->Flags != 0 && Flag != 0))
             {
-                Tile->SetWall(SDirection{ Direction });
-                NeighborTile->SetWall(NeighborDirection);
+                Tile->ClearEdgeFlags(Direction);
+                NeighborTile->ClearEdgeFlags(NeighborDirection);
             }
             else
             {
-                Tile->ClearEdgeFlags(SDirection{ Direction });
-                NeighborTile->ClearEdgeFlags(NeighborDirection);
+                Tile->SetWall(Direction);
+                NeighborTile->SetWall(NeighborDirection);
             }
         }
         else
         {
-            Tile->ClearEdgeFlags(SDirection{ Direction });
+            Tile->SetWall(Direction);
         }
     }
 }
 
-void STilemap::CoverBlock(const URectInt& Rect)
+void STilemap::EditBlock(const URectInt& Rect, ETileFlag Flag)
 {
     if (Rect.Min == Rect.Max)
     {
-        Cover(Rect.Max);
+        Edit(Rect.Max, Flag);
     }
 
     for (auto X = Rect.Min.X; X <= Rect.Max.X; ++X)
     {
         for (auto Y = Rect.Min.Y; Y <= Rect.Max.Y; ++Y)
         {
-            Cover({ X, Y });
+            Edit({ X, Y }, Flag);
         }
     }
 }

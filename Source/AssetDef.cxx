@@ -90,12 +90,13 @@ namespace Asset::Map
     DEFINE_ASSET(TestMapERM, "../Asset/Map/TestMap.erm")
 }
 
-namespace Asset::TileSet::Hotel
+namespace Asset::Tileset::Hotel
 {
-    DEFINE_ASSET(FloorOBJ, "../Asset/TileSet/Hotel/Floor.obj")
-    DEFINE_ASSET(WallOBJ, "../Asset/TileSet/Hotel/Wall.obj")
-    DEFINE_ASSET(WallJointOBJ, "../Asset/TileSet/Hotel/WallJoint.obj")
-    DEFINE_ASSET(DoorFrameOBJ, "../Asset/TileSet/Hotel/DoorFrame.obj")
-    DEFINE_ASSET(DoorOBJ, "../Asset/TileSet/Hotel/Door.obj")
-    DEFINE_ASSET(AtlasPNG, "../Asset/TileSet/Hotel/Atlas.png")
+    DEFINE_ASSET(FloorOBJ, "../Asset/Tileset/Hotel/Floor.obj")
+    DEFINE_ASSET(HoleOBJ, "../Asset/Tileset/Hotel/Hole.obj")
+    DEFINE_ASSET(WallOBJ, "../Asset/Tileset/Hotel/Wall.obj")
+    DEFINE_ASSET(WallJointOBJ, "../Asset/Tileset/Hotel/WallJoint.obj")
+    DEFINE_ASSET(DoorFrameOBJ, "../Asset/Tileset/Hotel/DoorFrame.obj")
+    DEFINE_ASSET(DoorOBJ, "../Asset/Tileset/Hotel/Door.obj")
+    DEFINE_ASSET(AtlasPNG, "../Asset/Tileset/Hotel/Atlas.png")
 }

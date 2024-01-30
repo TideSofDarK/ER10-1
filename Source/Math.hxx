@@ -331,8 +331,15 @@ namespace Math
         return Value * Value * (2.70158 * Value - 1.70158);
     }
 
-    //    template <typename T>
-    //    constexpr T Clamp(T A, T Min, T Max) {
-    //        return std::max(std::min(A, Max), Min);
-    //    }
+    template <typename T>
+    constexpr T EaseOutQuad(T Value)
+    {
+        return 1 - (1 - Value) * (1 - Value);
+    }
+
+    template <typename T>
+    constexpr T Step(T Edge, T Value)
+    {
+        return Edge < Value ? 0.0 : 1.0;
+    }
 }

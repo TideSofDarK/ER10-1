@@ -147,15 +147,11 @@ struct STilemap
 
     void PostProcess();
 
-    void ToggleEdge(const UVec2Int& Coords, SDirection Direction, uint32_t NorthEdgeBit);
+    void ToggleEdge(const UVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit);
 
-    void Excavate(UVec2Int Coords);
+    void Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges = true);
 
-    void ExcavateBlock(const URectInt& Rect);
-
-    void Cover(UVec2Int Coords);
-
-    void CoverBlock(const URectInt& Rect);
+    void EditBlock(const URectInt& Rect, ETileFlag Flag);
 
     void Serialize(std::ofstream& Stream) const;
 

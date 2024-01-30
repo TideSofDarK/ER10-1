@@ -1,29 +1,32 @@
 #pragma once
 
-#include <cstdint>
-#include <optional>
 #include "Serialization.hxx"
 #include "CommonTypes.hxx"
 #include "SharedConstants.hxx"
 
+using ETileFlag = UFlagType;
+using ETileSpecialFlag = UFlagType;
+using ETileEdgeFlag = UFlagType;
+using ETileSpecialEdgeFlag = UFlagType;
+
 struct STile
 {
-    uint32_t Flags{};
-    uint32_t SpecialFlags{};
-    uint32_t EdgeFlags{};
-    uint32_t SpecialEdgeFlags{};
+    ETileFlag Flags{};
+    ETileSpecialFlag SpecialFlags{};
+    ETileEdgeFlag EdgeFlags{};
+    ETileSpecialEdgeFlag SpecialEdgeFlags{};
 
-    [[nodiscard]] static constexpr uint32_t DirectionBit(uint32_t NorthBit, SDirection Direction)
+    [[nodiscard]] static constexpr UFlagType DirectionBit(UFlagType NorthBit, SDirection Direction)
     {
         return NorthBit << Direction.Index;
     }
 
-    [[nodiscard]] inline bool CheckFlag(uint32_t Flag) const
+    [[nodiscard]] inline bool CheckFlag(ETileFlag Flag) const
     {
         return Flags & Flag;
     }
 
-    [[nodiscard]] inline bool CheckEdgeFlag(uint32_t NorthBit, SDirection Direction) const
+    [[nodiscard]] inline bool CheckEdgeFlag(ETileEdgeFlag NorthBit, SDirection Direction) const
     {
         return EdgeFlags & DirectionBit(NorthBit, Direction);
     }
@@ -33,14 +36,20 @@ struct STile
         return !(EdgeFlags & DirectionBit(TILE_EDGE_NORTH_BITS, Direction));
     }
 
-    inline void SetSpecialFlag(uint32_t Flag)
+    inline void SetSpecialFlag(ETileSpecialFlag Flag)
     {
         SpecialFlags |= Flag;
     }
 
-    inline void ClearSpecialFlag(uint32_t Flag)
+    inline void ClearSpecialFlag(ETileSpecialFlag Flag)
     {
         SpecialFlags &= ~Flag;
+    }
+
+    inline void SetEdgeFlag(ETileEdgeFlag EdgeBit, SDirection Direction)
+    {
+        ClearEdgeFlags(Direction);
+        EdgeFlags |= DirectionBit(EdgeBit, Direction);
     }
 
     inline void ClearEdgeFlags(SDirection Direction)
@@ -53,18 +62,12 @@ struct STile
         EdgeFlags |= DirectionBit(TILE_EDGE_WALL_BIT, Direction);
     }
 
-    inline void SetEdge(uint32_t EdgeBit, SDirection Direction)
-    {
-        ClearEdgeFlags(Direction);
-        EdgeFlags |= DirectionBit(EdgeBit, Direction);
-    }
-
     [[nodiscard]] inline bool IsWalkable() const
     {
-        return Flags & TILE_FLOOR_BIT;
+        return CheckFlag(TILE_FLOOR_BIT) || CheckFlag(TILE_HOLE_BIT);
     }
 
-    [[nodiscard]] inline bool IsTraversable(SDirection Direction) const
+    [[nodiscard]] inline bool IsEdgeTraversable(SDirection Direction) const
     {
         return !(EdgeFlags & DirectionBit(TILE_EDGE_WALL_BIT, Direction));
     }

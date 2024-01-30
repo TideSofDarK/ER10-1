@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_events.h>
+#include "Blob.hxx"
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
 #include "Level.hxx"
@@ -23,9 +24,10 @@ namespace Asset::Common
     EXTERN_ASSET(DoorCreekWAV)
 }
 
-namespace Asset::TileSet::Hotel
+namespace Asset::Tileset::Hotel
 {
     EXTERN_ASSET(FloorOBJ)
+    EXTERN_ASSET(HoleOBJ)
     EXTERN_ASSET(WallOBJ)
     EXTERN_ASSET(WallJointOBJ)
     EXTERN_ASSET(DoorFrameOBJ)
@@ -62,21 +64,22 @@ SGame::SGame()
 
     auto& PrimaryAtlas3D = Renderer.Atlases[ATLAS_PRIMARY3D];
     PrimaryAtlas3D.AddSprite(
-        Asset::TileSet::Hotel::AtlasPNG);
+        Asset::Tileset::Hotel::AtlasPNG);
     PrimaryAtlas3D.Build();
 
     // TestGeometry.InitFromRawMesh(CRawMesh(
     //     Asset::Common::PillarOBJ));
 
-    TileSet.InitBasic(
-        Asset::TileSet::Hotel::FloorOBJ,
-        Asset::TileSet::Hotel::WallOBJ,
-        Asset::TileSet::Hotel::WallJointOBJ,
-        Asset::TileSet::Hotel::DoorFrameOBJ,
-        Asset::TileSet::Hotel::DoorOBJ);
-    TileSet.DoorAnimationType = EDoorAnimationType::TwoDoors;
-    TileSet.DoorOffset = 0.22f;
-    Renderer.SetupLevelDrawData(TileSet);
+    Tileset.InitBasic(
+        Asset::Tileset::Hotel::FloorOBJ,
+        Asset::Tileset::Hotel::HoleOBJ,
+        Asset::Tileset::Hotel::WallOBJ,
+        Asset::Tileset::Hotel::WallJointOBJ,
+        Asset::Tileset::Hotel::DoorFrameOBJ,
+        Asset::Tileset::Hotel::DoorOBJ);
+    Tileset.DoorAnimationType = EDoorAnimationType::TwoDoors;
+    Tileset.DoorOffset = 0.22f;
+    Renderer.SetupLevelDrawData(Tileset);
 
     Blob.Direction = SDirection::East();
     Blob.ApplyDirection(true);
@@ -254,8 +257,6 @@ void SGame::Run()
                 Audio.TestAudio();
             }
 
-            Blob.Update(Window.DeltaTime);
-
             Camera.Position = Blob.EyePositionCurrent;
             Camera.Target = Camera.Position + Blob.EyeForwardCurrent;
             Camera.Update();
@@ -265,7 +266,7 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 109, 85 }, Blob.Coords);
+            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 14 * 7 + 1, 14 * 5 + 1 }, Blob.UnreliableCoords());
 
             switch (SpriteDemoState)
             {
@@ -309,7 +310,7 @@ void SGame::Run()
     Renderer.Cleanup();
     /* @TODO: Fix this. */
     DoorCreek.Free();
-    TileSet.Cleanup();
+    Tileset.Cleanup();
 }
 
 void SGame::UpdateInputState()
@@ -334,6 +335,8 @@ void SGame::UpdateInputState()
 
 void SGame::HandleBlobMovement()
 {
+    Blob.Update(Window.DeltaTime);
+
     const auto bBlobWasIdle = !Blob.IsMoving();
     if (Blob.MoveSeq.IsFinished())
     {
@@ -390,6 +393,10 @@ void SGame::HandleBlobMovement()
 
             BufferedInputState.Value = 0;
         }
+        else
+        {
+            Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+        }
     }
     else
     {
@@ -426,6 +433,25 @@ void SGame::HandleBlobMovement()
     {
         OnBlobMoved();
     }
+    else if (Blob.ShouldHandleAnimationEnd())
+    {
+        auto LastAnimation = Blob.HandleAnimationEnd();
+
+        switch (LastAnimation)
+        {
+            case EBlobAnimationType::Fall:
+            {
+                Blob.Coords = {};
+                Blob.Direction = {};
+                Blob.ResetEye();
+                Blob.ApplyDirection(true);
+                OnBlobMoved();
+            }
+            break;
+            default:
+                break;
+        }
+    }
 }
 
 bool SGame::AttemptBlobStep(SDirection Direction)
@@ -436,7 +462,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
         return false;
     }
 
-    if (!CurrentTile->IsTraversable(Direction))
+    if (!CurrentTile->IsEdgeTraversable(Direction))
     {
         if (Direction == Blob.Direction)
         {
@@ -462,18 +488,22 @@ bool SGame::AttemptBlobStep(SDirection Direction)
 
         Level.DrawState.DoorInfo.Set(Blob.Coords, Direction);
 
-        Blob.Step(DirectionVector, true);
+        Blob.Step(DirectionVector, EBlobAnimationType::Enter);
 
         Audio.Play(DoorCreek);
+    }
+    else if (NextTile->CheckFlag(TILE_HOLE_BIT))
+    {
+        Blob.Step(DirectionVector, EBlobAnimationType::Fall);
     }
     else
     {
         Level.DrawState.DoorInfo.Invalidate();
 
         Blob.Step(DirectionVector);
-
-        Audio.TestAudio();
     }
+
+    Audio.TestAudio();
 
     return true;
 }
@@ -487,9 +517,9 @@ void SGame::OnBlobMoved()
     }
 
     UVec2Size DirtyRange{};
-    for (auto X = Blob.Coords.X - Blob.GetExploreRadius(); X <= Blob.Coords.X + Blob.GetExploreRadius(); ++X)
+    for (auto X = Blob.Coords.X - Blob.ExploreRadius(); X <= Blob.Coords.X + Blob.ExploreRadius(); ++X)
     {
-        for (auto Y = Blob.Coords.Y - Blob.GetExploreRadius(); Y <= Blob.Coords.Y + Blob.GetExploreRadius(); ++Y)
+        for (auto Y = Blob.Coords.Y - Blob.ExploreRadius(); Y <= Blob.Coords.Y + Blob.ExploreRadius(); ++Y)
         {
             CurrentTile = Level.GetTileAtMutable(UVec2Int{ X, Y });
             if (CurrentTile != nullptr)

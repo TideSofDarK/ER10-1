@@ -102,7 +102,7 @@ void main()
 
         texCoord -= vec2(centerOffsetX, centerOffsetY);
 #else
-        const float tileSize = 12.0;
+        const float tileSize = 14.0;
 
         float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize);
         float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize);
@@ -128,11 +128,18 @@ void main()
         validTileMask *= exploredMask;
 
         // Floor
-        float floorTileMask = bitMask(tile.flags, TILE_FLOOR_BIT) * validTileMask;
-        float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
+        float holeMask = bitMask(tile.flags, TILE_HOLE_BIT) * validTileMask;
+        float floorTileMask = (bitMask(tile.flags, TILE_FLOOR_BIT) + holeMask) * validTileMask;
+
+        // float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
         float visitedMask = bitMask(tile.specialFlags, TILE_SPECIAL_VISITED_BIT);
-        vec3 floorTile = vec3(0.0, 0.0, 1.0 - ((visitedMask) * checkerMask * 0.2) - ((1.0 - visitedMask) * 0.8));
+        vec3 floorTile = vec3(0.0, 0.0, 1.0 - ((1.0 - visitedMask) * 0.8));
         finalColor = overlay(finalColor, floorTile, floorTileMask);
+
+        holeMask *= step(abs(map1to1(tileU)), 0.55);
+        holeMask *= step(abs(map1to1(tileV)), 0.55);
+        vec3 holeColor = vec3(0.0, 0.0, 0.1);
+        finalColor = overlay(finalColor, holeColor, holeMask);
 
         // Current POV
         float povTileMask = (1.0 - min(abs(tileX - povX), 1.0)) * (1.0 - min(abs(tileY - povY), 1.0));
