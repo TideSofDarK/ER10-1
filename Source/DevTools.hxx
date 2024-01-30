@@ -13,18 +13,7 @@ enum class ELevelEditorMode
     ToggleDoor
 };
 
-struct SDebugToolsData
-{
-    float FPS{};
-    std::size_t NumberOfBlocks{};
-    UVec2Int PlayerCoords{};
-    SDirection PlayerDirection{ 0 };
-    SParty* Party{};
-    bool bImportLevel{};
-    float* BufferTime{};
-};
-
-struct SDevTools
+struct SLevelEditor
 {
     bool bLevelEditorActive{};
     ELevelEditorMode LevelEditorMode{};
@@ -38,25 +27,35 @@ struct SDevTools
     std::optional<UVec2Int> BlockModeTileCoords{};
     SLevel Level{};
 
+    SLevelEditor();
+
+    void Show();
+
+    void SaveTilemapToFile() const;
+    void LoadTilemapFromFile();
+
+    void DrawLevel();
+
+    void FitTilemapToWindow();
+};
+
+struct SDevTools
+{
+    SLevelEditor LevelEditor;
+
     void Init(struct SDL_Window* Window, void* Context);
 
     static void Cleanup();
 
     static void ProcessEvent(const union SDL_Event* Event);
 
-    void Update();
-
-    void DebugTools(SDebugToolsData& Data);
+    void Update(struct SGame& Game);
 
     static void DrawParty(SParty& Party, float Scale, bool bReversed);
 
     void Draw() const;
 
 private:
-    void FitTilemapToWindow();
-
-    void DrawLevel();
-
     template <typename E>
     void EnumCombo(const char* Label, const char** Types, const int TypeCount, E* SelectedType)
     {
@@ -77,7 +76,4 @@ private:
             ImGui::EndCombo();
         }
     }
-
-    void SaveTilemapToFile() const;
-    void LoadTilemapFromFile();
 };

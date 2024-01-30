@@ -10,9 +10,12 @@
 #include <imgui/imgui_impl_sdl3.h>
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
+#include "Game.hxx"
 #include "GameSystem.hxx"
 #include "AssetTools.hxx"
+#include "Level.hxx"
 #include "Math.hxx"
+#include "Memory.hxx"
 
 #define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
 #define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
@@ -31,23 +34,8 @@ namespace Asset::Common
     EXTERN_ASSET(DroidSansTTF)
 }
 
-void SDevTools::Init(SDL_Window* Window, void* Context)
+SLevelEditor::SLevelEditor()
 {
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    ImGui::StyleColorsDark();
-    ImGui_ImplSDL3_InitForOpenGL(Window, Context);
-    ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
-
-    /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
-    ImFontConfig FontConfig;
-    FontConfig.SizePixels = 40.0f;
-    FontConfig.FontDataOwnedByAtlas = false;
-    io.Fonts->AddFontFromMemoryTTF(Asset::Common::DroidSansTTF.AsVoidPtr(), (int)Asset::Common::DroidSansTTF.Length, 16.0f, &FontConfig);
-
     bLevelEditorActive = false;
     LevelEditorMode = ELevelEditorMode::Normal;
     NewLevelSize = UVec2Int{ 8, 8 };
@@ -58,189 +46,133 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     Level = SLevel{ 8, 8 };
 }
 
-void SDevTools::Cleanup()
+void SLevelEditor::Show()
 {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplSDL3_Shutdown();
-    ImGui::DestroyContext();
-}
+    bool bNewLevel = false;
+    bool bLoadLevel = false;
+    bool bSaveLevel = false;
+    bool bLevelProperties = false;
 
-void SDevTools::Update()
-{
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
-
-    if (bLevelEditorActive)
+    if (ImGui::BeginMainMenuBar())
     {
-        bool bNewLevel = false;
-        bool bLoadLevel = false;
-        bool bSaveLevel = false;
-        bool bLevelProperties = false;
-
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::BeginMenu("File"))
-            {
-                ImGui::MenuItem("New Level", "Ctrl+N", &bNewLevel);
-                ImGui::MenuItem("Load Level", "Ctrl+L", &bLoadLevel);
-                ImGui::MenuItem("Save Level", "Ctrl+S", &bSaveLevel);
-                ImGui::Separator();
-                ImGui::MenuItem("Level Properties", "F5", &bLevelProperties);
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("View"))
-            {
-                ImGui::MenuItem("Show Edges", nullptr, &bDrawEdges);
-                ImGui::MenuItem("Show Wall Joints", nullptr, &bDrawWallJoints);
-                ImGui::MenuItem("Show Grid Lines", nullptr, &bDrawGridLines);
-                ImGui::EndMenu();
-            }
-
+            ImGui::MenuItem("New Level", "Ctrl+N", &bNewLevel);
+            ImGui::MenuItem("Load Level", "Ctrl+L", &bLoadLevel);
+            ImGui::MenuItem("Save Level", "Ctrl+S", &bSaveLevel);
             ImGui::Separator();
-
-            const char* EditorModes[] = { "Normal", "Block Selection", "Toggle Door" };
-            ImGui::Text("Current Mode: %s", EditorModes[(int)LevelEditorMode]);
-
-            ImGui::EndMainMenuBar();
+            ImGui::MenuItem("Level Properties", "F5", &bLevelProperties);
+            ImGui::EndMenu();
         }
 
-        if (bNewLevel)
+        if (ImGui::BeginMenu("View"))
         {
-            ImGui::OpenPopup("New Level...");
+            ImGui::MenuItem("Show Edges", nullptr, &bDrawEdges);
+            ImGui::MenuItem("Show Wall Joints", nullptr, &bDrawWallJoints);
+            ImGui::MenuItem("Show Grid Lines", nullptr, &bDrawGridLines);
+            ImGui::EndMenu();
         }
-        if (ImGui::BeginPopupModal("New Level...", nullptr,
-                ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
+
+        ImGui::Separator();
+
+        const char* EditorModes[] = { "Normal", "Block Selection", "Toggle Door" };
+        ImGui::Text("Current Mode: %s", EditorModes[(int)LevelEditorMode]);
+
+        ImGui::EndMainMenuBar();
+    }
+
+    if (bNewLevel)
+    {
+        ImGui::OpenPopup("New Level...");
+    }
+    if (ImGui::BeginPopupModal("New Level...", nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
+    {
+        ImGui::SliderInt("Width", &NewLevelSize.X, 8, MAX_LEVEL_WIDTH);
+        ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
+        if (ImGui::Button("Accept"))
         {
-            ImGui::SliderInt("Width", &NewLevelSize.X, 8, MAX_LEVEL_WIDTH);
-            ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
-            if (ImGui::Button("Accept"))
+            Level = SLevel{ (uint32_t)NewLevelSize.X, (uint32_t)NewLevelSize.Y };
+            FitTilemapToWindow();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (bSaveLevel)
+    {
+        SaveTilemapToFile();
+    }
+
+    if (bLoadLevel)
+    {
+        LoadTilemapFromFile();
+    }
+
+    /* Validate Selected Tile */
+    if (SelectedTileCoords.has_value())
+    {
+        if (!Level.IsValidTile(*SelectedTileCoords))
+        {
+            SelectedTileCoords.reset();
+        }
+        else
+        {
+            /* Tile Settings Window */
+            auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
+            if (ImGui::Begin("Tile Settings", nullptr,
+                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing))
             {
-                Level = SLevel{ (uint32_t)NewLevelSize.X, (uint32_t)NewLevelSize.Y };
-                FitTilemapToWindow();
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
+                ImGui::Text("X=%d, Y=%d", SelectedTileCoords->X, SelectedTileCoords->Y);
+                ImGui::Separator();
+                const char* TileTypes[] = { "Empty", "Floor", "Hole" };
+                const char* EdgeTypes[] = { "Empty", "Wall", "Door" };
 
-        if (bSaveLevel)
-        {
-            SaveTilemapToFile();
-        }
-
-        if (bLoadLevel)
-        {
-            LoadTilemapFromFile();
-        }
-
-        /* Validate Selected Tile */
-        if (SelectedTileCoords.has_value())
-        {
-            if (!Level.IsValidTile(*SelectedTileCoords))
-            {
-                SelectedTileCoords.reset();
-            }
-            else
-            {
-                /* Tile Settings Window */
-                auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
-                if (ImGui::Begin("Tile Settings", nullptr,
-                        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing))
+                for (auto Direction = 0u; Direction < 4; Direction++)
                 {
-                    ImGui::Text("X=%d, Y=%d", SelectedTileCoords->X, SelectedTileCoords->Y);
-                    ImGui::Separator();
-                    const char* TileTypes[] = { "Empty", "Floor", "Hole" };
-                    const char* EdgeTypes[] = { "Empty", "Wall", "Door" };
-
-                    for (auto Direction = 0u; Direction < 4; Direction++)
+                    if (ImGui::TreeNode(SDirection::Names[Direction]))
                     {
-                        if (ImGui::TreeNode(SDirection::Names[Direction]))
-                        {
-                            ImGui::CheckboxFlags("Wall", &SelectedTile->EdgeFlags, STile::DirectionBit(TILE_EDGE_WALL_BIT, SDirection{ Direction }));
-                            ImGui::CheckboxFlags("Door", &SelectedTile->EdgeFlags, STile::DirectionBit(TILE_EDGE_DOOR_BIT, SDirection{ Direction }));
-                            ImGui::TreePop();
-                            ImGui::Spacing();
-                        }
+                        ImGui::CheckboxFlags("Wall", &SelectedTile->EdgeFlags, STile::DirectionBit(TILE_EDGE_WALL_BIT, SDirection{ Direction }));
+                        ImGui::CheckboxFlags("Door", &SelectedTile->EdgeFlags, STile::DirectionBit(TILE_EDGE_DOOR_BIT, SDirection{ Direction }));
+                        ImGui::TreePop();
+                        ImGui::Spacing();
                     }
-                    ImGui::End();
                 }
+                ImGui::End();
             }
         }
-
-        DrawLevel();
     }
+
+    DrawLevel();
 }
 
-void SDevTools::DebugTools(SDebugToolsData& Data)
+void SLevelEditor::SaveTilemapToFile() const
 {
-    if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        if (ImGui::TreeNode("System Info"))
-        {
-            ImGui::Text("Frames Per Second: %.6f", Data.FPS);
-            ImGui::Text("Number Of Blocks: %zu", Data.NumberOfBlocks);
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Player Info"))
-        {
-            ImGui::Text("Direction: %s", SDirection::Names[Data.PlayerDirection.Index]);
-            ImGui::Text("Coords: X=%d, Y=%d", Data.PlayerCoords.X, Data.PlayerCoords.Y);
-            if (Data.Party)
-            {
-                DrawParty(*Data.Party, 0.5f, true);
-                DrawParty(*Data.Party, 0.5f, false);
-            }
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Level Tools"))
-        {
-            if (ImGui::Button("Import Level From Editor"))
-            {
-                Data.bImportLevel = true;
-            }
-            if (ImGui::Button("Import Level From File"))
-            {
-                LoadTilemapFromFile();
-                Data.bImportLevel = true;
-            }
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Adjustments"))
-        {
-            ImGui::SliderFloat(" ", Data.BufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
-            ImGui::TreePop();
-        }
-        ImGui::End();
-    }
+    const auto& Tilemap = Level;
+
+    std::ofstream TilemapFile;
+    TilemapFile.open("templevel", std::ofstream::binary);
+    Tilemap.Serialize(TilemapFile);
+    TilemapFile.close();
 }
 
-void SDevTools::Draw() const
+void SLevelEditor::LoadTilemapFromFile()
 {
-    ImGui::Render();
-    ImGuiIO& io = ImGui::GetIO();
-    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-    if (bLevelEditorActive)
-    {
-        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    auto& Tilemap = Level;
+    std::ifstream TilemapFile;
+    TilemapFile.open("templevel", std::ifstream::binary);
+    Tilemap.Deserialize(TilemapFile);
+    TilemapFile.close();
 }
 
-void SDevTools::ProcessEvent(const SDL_Event* Event)
-{
-    ImGui_ImplSDL3_ProcessEvent(Event);
-}
-
-void SDevTools::FitTilemapToWindow()
+void SLevelEditor::FitTilemapToWindow()
 {
     auto Viewport = ImGui::GetMainViewport();
     LevelEditorCellSize = std::min((float)Viewport->Size.x / (float)Level.Width, (float)Viewport->Size.y / (float)Level.Height) * 0.8f;
     bResetGridPosition = true;
 }
 
-void SDevTools::DrawLevel()
+void SLevelEditor::DrawLevel()
 {
     ImGuiIO& IO = ImGui::GetIO();
     const float WindowPadding = (float)LevelEditorCellSize * 0.1f;
@@ -779,21 +711,120 @@ void SDevTools::DrawParty(SParty& Party, float Scale, bool bReversed)
     ImGui::SetCursorScreenPos(PosMin);
 }
 
-void SDevTools::SaveTilemapToFile() const
+void SDevTools::Init(SDL_Window* Window, void* Context)
 {
-    const auto& Tilemap = Level;
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    ImGui::StyleColorsDark();
+    ImGui_ImplSDL3_InitForOpenGL(Window, Context);
+    ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
 
-    std::ofstream TilemapFile;
-    TilemapFile.open("templevel", std::ofstream::binary);
-    Tilemap.Serialize(TilemapFile);
-    TilemapFile.close();
+    /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
+    ImFontConfig FontConfig;
+    FontConfig.SizePixels = 40.0f;
+    FontConfig.FontDataOwnedByAtlas = false;
+    io.Fonts->AddFontFromMemoryTTF(Asset::Common::DroidSansTTF.AsVoidPtr(), (int)Asset::Common::DroidSansTTF.Length, 16.0f, &FontConfig);
 }
 
-void SDevTools::LoadTilemapFromFile()
+void SDevTools::Cleanup()
 {
-    auto& Tilemap = Level;
-    std::ifstream TilemapFile;
-    TilemapFile.open("templevel", std::ifstream::binary);
-    Tilemap.Deserialize(TilemapFile);
-    TilemapFile.close();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+}
+
+void SDevTools::Update(SGame& Game)
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))
+    {
+        LevelEditor.bLevelEditorActive = !LevelEditor.bLevelEditorActive;
+    }
+
+    if (LevelEditor.bLevelEditorActive)
+    {
+        LevelEditor.Show();
+    }
+    else
+    {
+        if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            if (ImGui::TreeNode("System Info"))
+            {
+                ImGui::Text("Frames Per Second: %.2f", 1000.0f / Game.Window.DeltaTime / 1000.0f);
+                ImGui::Text("Number Of Blocks: %zu", CMemory::NumberOfBlocks());
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("Player Info"))
+            {
+                ImGui::Text("Direction: %s (%u)", SDirection::Names[Game.Blob.Direction.Index], Game.Blob.Direction.Index);
+                ImGui::Text("Coords: X=%d, Y=%d", Game.Blob.Coords.X, Game.Blob.Coords.Y);
+                ImGui::Text("Unreliable Coords: X=%d, Y=%d", Game.Blob.UnreliableCoords().X, Game.Blob.UnreliableCoords().Y);
+                DrawParty(Game.PlayerParty, 0.5f, true);
+                DrawParty(Game.PlayerParty, 0.5f, false);
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("Level Tools"))
+            {
+                if (ImGui::Button("Explore Level"))
+                {
+                    for (auto& Tile : Game.Level.Tiles)
+                    {
+                        Tile.SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
+                        Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+                        Game.Level.DrawState.DirtyRange = {0, Game.Level.TileCount()};
+                    }
+                }
+                if (ImGui::Button("Visit Level"))
+                {
+                    for (auto& Tile : Game.Level.Tiles)
+                    {
+                        Tile.SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
+                        Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+                        Game.Level.DrawState.DirtyRange = {0, Game.Level.TileCount()};
+                    }
+                }
+                if (ImGui::Button("Import Level From Editor"))
+                {
+                    Game.ChangeLevel(LevelEditor.Level);
+                }
+                if (ImGui::Button("Import Level From File"))
+                {
+                    LevelEditor.LoadTilemapFromFile();
+                    Game.ChangeLevel(LevelEditor.Level);
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("Adjustments"))
+            {
+                ImGui::SliderFloat(" ", &Game.Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
+                ImGui::TreePop();
+            }
+            ImGui::End();
+        }
+    }
+}
+
+void SDevTools::Draw() const
+{
+    ImGui::Render();
+    ImGuiIO& io = ImGui::GetIO();
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    if (LevelEditor.bLevelEditorActive)
+    {
+        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void SDevTools::ProcessEvent(const SDL_Event* Event)
+{
+    ImGui_ImplSDL3_ProcessEvent(Event);
 }

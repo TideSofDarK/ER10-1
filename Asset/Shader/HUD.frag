@@ -102,7 +102,7 @@ void main()
 
         texCoord -= vec2(centerOffsetX, centerOffsetY);
 #else
-        const float tileSize = 14.0;
+        const float tileSize = 12.0;
 
         float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize);
         float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize);

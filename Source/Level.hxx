@@ -161,6 +161,7 @@ struct STilemap
 struct SLevel : STilemap
 {
     int Z{};
+    /* @TODO: Separate state for map? */
     SDrawLevelState DrawState;
 
     void Update(float DeltaTime);

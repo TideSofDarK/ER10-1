@@ -126,7 +126,7 @@ SGame::SGame()
     ChangeLevel(Asset::Map::TestMapERM);
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    DevTools.Level = Level;
+    DevTools.LevelEditor.Level = Level;
 #endif
 
     SpriteDemoState = 5;
@@ -199,7 +199,7 @@ void SGame::Run()
         UpdateInputState();
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-        DevTools.Update();
+        DevTools.Update(*this);
 #endif
         // if (InputState.Cancel == EKeyState::Pressed)
         // {
@@ -211,35 +211,8 @@ void SGame::Run()
             Window.ToggleBorderlessFullscreen();
         }
 
-#ifdef EQUINOX_REACH_DEVELOPMENT
-        if (InputState.ToggleLevelEditor == EKeyState::Pressed)
-        {
-            DevTools.bLevelEditorActive = !DevTools.bLevelEditorActive;
-        }
-#endif
-
         if (IsGameRunning())
         {
-#ifdef EQUINOX_REACH_DEVELOPMENT
-            SDebugToolsData Data = {
-                1000.0f / Window.DeltaTime / 1000.0f,
-                CMemory::NumberOfBlocks(),
-                Blob.Coords,
-                Blob.Direction,
-                &PlayerParty,
-                false,
-                &Blob.InputBufferTime
-            };
-            DevTools.DebugTools(Data);
-
-            if (Data.bImportLevel)
-            {
-                ChangeLevel(DevTools.Level);
-            }
-
-            // SDevTools::DrawParty(PlayerParty);
-#endif
-
             HandleBlobMovement();
 
             if (InputState.ZL == EKeyState::Pressed)
@@ -266,7 +239,7 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 14 * 7 + 1, 14 * 5 + 1 }, Blob.UnreliableCoords());
+            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 12 * 7 + 1, 12 * 5 + 1 }, Blob.UnreliableCoords());
 
             switch (SpriteDemoState)
             {
@@ -559,7 +532,7 @@ void SGame::ChangeLevel(const SAsset& LevelAsset)
 bool SGame::IsGameRunning() const
 {
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    return !DevTools.bLevelEditorActive;
+    return !DevTools.LevelEditor.bLevelEditorActive;
 #else
     return true;
 #endif
