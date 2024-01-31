@@ -32,7 +32,7 @@
 
 namespace Asset::Common
 {
-    EXTERN_ASSET(DroidSansTTF)
+    EXTERN_ASSET(BerkeleyTTF)
 }
 
 static const std::filesystem::path MapExtension = ".erm";
@@ -249,7 +249,6 @@ void SLevelEditor::ScanForLevels()
 {
     namespace fs = std::filesystem;
     AvailableMaps.clear();
-    // auto CWD = fs::path(fs::current_path().string() + "/../../");
     auto CWD = fs::current_path().parent_path().parent_path() / "Asset\\Map";
     for (const auto& File : fs::recursive_directory_iterator(CWD))
     {
@@ -829,9 +828,8 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
 
     /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
     ImFontConfig FontConfig;
-    FontConfig.SizePixels = 40.0f;
     FontConfig.FontDataOwnedByAtlas = false;
-    io.Fonts->AddFontFromMemoryTTF(Asset::Common::DroidSansTTF.AsVoidPtr(), (int)Asset::Common::DroidSansTTF.Length, 16.0f, &FontConfig);
+    io.Fonts->AddFontFromMemoryTTF(Asset::Common::BerkeleyTTF.AsVoidPtr(), (int)Asset::Common::BerkeleyTTF.Length, 32.0f, &FontConfig);
 }
 
 void SDevTools::Cleanup()

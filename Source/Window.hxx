@@ -17,4 +17,6 @@ struct SWindow : SWindowData
     void OnWindowResized(int InWidth, int InHeight);
 
     void ToggleBorderlessFullscreen() const;
+
+    void SetOptimalWindowedResolution() const;
 };
