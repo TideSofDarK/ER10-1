@@ -780,7 +780,6 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
         {
             auto FirstTile = Level.GetTile(Level.DrawState.DirtyRange.X);
             glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DrawState.DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
-            Log::Draw<ELogLevel::Critical>("%zu", DirtyCount);
         }
 
         Level.DrawState.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
