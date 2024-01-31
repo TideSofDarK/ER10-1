@@ -391,7 +391,7 @@ struct SRenderer
 
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
-    void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin);
+    void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

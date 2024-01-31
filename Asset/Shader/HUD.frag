@@ -19,8 +19,8 @@ layout (std140) uniform ub_map
 {
     uint width;
     uint height;
-    uint povX;
-    uint povY;
+    float povX;
+    float povY;
     TileData[MAX_LEVEL_TILE_COUNT] tiles;
 } u_map;
 
@@ -111,8 +111,8 @@ void main()
         float levelHeight = float(u_map.height);
         float levelTileCount = levelWidth * levelHeight;
 
-        float povX = float(u_map.povX);
-        float povY = float(u_map.povY);
+        float povX = u_map.povX;
+        float povY = u_map.povY;
         vec2 pov = vec2(povX, povY);
 
         vec2 texCoord = f_texCoord;

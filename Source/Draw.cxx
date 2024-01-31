@@ -36,8 +36,8 @@ struct SShaderMapData
 {
     int32_t Width{};
     int32_t Height{};
-    int32_t POVX{};
-    int32_t POVY{};
+    float POVX{};
+    float POVY{};
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles;
 };
 
@@ -766,7 +766,7 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2Int& POVOrigin)
+void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin)
 {
     if (Level.DrawState.DirtyFlags & ELevelDirtyFlags::POVChanged)
     {
