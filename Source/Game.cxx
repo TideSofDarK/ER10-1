@@ -44,7 +44,8 @@ namespace Asset::Map
 static const URectInt MapRectMin{ SCREEN_WIDTH - 128, 10, 12 * 7 + 1, 12 * 5 + 1 };
 static const URectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH + 1, SCENE_HEIGHT + 1 };
 
-SGame::SGame() : MapRect(MapRectMin)
+SGame::SGame()
+    : MapRect(MapRectMin)
 {
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Init(Window.Window, Window.Context);
@@ -379,7 +380,7 @@ void SGame::HandleBlobMovement()
         }
         else
         {
-            Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+            Level.DirtyFlags |= ELevelDirtyFlags::POVChanged;
         }
     }
     else
@@ -470,7 +471,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
             return false;
         }
 
-        Level.DrawState.DoorInfo.Set(Blob.Coords, Direction);
+        Level.DoorInfo.Set(Blob.Coords, Direction);
 
         Blob.Step(DirectionVector, EBlobAnimationType::Enter);
 
@@ -482,7 +483,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
     }
     else
     {
-        Level.DrawState.DoorInfo.Invalidate();
+        Level.DoorInfo.Invalidate();
 
         Blob.Step(DirectionVector);
     }
@@ -495,25 +496,27 @@ bool SGame::AttemptBlobStep(SDirection Direction)
 void SGame::OnBlobMoved()
 {
     auto CurrentTile = Level.GetTileAtMutable(Blob.Coords);
-    if (CurrentTile != nullptr)
-    {
-        CurrentTile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
-    }
-    else
+    if (CurrentTile == nullptr)
     {
         return;
     }
 
-    UVec2Size DirtyRange{};
-    DirtyRange.X = SIZE_MAX;
-    DirtyRange.Y = 0;
+    UVec2Size DirtyRange{SIZE_MAX, SIZE_MAX};
 
-    for (auto X = Blob.Coords.X - SBlob::ExploreRadius(); X <= Blob.Coords.X + SBlob::ExploreRadius(); ++X)
+    if (!CurrentTile->CheckSpecialFlag(TILE_SPECIAL_VISITED_BIT))
     {
-        for (auto Y = Blob.Coords.Y - SBlob::ExploreRadius(); Y <= Blob.Coords.Y + SBlob::ExploreRadius(); ++Y)
+        CurrentTile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
+
+        DirtyRange.X = Level.CoordsToIndex(Blob.Coords);
+        DirtyRange.Y = DirtyRange.X;
+    }
+
+    for (auto Y = Blob.Coords.Y - SBlob::ExploreRadius(); Y <= Blob.Coords.Y + SBlob::ExploreRadius(); ++Y)
+    {
+        for (auto X = Blob.Coords.X - SBlob::ExploreRadius(); X <= Blob.Coords.X + SBlob::ExploreRadius(); ++X)
         {
             auto Tile = Level.GetTileAtMutable({ X, Y });
-            if (Tile != nullptr)
+            if (Tile != nullptr && !Tile->CheckSpecialFlag(TILE_SPECIAL_EXPLORED_BIT))
             {
                 Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
                 std::size_t Index = Level.CoordsToIndex(X, Y);
@@ -523,13 +526,14 @@ void SGame::OnBlobMoved()
         }
     }
 
-    if (DirtyRange.X > DirtyRange.Y)
+    if (DirtyRange.X != SIZE_MAX)
     {
-        DirtyRange = {};
+        Level.DirtyFlags |= ELevelDirtyFlags::DirtyRange;
+        Level.DirtyRange = DirtyRange;
     }
 
-    Level.DrawState.DirtyFlags = ELevelDirtyFlags::DrawSet | ELevelDirtyFlags::POVChanged;
-    Level.DrawState.DirtyRange = DirtyRange;
+    Level.DirtyFlags |= ELevelDirtyFlags::DrawSet;
+    Level.DirtyFlags |= ELevelDirtyFlags::POVChanged;
 }
 
 void SGame::ChangeLevel()

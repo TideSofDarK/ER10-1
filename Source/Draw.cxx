@@ -768,25 +768,27 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
 
 void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin)
 {
-    if (Level.DrawState.DirtyFlags & ELevelDirtyFlags::POVChanged)
+    glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
+    if (Level.DirtyFlags & ELevelDirtyFlags::POVChanged)
     {
-        glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
-
         glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
 
-        /* @TODO: Fix unnecessary glBufferSubDatas! */
-        auto DirtyCount = (GLsizeiptr)(Level.DrawState.DirtyRange.Y + 1 - Level.DrawState.DirtyRange.X);
-        if (DirtyCount > 0)
-        {
-            auto FirstTile = Level.GetTile(Level.DrawState.DirtyRange.X);
-            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DrawState.DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
-        }
+        Level.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
 
-        Level.DrawState.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
-        Level.DrawState.DirtyRange = {};
-
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        Log::Draw<ELogLevel::Verbose>("%s(): POVOrigin: { %.2f, %.2f }", __func__, POVOrigin.X, POVOrigin.Y);
     }
+
+    if (Level.DirtyFlags & ELevelDirtyFlags::DirtyRange)
+    {
+        auto DirtyCount = (GLsizeiptr)(Level.DirtyRange.Y - Level.DirtyRange.X) + 1;
+        auto FirstTile = Level.GetTile(Level.DirtyRange.X);
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
+
+        Level.DirtyFlags &= ~ELevelDirtyFlags::DirtyRange;
+
+        Log::Draw<ELogLevel::Debug>("%s(): DirtyRange: %d to %d", __func__, Level.DirtyRange.X, Level.DirtyRange.Y);
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::HUD;
@@ -920,9 +922,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
     /* @TODO: Generic CleanDynamic method? */
     DoorDrawCall.DynamicCount = 0;
 
-    auto& DrawLevelState = Level.DrawState;
-
-    if (Level.DrawState.DirtyFlags & ELevelDirtyFlags::DrawSet)
+    if (Level.DirtyFlags & ELevelDirtyFlags::DrawSet)
     {
         LevelDrawData.Clear();
 
@@ -1027,9 +1027,9 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
 
                         /* Check two adjacent tiles for ongoing door animation.
                          * Prevents static doors from being drawn if the animation is playing. */
-                        if (DrawLevelState.DoorInfo.Timeline.IsPlaying())
+                        if (Level.DoorInfo.Timeline.IsPlaying())
                         {
-                            if (TileCoords == DrawLevelState.DoorInfo.TileCoords && Direction == DrawLevelState.DoorInfo.Direction)
+                            if (TileCoords == Level.DoorInfo.TileCoords && Direction == Level.DoorInfo.Direction)
                             {
                                 continue;
                             }
@@ -1044,16 +1044,16 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                 }
             }
         }
-        Level.DrawState.DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
+        Level.DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
 
         Log::Draw<ELogLevel::Debug>("Regenerated LevelDrawData");
     }
 
     Draw3DLevelDoor(
         DoorDrawCall,
-        DrawLevelState.DoorInfo.TileCoords,
-        DrawLevelState.DoorInfo.Direction,
-        DrawLevelState.DoorInfo.Timeline.Value);
+        Level.DoorInfo.TileCoords,
+        Level.DoorInfo.Direction,
+        Level.DoorInfo.Timeline.Value);
 
     SEntry3D Entry;
 

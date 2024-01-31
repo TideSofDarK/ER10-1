@@ -150,5 +150,5 @@ void STilemap::Deserialize(std::istream& Stream)
 
 void SLevel::Update(float DeltaTime)
 {
-    DrawState.DoorInfo.Timeline.Advance(DeltaTime);
+    DoorInfo.Timeline.Advance(DeltaTime);
 }

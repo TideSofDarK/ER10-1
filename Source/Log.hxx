@@ -14,6 +14,7 @@ enum class ELogLevel
 namespace Log
 {
 #ifdef EQUINOX_REACH_DEVELOPMENT
+    // static constexpr ELogLevel LogLevel = ELogLevel::Verbose;
     static constexpr ELogLevel LogLevel = ELogLevel::Debug;
 #else
     static constexpr ELogLevel LogLevel = ELogLevel::Info;

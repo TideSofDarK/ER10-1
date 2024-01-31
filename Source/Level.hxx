@@ -35,19 +35,12 @@ namespace ELevelDirtyFlags
     using Type = uint32_t;
     enum : Type
     {
-        All = 1 << 0,
-        POVChanged = 1 << 1,
-        DrawSet = 1 << 2
+        POVChanged = 1 << 0,
+        DrawSet = 1 << 2,
+        DirtyRange = 1 << 3,
+        All = UINT32_MAX
     };
 }
-
-struct SDrawLevelState
-{
-    uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
-    SVec2<std::size_t> DirtyRange{};
-
-    SDrawDoorInfo DoorInfo;
-};
 
 struct STilemap
 {
@@ -161,8 +154,11 @@ struct STilemap
 struct SLevel : STilemap
 {
     int Z{};
-    /* @TODO: Separate state for map? */
-    SDrawLevelState DrawState;
+
+    /* Draw State */
+    SDrawDoorInfo DoorInfo;
+    uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
+    SVec2<std::size_t> DirtyRange{};
 
     void Update(float DeltaTime);
 };

@@ -785,8 +785,8 @@ void SDevTools::Update(SGame& Game)
                             }
                         }
                     }
-                    Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
-                    Game.Level.DrawState.DirtyRange = { 0, Game.Level.TileCount() };
+                    Game.Level.DirtyFlags = ELevelDirtyFlags::All;
+                    Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
                 }
                 if (ImGui::Button("Visit Level"))
                 {
@@ -801,8 +801,8 @@ void SDevTools::Update(SGame& Game)
                             }
                         }
                     }
-                    Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
-                    Game.Level.DrawState.DirtyRange = { 0, Game.Level.TileCount() };
+                    Game.Level.DirtyFlags = ELevelDirtyFlags::All;
+                    Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
                 }
                 if (ImGui::Button("Import Level From Editor"))
                 {
