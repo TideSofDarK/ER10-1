@@ -797,6 +797,7 @@ void SDevTools::Update(SGame& Game)
                             auto Tile = Game.Level.GetTileAtMutable({ X, Y });
                             if (Tile != nullptr)
                             {
+                                Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
                                 Tile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
                             }
                         }

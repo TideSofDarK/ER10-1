@@ -6,7 +6,6 @@
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
 #include "Level.hxx"
-#include "Log.hxx"
 #include "SharedConstants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
@@ -251,7 +250,7 @@ void SGame::Run()
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
 
             MapRect = Math::Mix(MapRect, URect(bMapMaximized ? MapRectMax : MapRectMin), Window.DeltaTime * 10.0f);
-            Renderer.DrawHUDMap(Level, UVec3(MapRect.Min), UVec2Int(MapRect.Max), Blob.UnreliableCoords());
+            Renderer.DrawHUDMap(Level, UVec3(MapRect.Min), UVec2Int((int)std::round(MapRect.Max.X), (int)std::round(MapRect.Max.Y)), Blob.UnreliableCoords());
 
             switch (SpriteDemoState)
             {
