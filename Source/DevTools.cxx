@@ -103,17 +103,19 @@ void SLevelEditor::Show()
         ImGui::EndPopup();
     }
 
+    static constexpr float ModalWidth = 400.0f;
+    static constexpr float ModalHeight = 200.0f;
     static std::string SavePathString{};
     if (bSaveLevel)
     {
-        ImGui::OpenPopup("Save Level...");
+        ImGui::OpenPopup("Save Level");
         SavePathString = (std::filesystem::current_path().parent_path().parent_path() / (std::filesystem::path("Asset\\Map\\NewMap" + MapExtension.string()))).string();
         ScanForLevels();
     }
-    if (ImGui::BeginPopupModal("Save Level...", nullptr,
+    if (ImGui::BeginPopupModal("Save Level", nullptr,
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
     {
-        ImGui::BeginChild("Available Levels", ImVec2(400, 200), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+        ImGui::BeginChild("Available Levels", ImVec2(ModalWidth, ModalHeight), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
 
         for (auto& LevelPath : AvailableMaps)
         {
@@ -124,7 +126,7 @@ void SLevelEditor::Show()
         }
         ImGui::EndChild();
 
-        ImGui::PushItemWidth(400);
+        ImGui::PushItemWidth(ModalWidth);
         ImGui::InputText("##SaveAs", &SavePathString);
         ImGui::PopItemWidth();
 
@@ -150,13 +152,13 @@ void SLevelEditor::Show()
 
     if (bLoadLevel)
     {
-        ImGui::OpenPopup("Load Level...");
+        ImGui::OpenPopup("Load Level");
         ScanForLevels();
     }
-    if (ImGui::BeginPopupModal("Load Level...", nullptr,
+    if (ImGui::BeginPopupModal("Load Level", nullptr,
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
     {
-        ImGui::BeginChild("Available Levels", ImVec2(400, 200), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+        ImGui::BeginChild("Available Levels", ImVec2(ModalWidth, ModalHeight), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
         static std::filesystem::path* LoadPath = nullptr;
         for (auto& LevelPath : AvailableMaps)
         {
