@@ -41,7 +41,7 @@ namespace Asset::Map
     EXTERN_ASSET(TestMapERM)
 }
 
-static const URectInt MapRectMin{ SCREEN_WIDTH - 128, 10, 12 * 7 + 1, 12 * 5 + 1 };
+static const URectInt MapRectMin{ SCREEN_WIDTH - 128, 10, 12 * 7 + 1, 12 * 5 + 2 };
 static const URectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH + 1, SCENE_HEIGHT + 1 };
 
 SGame::SGame()
