@@ -1,4 +1,4 @@
-// dear imgui, v1.90.0
+// dear imgui, v1.90.1
 // (drawing and font code)
 
 /*
@@ -614,7 +614,7 @@ void ImDrawList::PopTextureID()
 }
 
 // Reserve space for a number of vertices and indices.
-// You must finish filling your reserved data before calling PrimReserve() again, as it may AllocateInline or
+// You must finish filling your reserved data before calling PrimReserve() again, as it may reallocate or
 // submit the intermediate results. PrimUnreserve() can be used to release unused allocations.
 void ImDrawList::PrimReserve(int idx_count, int vtx_count)
 {
@@ -2541,7 +2541,7 @@ static bool ImFontAtlasBuildWithStbTruetype(ImFontAtlas* atlas)
         dst_tmp_array[dst_i].GlyphsSet.Clear();
     dst_tmp_array.clear();
 
-    // AllocateInline packing character data and flag packed characters buffer as non-packed (x0=y0=x1=y1=0)
+    // Allocate packing character data and flag packed characters buffer as non-packed (x0=y0=x1=y1=0)
     // (We technically don't need to zero-clear buf_rects, but let's do it for the sake of sanity)
     ImVector<stbrp_rect> buf_rects;
     ImVector<stbtt_packedchar> buf_packedchars;
@@ -2623,7 +2623,7 @@ static bool ImFontAtlasBuildWithStbTruetype(ImFontAtlas* atlas)
                 atlas->TexHeight = ImMax(atlas->TexHeight, src_tmp.Rects[glyph_i].y + src_tmp.Rects[glyph_i].h);
     }
 
-    // 7. AllocateInline texture
+    // 7. Allocate texture
     atlas->TexHeight = (atlas->Flags & ImFontAtlasFlags_NoPowerOfTwoHeight) ? (atlas->TexHeight + 1) : ImUpperPowerOfTwo(atlas->TexHeight);
     atlas->TexUvScale = ImVec2(1.0f / atlas->TexWidth, 1.0f / atlas->TexHeight);
     atlas->TexPixelsAlpha8 = (unsigned char*)IM_ALLOC(atlas->TexWidth * atlas->TexHeight);
@@ -4205,8 +4205,8 @@ static unsigned int stb_decompress(unsigned char *output, const unsigned char *i
 //-----------------------------------------------------------------------------
 // ProggyClean.ttf
 // Copyright (c) 2004, 2005 Tristan Grimmer
-// MIT license (see License.txt in http://www.upperbounds.net/download/ProggyClean.ttf.zip)
-// Download and more information at http://upperbounds.net
+// MIT license (see License.txt in http://www.proggyfonts.net/index.php?menu=download)
+// Download and more information at http://www.proggyfonts.net or http://upperboundsinteractive.com/fonts.php
 //-----------------------------------------------------------------------------
 // File: 'ProggyClean.ttf' (41208 bytes)
 // Exported using misc/fonts/binary_to_compressed_c.cpp (with compression + base85 string encoding).

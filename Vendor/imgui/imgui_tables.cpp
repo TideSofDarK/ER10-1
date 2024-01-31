@@ -1,4 +1,4 @@
-// dear imgui, v1.90.0
+// dear imgui, v1.90.1
 // (tables and columns code)
 
 /*
@@ -329,6 +329,10 @@ bool    ImGui::BeginTableEx(const char* name, ImGuiID id, int columns_count, ImG
         return false;
     }
 
+    // [DEBUG] Debug break requested by user
+    if (g.DebugBreakInTable == id)
+        IM_DEBUG_BREAK();
+
     // Acquire storage for the table
     ImGuiTable* table = g.Tables.GetOrAddByKey(id);
     const ImGuiTableFlags table_last_flags = table->Flags;
@@ -613,7 +617,7 @@ bool    ImGui::BeginTableEx(const char* name, ImGuiID id, int columns_count, ImG
 // Unused channels don't perform their +2 allocations.
 void ImGui::TableBeginInitMemory(ImGuiTable* table, int columns_count)
 {
-    // AllocateInline single buffer for our arrays
+    // Allocate single buffer for our arrays
     const int columns_bit_array_size = (int)ImBitArrayGetStorageSizeInBytes(columns_count);
     ImSpanAllocator<6> span_allocator;
     span_allocator.Reserve(0, columns_count * sizeof(ImGuiTableColumn));
@@ -950,7 +954,7 @@ void ImGui::TableUpdateLayout(ImGuiTable* table)
             continue;
         ImGuiTableColumn* column = &table->Columns[column_n];
 
-        // AllocateInline width for stretched/weighted columns (StretchWeight gets converted into WidthRequest)
+        // Allocate width for stretched/weighted columns (StretchWeight gets converted into WidthRequest)
         if (column->Flags & ImGuiTableColumnFlags_WidthStretch)
         {
             float weight_ratio = column->StretchWeight / stretch_sum_weights;
@@ -1173,7 +1177,7 @@ void ImGui::TableUpdateLayout(ImGuiTable* table)
         window_content_max_y = ImMax(table->InnerWindow->ContentRegionRect.Max.y, (table->Flags & ImGuiTableFlags_ScrollY) ? 0.0f : table->OuterRect.Max.y);
     table->InnerWindow->WorkRect.Max.y = ImClamp(window_content_max_y - g.Style.CellPadding.y, table->InnerWindow->WorkRect.Min.y, table->InnerWindow->WorkRect.Max.y);
 
-    // [Part 9] AllocateInline draw channels and setup background cliprect
+    // [Part 9] Allocate draw channels and setup background cliprect
     TableSetupDrawChannels(table);
 
     // [Part 10] Hit testing on borders
@@ -2372,7 +2376,7 @@ void ImGui::TablePopBackgroundChannel()
     table->DrawSplitter->SetCurrentChannel(window->DrawList, column->DrawChannelCurrent);
 }
 
-// AllocateInline draw channels. Called by TableUpdateLayout()
+// Allocate draw channels. Called by TableUpdateLayout()
 // - We allocate them following storage order instead of display order so reordering columns won't needlessly
 //   increase overall dormant memory cost.
 // - We isolate headers draw commands in their own channels instead of just altering clip rects.
@@ -3802,7 +3806,8 @@ static const char* DebugNodeTableGetSizingPolicyDesc(ImGuiTableFlags sizing_poli
 
 void ImGui::DebugNodeTable(ImGuiTable* table)
 {
-    const bool is_active = (table->LastFrameActive >= GetFrameCount() - 2); // Note that fully clipped early out scrolling tables will appear as inactive here.
+    ImGuiContext& g = *GImGui;
+    const bool is_active = (table->LastFrameActive >= g.FrameCount - 2); // Note that fully clipped early out scrolling tables will appear as inactive here.
     if (!is_active) { PushStyleColor(ImGuiCol_Text, GetStyleColorVec4(ImGuiCol_TextDisabled)); }
     bool open = TreeNode(table, "Table 0x%08X (%d columns, in '%s')%s", table->ID, table->ColumnsCount, table->OuterWindow->Name, is_active ? "" : " *Inactive*");
     if (!is_active) { PopStyleColor(); }
@@ -3814,6 +3819,13 @@ void ImGui::DebugNodeTable(ImGuiTable* table)
         return;
     if (table->InstanceCurrent > 0)
         Text("** %d instances of same table! Some data below will refer to last instance.", table->InstanceCurrent + 1);
+    if (g.IO.ConfigDebugIsDebuggerPresent)
+    {
+        if (DebugBreakButton("**DebugBreak**", "in BeginTable()"))
+            g.DebugBreakInTable = table->ID;
+        SameLine();
+    }
+
     bool clear_settings = SmallButton("Clear settings");
     BulletText("OuterRect: Pos: (%.1f,%.1f) Size: (%.1f,%.1f) Sizing: '%s'", table->OuterRect.Min.x, table->OuterRect.Min.y, table->OuterRect.GetWidth(), table->OuterRect.GetHeight(), DebugNodeTableGetSizingPolicyDesc(table->Flags));
     BulletText("ColumnsGivenWidth: %.1f, ColumnsAutoFitWidth: %.1f, InnerWidth: %.1f%s", table->ColumnsGivenWidth, table->ColumnsAutoFitWidth, table->InnerWidth, table->InnerWidth == 0.0f ? " (auto)" : "");

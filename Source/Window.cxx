@@ -37,7 +37,9 @@ SWindow::SWindow()
         exit(1);
     }
 
+#ifdef EQUINOX_REACH_GAME
     SDL_SetEventEnabled(SDL_EVENT_TEXT_INPUT, SDL_FALSE);
+#endif
 
     Window = SDL_CreateWindow(GAME_NAME,
         WINDOW_WIDTH, WINDOW_HEIGHT,

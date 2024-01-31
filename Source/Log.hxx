@@ -59,6 +59,9 @@ namespace Log
     LOG_CATEGORY(Platform)
     LOG_CATEGORY(Draw)
     LOG_CATEGORY(Game)
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    LOG_CATEGORY(DevTools)
+#endif
 
 #undef LOG_CATEGORY
 }

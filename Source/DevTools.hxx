@@ -31,10 +31,12 @@ struct SLevelEditor
 
     void Show();
 
-    void SaveTilemapToFile() const;
-    void LoadTilemapFromFile();
+    void SaveTilemapToFile(const class std::filesystem::path& Path) const;
+    void LoadTilemapFromFile(const class std::filesystem::path& Path);
 
-    void DrawLevel();
+    void ScanForLevels();
+
+    void ShowLevel();
 
     void FitTilemapToWindow();
 };

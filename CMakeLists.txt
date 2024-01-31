@@ -120,6 +120,7 @@ add_equinox_reach_target(
         Vendor/imgui/imgui_widgets.cpp
         Vendor/imgui/imgui_impl_sdl3.cpp
         Vendor/imgui/imgui_impl_opengl3.cpp
+        Vendor/imgui/imgui_stdlib.cpp
         # INCLUDE_DIRS
         # Vendor/imgui
 )

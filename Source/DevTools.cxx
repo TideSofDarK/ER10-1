@@ -6,6 +6,7 @@
 #include <fstream>
 #include <glad/gl.h>
 #include <imgui/imgui.h>
+#include <imgui/imgui_stdlib.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl3.h>
 #include "CommonTypes.hxx"
@@ -33,6 +34,9 @@ namespace Asset::Common
 {
     EXTERN_ASSET(DroidSansTTF)
 }
+
+static const std::filesystem::path MapExtension = ".erm";
+static std::vector<std::filesystem::path> AvailableMaps(20);
 
 SLevelEditor::SLevelEditor()
 {
@@ -99,17 +103,90 @@ void SLevelEditor::Show()
         ImGui::EndPopup();
     }
 
+    static std::string SavePathString{};
     if (bSaveLevel)
     {
-        SaveTilemapToFile();
+        ImGui::OpenPopup("Save Level...");
+        SavePathString = (std::filesystem::current_path().parent_path().parent_path() / (std::filesystem::path("Asset\\Map\\NewMap" + MapExtension.string()))).string();
+        ScanForLevels();
+    }
+    if (ImGui::BeginPopupModal("Save Level...", nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
+    {
+        ImGui::BeginChild("Available Levels", ImVec2(400, 200), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+
+        for (auto& LevelPath : AvailableMaps)
+        {
+            if (ImGui::Selectable(LevelPath.string().c_str(), LevelPath.string() == SavePathString))
+            {
+                SavePathString = LevelPath.string();
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::PushItemWidth(400);
+        ImGui::InputText("##SaveAs", &SavePathString);
+        ImGui::PopItemWidth();
+
+        ImGui::BeginGroup();
+        if (ImGui::Button("Accept"))
+        {
+            auto SavePath = std::filesystem::path(SavePathString);
+            if (SavePath.extension() == MapExtension)
+            {
+                SaveTilemapToFile(SavePath);
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndGroup();
+
+        ImGui::EndPopup();
     }
 
     if (bLoadLevel)
     {
-        LoadTilemapFromFile();
+        ImGui::OpenPopup("Load Level...");
+        ScanForLevels();
+    }
+    if (ImGui::BeginPopupModal("Load Level...", nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
+    {
+        ImGui::BeginChild("Available Levels", ImVec2(400, 200), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+        static std::filesystem::path* LoadPath = nullptr;
+        for (auto& LevelPath : AvailableMaps)
+        {
+            if (ImGui::Selectable(LevelPath.string().c_str(), &LevelPath == LoadPath))
+            {
+                LoadPath = &LevelPath;
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::BeginGroup();
+        if (ImGui::Button("Accept"))
+        {
+            if (LoadPath != nullptr)
+            {
+                LoadTilemapFromFile(*LoadPath);
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndGroup();
+
+        ImGui::EndPopup();
     }
 
-    /* Validate Selected Tile */
+    /* Validate selected tile. */
     if (SelectedTileCoords.has_value())
     {
         if (!Level.IsValidTile(*SelectedTileCoords))
@@ -143,26 +220,47 @@ void SLevelEditor::Show()
         }
     }
 
-    DrawLevel();
+    ShowLevel();
 }
 
-void SLevelEditor::SaveTilemapToFile() const
+void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path) const
 {
     const auto& Tilemap = Level;
 
     std::ofstream TilemapFile;
-    TilemapFile.open("templevel", std::ofstream::binary);
+    TilemapFile.open(Path, std::ofstream::binary);
     Tilemap.Serialize(TilemapFile);
     TilemapFile.close();
 }
 
-void SLevelEditor::LoadTilemapFromFile()
+void SLevelEditor::LoadTilemapFromFile(const std::filesystem::path& Path)
 {
     auto& Tilemap = Level;
     std::ifstream TilemapFile;
-    TilemapFile.open("templevel", std::ifstream::binary);
+    TilemapFile.open(Path, std::ifstream::binary);
     Tilemap.Deserialize(TilemapFile);
     TilemapFile.close();
+    FitTilemapToWindow();
+}
+
+void SLevelEditor::ScanForLevels()
+{
+    namespace fs = std::filesystem;
+    AvailableMaps.clear();
+    // auto CWD = fs::path(fs::current_path().string() + "/../../");
+    auto CWD = fs::current_path().parent_path().parent_path() / "Asset\\Map";
+    for (const auto& File : fs::recursive_directory_iterator(CWD))
+    {
+        if (!File.is_regular_file())
+        {
+            continue;
+        }
+        if (File.path().extension() != MapExtension)
+        {
+            continue;
+        }
+        AvailableMaps.emplace_back(File);
+    }
 }
 
 void SLevelEditor::FitTilemapToWindow()
@@ -172,7 +270,7 @@ void SLevelEditor::FitTilemapToWindow()
     bResetGridPosition = true;
 }
 
-void SLevelEditor::DrawLevel()
+void SLevelEditor::ShowLevel()
 {
     ImGuiIO& IO = ImGui::GetIO();
     const float WindowPadding = (float)LevelEditorCellSize * 0.1f;
@@ -439,9 +537,9 @@ void SLevelEditor::DrawLevel()
             }
         }
 
-        if (SelectedTileCoords.has_value())
+        if (ImGui::IsWindowFocused())
         {
-            if (ImGui::IsWindowFocused())
+            if (SelectedTileCoords.has_value())
             {
                 if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
                 {
@@ -532,49 +630,49 @@ void SLevelEditor::DrawLevel()
                         ToggleDoor(SDirection::East());
                     }
                 }
-            }
 
-            /* Outline block selection. */
-            if (LevelEditorMode == ELevelEditorMode::Block && BlockModeTileCoords.has_value())
-            {
-                auto MinTileX = std::min(BlockModeTileCoords->X, SelectedTileCoords->X);
-                auto MinTileY = std::min(BlockModeTileCoords->Y, SelectedTileCoords->Y);
-
-                auto MaxTileX = std::max(BlockModeTileCoords->X, SelectedTileCoords->X);
-                auto MaxTileY = std::max(BlockModeTileCoords->Y, SelectedTileCoords->Y);
-
-                auto BlockWidth = MaxTileX - MinTileX + 1;
-                auto BlockHeight = MaxTileY - MinTileY + 1;
-
-                auto SelectedTilePosMin = ImVec2(
-                    PosMin.x + ((float)MinTileX * LevelEditorCellSize),
-                    PosMin.y + ((float)MinTileY * LevelEditorCellSize));
-                auto SelectedTilePosMax = ImVec2(
-                    SelectedTilePosMin.x + ((float)LevelEditorCellSize * (float)BlockWidth),
-                    SelectedTilePosMin.y + ((float)LevelEditorCellSize * (float)BlockHeight));
-
-                auto Thickness = (float)LevelEditorCellSize * 0.04f;
-
-                DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                    BLOCK_SELECTION_COLOR, 0.0f, 0, Thickness);
-            }
-            else /* Outline single tile. */
-            {
-                auto SelectedTilePosMin = ImVec2(PosMin.x + ((float)SelectedTileCoords->X * LevelEditorCellSize),
-                    PosMin.y + ((float)SelectedTileCoords->Y * LevelEditorCellSize));
-                auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + (float)LevelEditorCellSize + 1,
-                    SelectedTilePosMin.y + (float)LevelEditorCellSize + 1);
-                auto Thickness = (float)LevelEditorCellSize * 0.04f;
-                if (LevelEditorMode == ELevelEditorMode::Normal)
+                /* Outline block selection. */
+                if (LevelEditorMode == ELevelEditorMode::Block && BlockModeTileCoords.has_value())
                 {
+                    auto MinTileX = std::min(BlockModeTileCoords->X, SelectedTileCoords->X);
+                    auto MinTileY = std::min(BlockModeTileCoords->Y, SelectedTileCoords->Y);
+
+                    auto MaxTileX = std::max(BlockModeTileCoords->X, SelectedTileCoords->X);
+                    auto MaxTileY = std::max(BlockModeTileCoords->Y, SelectedTileCoords->Y);
+
+                    auto BlockWidth = MaxTileX - MinTileX + 1;
+                    auto BlockHeight = MaxTileY - MinTileY + 1;
+
+                    auto SelectedTilePosMin = ImVec2(
+                        PosMin.x + ((float)MinTileX * LevelEditorCellSize),
+                        PosMin.y + ((float)MinTileY * LevelEditorCellSize));
+                    auto SelectedTilePosMax = ImVec2(
+                        SelectedTilePosMin.x + ((float)LevelEditorCellSize * (float)BlockWidth),
+                        SelectedTilePosMin.y + ((float)LevelEditorCellSize * (float)BlockHeight));
+
+                    auto Thickness = (float)LevelEditorCellSize * 0.04f;
+
                     DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                        SELECTION_COLOR, 0.0f, 0, Thickness);
+                        BLOCK_SELECTION_COLOR, 0.0f, 0, Thickness);
                 }
-                else
+                else /* Outline single tile. */
                 {
-                    Thickness += std::abs(1.0f * std::sin((float)ImGui::GetTime() * 10.0f));
-                    DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                        SELECTION_MODIFY_COLOR, 0.0f, 0, Thickness);
+                    auto SelectedTilePosMin = ImVec2(PosMin.x + ((float)SelectedTileCoords->X * LevelEditorCellSize),
+                        PosMin.y + ((float)SelectedTileCoords->Y * LevelEditorCellSize));
+                    auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + (float)LevelEditorCellSize + 1,
+                        SelectedTilePosMin.y + (float)LevelEditorCellSize + 1);
+                    auto Thickness = (float)LevelEditorCellSize * 0.04f;
+                    if (LevelEditorMode == ELevelEditorMode::Normal)
+                    {
+                        DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
+                            SELECTION_COLOR, 0.0f, 0, Thickness);
+                    }
+                    else
+                    {
+                        Thickness += std::abs(1.0f * std::sin((float)ImGui::GetTime() * 10.0f));
+                        DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
+                            SELECTION_MODIFY_COLOR, 0.0f, 0, Thickness);
+                    }
                 }
             }
         }
@@ -601,11 +699,16 @@ void SLevelEditor::DrawLevel()
         ImGui::End();
     }
     ImGui::PopStyleVar();
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)))
+    {
+        FitTilemapToWindow();
+    }
 }
 
 void SDevTools::DrawParty(SParty& Party, float Scale, bool bReversed)
 {
-    //    if (ImGui::Begin("Player Party", nullptr, 0)) { //ImGuiWindowFlags_AlwaysAutoResize
+    // if (ImGui::Begin("Player Party", nullptr, 0)) { //ImGuiWindowFlags_AlwaysAutoResize
     auto* DrawList = ImGui::GetWindowDrawList();
     ImVec2 PosMin = ImGui::GetCursorScreenPos();
 
@@ -745,6 +848,12 @@ void SDevTools::Update(SGame& Game)
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))
     {
         LevelEditor.bLevelEditorActive = !LevelEditor.bLevelEditorActive;
+        static bool bFirstTime = true;
+        if (bFirstTime && LevelEditor.bLevelEditorActive)
+        {
+            LevelEditor.FitTilemapToWindow();
+            bFirstTime = false;
+        }
     }
 
     if (LevelEditor.bLevelEditorActive)
@@ -807,11 +916,6 @@ void SDevTools::Update(SGame& Game)
                 }
                 if (ImGui::Button("Import Level From Editor"))
                 {
-                    Game.ChangeLevel(LevelEditor.Level);
-                }
-                if (ImGui::Button("Import Level From File"))
-                {
-                    LevelEditor.LoadTilemapFromFile();
                     Game.ChangeLevel(LevelEditor.Level);
                 }
                 ImGui::TreePop();

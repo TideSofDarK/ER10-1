@@ -1046,7 +1046,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
         }
         Level.DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
 
-        Log::Draw<ELogLevel::Debug>("Regenerated LevelDrawData");
+        Log::Draw<ELogLevel::Debug>("%s(): Regenerated Level Draw Set", __func__);
     }
 
     Draw3DLevelDoor(
