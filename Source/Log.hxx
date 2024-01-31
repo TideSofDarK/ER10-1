@@ -57,6 +57,7 @@ namespace Log
     LOG_CATEGORY(Memory)
     LOG_CATEGORY(Platform)
     LOG_CATEGORY(Draw)
+    LOG_CATEGORY(Game)
 
 #undef LOG_CATEGORY
 }

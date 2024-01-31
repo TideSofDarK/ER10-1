@@ -63,7 +63,7 @@ struct STilemap
     {
         if (IsValidTile(Coords))
         {
-            auto Index = CoordsToIndex(Coords.X, Coords.Y);
+            auto Index = CoordsToIndex(Coords);
             return &Tiles[Index];
         }
         return nullptr;
@@ -118,7 +118,7 @@ struct STilemap
         return Coord >= 0 && Coord < Height;
     }
 
-    [[nodiscard]] inline std::size_t CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
+    [[nodiscard]] inline std::size_t CoordsToIndex(int X, int Y) const { return (Y * (int)Width) + X; }
 
     [[nodiscard]] inline std::size_t CoordsToIndex(const UVec2Int& Coords) const { return CoordsToIndex(Coords.X, Coords.Y); }
 

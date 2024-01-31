@@ -6,6 +6,7 @@
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
 #include "Level.hxx"
+#include "Log.hxx"
 #include "SharedConstants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
@@ -488,21 +489,33 @@ void SGame::OnBlobMoved()
     {
         CurrentTile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
     }
+    else
+    {
+        return;
+    }
 
     UVec2Size DirtyRange{};
-    for (auto X = Blob.Coords.X - Blob.ExploreRadius(); X <= Blob.Coords.X + Blob.ExploreRadius(); ++X)
+    DirtyRange.X = SIZE_MAX;
+    DirtyRange.Y = 0;
+
+    for (auto X = Blob.Coords.X - SBlob::ExploreRadius(); X <= Blob.Coords.X + SBlob::ExploreRadius(); ++X)
     {
-        for (auto Y = Blob.Coords.Y - Blob.ExploreRadius(); Y <= Blob.Coords.Y + Blob.ExploreRadius(); ++Y)
+        for (auto Y = Blob.Coords.Y - SBlob::ExploreRadius(); Y <= Blob.Coords.Y + SBlob::ExploreRadius(); ++Y)
         {
-            CurrentTile = Level.GetTileAtMutable(UVec2Int{ X, Y });
-            if (CurrentTile != nullptr)
+            auto Tile = Level.GetTileAtMutable({ X, Y });
+            if (Tile != nullptr)
             {
-                CurrentTile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
+                Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
                 std::size_t Index = Level.CoordsToIndex(X, Y);
                 DirtyRange.X = std::min(DirtyRange.X, Index);
                 DirtyRange.Y = std::max(DirtyRange.Y, Index);
             }
         }
+    }
+
+    if (DirtyRange.X > DirtyRange.Y)
+    {
+        DirtyRange = {};
     }
 
     Level.DrawState.DirtyFlags = ELevelDirtyFlags::DrawSet | ELevelDirtyFlags::POVChanged;

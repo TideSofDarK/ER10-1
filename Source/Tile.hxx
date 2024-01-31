@@ -26,6 +26,11 @@ struct STile
         return Flags & Flag;
     }
 
+    [[nodiscard]] inline bool CheckSpecialFlag(ETileFlag Flag) const
+    {
+        return SpecialFlags & Flag;
+    }
+
     [[nodiscard]] inline bool CheckEdgeFlag(ETileEdgeFlag NorthBit, SDirection Direction) const
     {
         return EdgeFlags & DirectionBit(NorthBit, Direction);

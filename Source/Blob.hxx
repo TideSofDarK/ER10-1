@@ -82,7 +82,7 @@ public:
     EBlobAnimationType HandleAnimationEnd();
 
     [[nodiscard]] UVec2Int UnreliableCoords() const { return UVec2Int{ static_cast<int>(std::rint(EyePositionCurrent.X)), static_cast<int>(std::rint(EyePositionCurrent.Z)) }; }
-    [[nodiscard]] int ExploreRadius() const { return 2; }
+    [[nodiscard]] static int ExploreRadius()  { return 3; }
     [[nodiscard]] bool IsMoving() const { return AnimationType != EBlobAnimationType::Idle; }
     [[nodiscard]] bool IsReadyForBuffering() const { return Timeline.Value > InputBufferTime && Timeline.Value < 1.0f; }
     [[nodiscard]] bool ShouldHandleAnimationEnd() const { return !bAnimationEndHandled && Timeline.IsFinishedPlaying(); }

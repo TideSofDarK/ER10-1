@@ -774,21 +774,35 @@ void SDevTools::Update(SGame& Game)
             {
                 if (ImGui::Button("Explore Level"))
                 {
-                    for (auto& Tile : Game.Level.Tiles)
+                    for (auto X = 0; X < Game.Level.Width; X++)
                     {
-                        Tile.SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
-                        Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
-                        Game.Level.DrawState.DirtyRange = {0, Game.Level.TileCount()};
+                        for (auto Y = 0; Y < Game.Level.Height; Y++)
+                        {
+                            auto Tile = Game.Level.GetTileAtMutable({ X, Y });
+                            if (Tile != nullptr)
+                            {
+                                Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
+                            }
+                        }
                     }
+                    Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+                    Game.Level.DrawState.DirtyRange = { 0, Game.Level.TileCount() };
                 }
                 if (ImGui::Button("Visit Level"))
                 {
-                    for (auto& Tile : Game.Level.Tiles)
+                    for (auto X = 0; X < Game.Level.Width; X++)
                     {
-                        Tile.SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
-                        Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
-                        Game.Level.DrawState.DirtyRange = {0, Game.Level.TileCount()};
+                        for (auto Y = 0; Y < Game.Level.Height; Y++)
+                        {
+                            auto Tile = Game.Level.GetTileAtMutable({ X, Y });
+                            if (Tile != nullptr)
+                            {
+                                Tile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
+                            }
+                        }
                     }
+                    Game.Level.DrawState.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+                    Game.Level.DrawState.DirtyRange = { 0, Game.Level.TileCount() };
                 }
                 if (ImGui::Button("Import Level From Editor"))
                 {

@@ -67,7 +67,7 @@ protected:
     void Clear() const;
 
 public:
-    float Volume = 0.1f;
+    float Volume = 0.0f;
 
     CAudio();
     ~CAudio();
