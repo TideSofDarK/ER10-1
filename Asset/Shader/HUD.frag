@@ -148,12 +148,17 @@ void main()
         float validTileMask = calculateValidTileMask(tileInfo.x, tileInfo.y, levelWidth, levelHeight);
         float levelBoundsMask = step(texCoord.x, levelWidth * tileSize + 1) * step(texCoord.y, levelHeight * tileSize + 1) * step(0.0, texCoord.x) * step(0.0, texCoord.y);
 
+        float exploredMask = bitMask(tileData.specialFlags, TILE_SPECIAL_EXPLORED_BIT);
+
+        validTileMask *= exploredMask;
+        float visitedMask = bitMask(tileData.specialFlags, TILE_SPECIAL_VISITED_BIT);
+
         // Floor
         float holeMask = bitMask(tileData.flags, TILE_HOLE_BIT) * validTileMask;
         float floorTileMask = (bitMask(tileData.flags, TILE_FLOOR_BIT) + holeMask) * validTileMask;
 
         // float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
-        float visitedMask = bitMask(tileData.specialFlags, TILE_SPECIAL_VISITED_BIT);
+
         vec3 floorTile = vec3(0.0, 0.0, 1.0 - ((1.0 - visitedMask) * 0.6));
         finalColor = overlay(finalColor, floorTile, floorTileMask);
 

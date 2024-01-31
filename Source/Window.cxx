@@ -4,6 +4,8 @@
 #include <glad/gl.h>
 #include <SDL3/SDL.h>
 #include "Memory.hxx"
+#include "SDL_oldnames.h"
+#include "SDL_video.h"
 
 void SWindow::SwapBuffers() const
 {

@@ -38,6 +38,9 @@ public:
     // SGeometry TestGeometry;
     STileset Tileset;
 
+    URect MapRect;
+    bool bMapMaximized{};
+
     SSoundClip DoorCreek{};
 
     SSpriteHandle NoiseSprite;

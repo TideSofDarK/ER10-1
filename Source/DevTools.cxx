@@ -765,7 +765,7 @@ void SDevTools::Update(SGame& Game)
             {
                 ImGui::Text("Direction: %s (%u)", SDirection::Names[Game.Blob.Direction.Index], Game.Blob.Direction.Index);
                 ImGui::Text("Coords: X=%d, Y=%d", Game.Blob.Coords.X, Game.Blob.Coords.Y);
-                ImGui::Text("Unreliable Coords: X=%d, Y=%d", Game.Blob.UnreliableCoords().X, Game.Blob.UnreliableCoords().Y);
+                ImGui::Text("Unreliable Coords: X=%f, Y=%f", Game.Blob.UnreliableCoords().X, Game.Blob.UnreliableCoords().Y);
                 DrawParty(Game.PlayerParty, 0.5f, true);
                 DrawParty(Game.PlayerParty, 0.5f, false);
                 ImGui::TreePop();

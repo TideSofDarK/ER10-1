@@ -41,7 +41,10 @@ namespace Asset::Map
     EXTERN_ASSET(TestMapERM)
 }
 
-SGame::SGame()
+static const URectInt MapRectMin{ SCREEN_WIDTH - 128, 10, 12 * 7 + 1, 12 * 5 + 1 };
+static const URectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH + 1, SCENE_HEIGHT + 1 };
+
+SGame::SGame() : MapRect(MapRectMin)
 {
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Init(Window.Window, Window.Context);
@@ -216,14 +219,19 @@ void SGame::Run()
         {
             HandleBlobMovement();
 
-            if (InputState.ZL == EKeyState::Pressed)
-            {
-                SpriteDemoState = std::max(0, SpriteDemoState - 1);
-            }
+            // if (InputState.ZL == EKeyState::Pressed)
+            // {
+            //     SpriteDemoState = std::max(0, SpriteDemoState - 1);
+            // }
+            //
+            // if (InputState.ZR == EKeyState::Pressed)
+            // {
+            //     SpriteDemoState = std::min(5, SpriteDemoState + 1);
+            // }
 
             if (InputState.ZR == EKeyState::Pressed)
             {
-                SpriteDemoState = std::min(5, SpriteDemoState + 1);
+                bMapMaximized = !bMapMaximized;
             }
 
             if (InputState.Accept == EKeyState::Pressed)
@@ -240,7 +248,9 @@ void SGame::Run()
 
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
-            Renderer.DrawHUDMap(Level, { (float)SCREEN_WIDTH - 128.0f, 10.0f }, { 12 * 7 + 1, 12 * 5 + 1 }, Blob.UnreliableCoords());
+
+            MapRect = Math::Mix(MapRect, URect(bMapMaximized ? MapRectMax : MapRectMin), Window.DeltaTime * 10.0f);
+            Renderer.DrawHUDMap(Level, UVec3(MapRect.Min), UVec2Int(MapRect.Max), Blob.UnreliableCoords());
 
             switch (SpriteDemoState)
             {

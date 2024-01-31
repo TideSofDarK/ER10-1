@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <type_traits>
 
 template <typename T>
 struct SVec2
@@ -10,6 +11,17 @@ struct SVec2
 
     T X{};
     T Y{};
+
+    SVec2() = default;
+
+    SVec2(T InX, T InY) : X(InX), Y(InY) {};
+
+    template<typename AnotherT, typename = typename std::enable_if<std::is_same<T, AnotherT>::value == false>::type>
+    explicit SVec2(const SVec2<AnotherT>& Another)
+    {
+        X = static_cast<T>(Another.X);
+        Y = static_cast<T>(Another.Y);
+    }
 
     SVec2<T> operator-(const SVec2<T>& Other) const
     {
@@ -69,6 +81,16 @@ struct SVec3
     T X{};
     T Y{};
     T Z{};
+
+    SVec3() = default;
+
+    SVec3(T InX, T InY, T InZ) : X(InX), Y(InY), Z(InZ) {};
+
+    explicit SVec3(SVec2<T> Vec2)
+    {
+        X = Vec2.X;
+        Y = Vec2.Y;
+    }
 
     SVec3<T> operator+(const SVec3<T>& Other) const
     {
@@ -195,7 +217,32 @@ struct SRect
     SVec2<T> Min{};
     SVec2<T> Max{};
 
-    static SRect FromTwo(const SVec2<T> A, const SVec2<T> B)
+    SRect() = default;
+
+    template<typename AnotherT>
+    explicit SRect(SRect<AnotherT> Another)
+    {
+        Min.X = static_cast<T>(Another.Min.X);
+        Min.Y = static_cast<T>(Another.Min.Y);
+        Max.X = static_cast<T>(Another.Max.X);
+        Max.Y = static_cast<T>(Another.Max.Y);
+    }
+
+    explicit SRect(T X, T Y, T Z, T W)
+    {
+        Min.X = X;
+        Min.Y = Y;
+        Max.X = Z;
+        Max.Y = W;
+    }
+
+    explicit SRect(const SVec2<T>& A, const SVec2<T>& B)
+    {
+        Min = A;
+        Max = B;
+    }
+
+    static SRect FromTwo(const SVec2<T>& A, const SVec2<T>& B)
     {
         SRect NewRect;
 
@@ -209,6 +256,21 @@ struct SRect
         NewRect.Max = { MaxX, MaxY };
 
         return NewRect;
+    }
+
+    SRect<T> operator+(const SRect<T>& Other) const
+    {
+        return SRect<T>{ Min + Other.Min, Max + Other.Max };
+    }
+
+    SRect<T> operator-(const SRect<T>& Other) const
+    {
+        return SRect<T>{ Min - Other.Min, Max - Other.Max };
+    }
+
+    SRect<T> operator*(const T A) const
+    {
+        return SRect<T>{ Min * A, Max * A };
     }
 };
 
@@ -306,11 +368,17 @@ namespace Math
         return Degrees * 0.01745329251994329576923690768489f;
     }
 
-    template <typename T>
-    constexpr T Mix(T A, T B, T F)
+    template <typename T, typename AlphaT>
+    constexpr T Mix(T A, T B, AlphaT F)
     {
         return A * (1.0 - F) + (B * F);
     }
+
+    // template <typename T>
+    // constexpr T Mix(T A, T B, T F)
+    // {
+    //     return A * (1.0 - F) + (B * F);
+    // }
 
     template <typename T>
     constexpr T EaseInOutCirc(T Value)
