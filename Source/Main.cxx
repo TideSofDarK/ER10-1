@@ -4,6 +4,10 @@
 
 int main([[maybe_unused]] int ArgCount, [[maybe_unused]] char* Arguments[])
 {
+    if (SDL_SetMemoryFunctions(&CMemory::Malloc, &CMemory::Calloc, &CMemory::Realloc, &CMemory::Free))
+    {
+        exit(1);
+    }
     auto Game = CMemory::MakeShared<SGame>();
     Game->Run();
     return 0;

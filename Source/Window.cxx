@@ -26,12 +26,6 @@ SWindow::SWindow()
     },
         nullptr);
 
-    if (SDL_SetMemoryFunctions(&CMemory::Malloc, &CMemory::Calloc, &CMemory::Realloc, &CMemory::Free))
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
-        exit(1);
-    }
-
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
