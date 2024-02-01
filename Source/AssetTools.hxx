@@ -9,20 +9,24 @@ struct SAsset
 {
     const unsigned char* Data;
     size_t Length;
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    const char* Path;
 
+    explicit SAsset(const char* InData, size_t InLength, const char* InPath)
+        : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength), Path(InPath){};
+#else
     explicit SAsset(const char* InData, size_t InLength)
-        : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength){
-
-        };
+        : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength){};
+#endif
 
     [[nodiscard]] std::string ToString() const { return { AsSignedCharPtr(), Length }; }
 
-    const char* AsSignedCharPtr() const
+    [[nodiscard]] const char* AsSignedCharPtr() const
     {
         return reinterpret_cast<const char*>(Data);
     }
 
-    void* AsVoidPtr() const
+    [[nodiscard]] void* AsVoidPtr() const
     {
         return reinterpret_cast<void*>(const_cast<unsigned char*>(Data));
     }

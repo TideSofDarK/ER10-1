@@ -54,9 +54,15 @@
     #define EXTERN_OR_INLINE inline
 #endif
 
+#ifdef EQUINOX_REACH_DEVELOPMENT
+#define DEFINE_ASSET(NAME, PATH) \
+    INCBIN(NAME, PATH)           \
+    EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length, PATH);
+#else
 #define DEFINE_ASSET(NAME, PATH) \
     INCBIN(NAME, PATH)           \
     EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length);
+#endif
 
 namespace Asset::Common
 {

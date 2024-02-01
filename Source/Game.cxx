@@ -6,6 +6,7 @@
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
 #include "Level.hxx"
+#include "Log.hxx"
 #include "SharedConstants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
@@ -70,6 +71,10 @@ SGame::SGame()
     PrimaryAtlas3D.AddSprite(
         Asset::Tileset::Hotel::AtlasPNG);
     PrimaryAtlas3D.Build();
+//
+//#ifdef EQUINOX_REACH_DEVELOPMENT
+//    Log::Game<ELogLevel::Info>("Path: %s", Asset::Tileset::Hotel::AtlasPNG.Path);
+//#endif
 
     // TestGeometry.InitFromRawMesh(CRawMesh(
     //     Asset::Common::PillarOBJ));
@@ -500,7 +505,7 @@ void SGame::OnBlobMoved()
         return;
     }
 
-    UVec2Size DirtyRange{SIZE_MAX, SIZE_MAX};
+    UVec2Size DirtyRange{ SIZE_MAX, SIZE_MAX };
 
     if (!CurrentTile->CheckSpecialFlag(TILE_SPECIAL_VISITED_BIT))
     {
