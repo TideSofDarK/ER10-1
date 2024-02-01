@@ -17,6 +17,7 @@
 #include "Level.hxx"
 #include "Math.hxx"
 #include "Memory.hxx"
+#include "SDL_video.h"
 
 #define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
 #define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
@@ -32,7 +33,7 @@
 
 namespace Asset::Common
 {
-    EXTERN_ASSET(BerkeleyTTF)
+    EXTERN_ASSET(IBMPlexSansTTF)
 }
 
 static const std::filesystem::path MapExtension = ".erm";
@@ -56,6 +57,7 @@ void SLevelEditor::Show()
     bool bLoadLevel = false;
     bool bSaveLevel = false;
     bool bLevelProperties = false;
+    bool bFitToScreen = false;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -74,6 +76,8 @@ void SLevelEditor::Show()
             ImGui::MenuItem("Show Edges", nullptr, &bDrawEdges);
             ImGui::MenuItem("Show Wall Joints", nullptr, &bDrawWallJoints);
             ImGui::MenuItem("Show Grid Lines", nullptr, &bDrawGridLines);
+            ImGui::Separator();
+            ImGui::MenuItem("Fit to Screen", "Home", &bFitToScreen);
             ImGui::EndMenu();
         }
 
@@ -83,6 +87,11 @@ void SLevelEditor::Show()
         ImGui::Text("Current Mode: %s", EditorModes[(int)LevelEditorMode]);
 
         ImGui::EndMainMenuBar();
+    }
+
+    if (bFitToScreen)
+    {
+        FitTilemapToWindow();
     }
 
     if (bNewLevel)
@@ -103,8 +112,9 @@ void SLevelEditor::Show()
         ImGui::EndPopup();
     }
 
-    static constexpr float ModalWidth = 400.0f;
-    static constexpr float ModalHeight = 200.0f;
+    const float ModalWidth = ImGui::GetFontSize() * 30;
+    const float ModalHeight = ImGui::GetFontSize() * 15;
+
     static std::string SavePathString{};
     if (bSaveLevel)
     {
@@ -199,10 +209,14 @@ void SLevelEditor::Show()
         {
             /* Tile Settings Window */
             auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
+
+            ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 7, 0), ImGuiCond_Once);
             if (ImGui::Begin("Tile Settings", nullptr,
-                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing))
+                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing))
             {
                 ImGui::Text("X=%d, Y=%d", SelectedTileCoords->X, SelectedTileCoords->Y);
+
+                ImGui::SetNextItemWidth(ImGui::GetFontSize() * 100);
                 ImGui::Separator();
                 const char* TileTypes[] = { "Empty", "Floor", "Hole" };
                 const char* EdgeTypes[] = { "Empty", "Wall", "Door" };
@@ -701,7 +715,7 @@ void SLevelEditor::ShowLevel()
     }
     ImGui::PopStyleVar();
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)))
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
     {
         FitTilemapToWindow();
     }
@@ -820,16 +834,22 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+    io.LogFilename = nullptr;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsClassic();
     ImGui_ImplSDL3_InitForOpenGL(Window, Context);
     ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
+
+    float WindowScale = SDL_GetWindowDisplayScale(Window);
+
+    ImGui::GetStyle().ScaleAllSizes(WindowScale);
 
     /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
     ImFontConfig FontConfig;
     FontConfig.FontDataOwnedByAtlas = false;
-    io.Fonts->AddFontFromMemoryTTF(Asset::Common::BerkeleyTTF.AsVoidPtr(), (int)Asset::Common::BerkeleyTTF.Length, 32.0f, &FontConfig);
+    io.Fonts->AddFontFromMemoryTTF(Asset::Common::IBMPlexSansTTF.AsVoidPtr(), (int)Asset::Common::IBMPlexSansTTF.Length, std::floor(22.0f * WindowScale), &FontConfig);
 }
 
 void SDevTools::Cleanup()
@@ -862,11 +882,11 @@ void SDevTools::Update(SGame& Game)
     }
     else
     {
-        if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_None))
         {
             if (ImGui::TreeNode("System Info"))
             {
-                ImGui::Text("Frames Per Second: %.2f", 1000.0f / Game.Window.DeltaTime / 1000.0f);
+                ImGui::Text("Frames Per Second: %.f", 1000.0f / Game.Window.DeltaTime / 1000.0f);
                 ImGui::Text("Number Of Blocks: %zu", CMemory::NumberOfBlocks());
                 ImGui::TreePop();
             }
@@ -874,11 +894,12 @@ void SDevTools::Update(SGame& Game)
             {
                 ImGui::Text("Direction: %s (%u)", SDirection::Names[Game.Blob.Direction.Index], Game.Blob.Direction.Index);
                 ImGui::Text("Coords: X=%d, Y=%d", Game.Blob.Coords.X, Game.Blob.Coords.Y);
-                ImGui::Text("Unreliable Coords: X=%f, Y=%f", Game.Blob.UnreliableCoords().X, Game.Blob.UnreliableCoords().Y);
-                DrawParty(Game.PlayerParty, 0.5f, true);
-                DrawParty(Game.PlayerParty, 0.5f, false);
+                ImGui::Text("Unreliable Coords: X=%.2f, Y=%.2f", Game.Blob.UnreliableCoords().X, Game.Blob.UnreliableCoords().Y);
+                DrawParty(Game.PlayerParty, ImGui::GetFontSize() * 0.01f, true);
+                DrawParty(Game.PlayerParty, ImGui::GetFontSize() * 0.01f, false);
                 ImGui::TreePop();
             }
+            ImGui::SetNextItemOpen(true, ImGuiCond_Once);
             if (ImGui::TreeNode("Level Tools"))
             {
                 if (ImGui::Button("Explore Level"))
@@ -925,8 +946,8 @@ void SDevTools::Update(SGame& Game)
                 ImGui::SliderFloat(" ", &Game.Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
                 ImGui::TreePop();
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 }
 

@@ -66,7 +66,7 @@ namespace Asset::Common
     DEFINE_ASSET(NoisePNG, "../Asset/Texture/Noise.png")
     DEFINE_ASSET(QuadOBJ, "../Asset/Mesh/Quad.obj")
     DEFINE_ASSET(PillarOBJ, "../Asset/Mesh/Pillar.obj")
-    DEFINE_ASSET(BerkeleyTTF, "../Asset/Font/Berkeley.ttf")
+    DEFINE_ASSET(IBMPlexSansTTF, "../Asset/Font/IBMPlexSans.ttf")
     DEFINE_ASSET(DoorCreekWAV, "../Asset/Sound/DoorCreek.wav")
     DEFINE_ASSET(Tile_01WAV, "../Asset/Sound/Step/Tile_01.wav")
     DEFINE_ASSET(TestMusicWAV, "../Asset/Music/TestMusic.wav")

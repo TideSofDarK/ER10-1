@@ -67,7 +67,6 @@ SWindow::SWindow()
     }
 
     SDL_GetWindowSizeInPixels(Window, &Width, &Height);
-    OnWindowResized(Width, Height);
 }
 
 SWindow::~SWindow()
