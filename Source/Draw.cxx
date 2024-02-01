@@ -74,20 +74,20 @@ void SProgram::CheckProgram(unsigned int ProgramID)
     }
 }
 
-unsigned int SProgram::CreateVertexShader(const SAsset& Asset)
+unsigned int SProgram::CreateVertexShader(const char* Data, int Length)
 {
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
         Asset::Shader::SharedGLSL.AsSignedCharPtr(),
         &SharedConstants[0],
-        Asset.AsSignedCharPtr()
+        Data
     };
     int const Lengths[4] = {
         (int)GLSLVersion.length(),
         (int)Asset::Shader::SharedGLSL.Length,
         (int)SharedConstants.length(),
-        (int)Asset.Length
+        Length
     };
     glShaderSource(VertexShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(VertexShaderID);
@@ -95,20 +95,20 @@ unsigned int SProgram::CreateVertexShader(const SAsset& Asset)
     return VertexShaderID;
 }
 
-unsigned int SProgram::CreateFragmentShader(const SAsset& Asset)
+unsigned int SProgram::CreateFragmentShader(const char* Data, int Length)
 {
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
         Asset::Shader::SharedGLSL.AsSignedCharPtr(),
         &SharedConstants[0],
-        Asset.AsSignedCharPtr()
+        Data
     };
     int const Lengths[4] = {
         (int)GLSLVersion.length(),
         (int)Asset::Shader::SharedGLSL.Length,
         (int)SharedConstants.length(),
-        (int)Asset.Length
+        Length
     };
     glShaderSource(FragmentShaderID, 4, Blocks, &Lengths[0]);
     glCompileShader(FragmentShaderID);
@@ -133,10 +133,14 @@ void SProgram::InitUniforms()
     UniformModeControlBID = glGetUniformLocation(ID, "u_modeControlB");
 }
 
-void SProgram::Init(const SAsset& VertexShaderData, const SAsset& FragmentShaderData)
+void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentShaderAsset)
 {
-    unsigned VertexShader = CreateVertexShader(VertexShaderData);
-    unsigned FragmentShader = CreateFragmentShader(FragmentShaderData);
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    VertexShaderAsset = &InVertexShaderAsset;
+    FragmentShaderAsset = &InFragmentShaderAsset;
+#endif
+    unsigned VertexShader = CreateVertexShader(InVertexShaderAsset.AsSignedCharPtr(), (int)InVertexShaderAsset.Length);
+    unsigned FragmentShader = CreateFragmentShader(InFragmentShaderAsset.AsSignedCharPtr(), (int)InFragmentShaderAsset.Length);
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
@@ -148,13 +152,55 @@ void SProgram::Cleanup() const
 {
     glDeleteProgram(ID);
 
-    Log::Draw<ELogLevel::Debug>("Deleting SProgram", "");
+    Log::Draw<ELogLevel::Debug>("Deleting SProgram");
 }
 
 void SProgram::Use() const
 {
     glUseProgram(ID);
 }
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    #include <filesystem>
+    #include <sstream>
+void SProgram::Reload()
+{
+    namespace fs = std::filesystem;
+
+    std::ifstream ShaderFile;
+
+    unsigned VertexShader, FragmentShader;
+
+    {
+        ShaderFile.open(VertexShaderAsset->Path, std::ifstream::in);
+        std::stringstream VertexShaderStringBuffer;
+        VertexShaderStringBuffer << ShaderFile.rdbuf();
+        auto VertexShaderString = VertexShaderStringBuffer.str();
+        VertexShader = CreateVertexShader(VertexShaderString.data(), (int)VertexShaderString.length());
+
+        ShaderFile.close();
+    }
+
+    {
+        ShaderFile.open(FragmentShaderAsset->Path, std::ifstream::in);
+        std::stringstream FragmentShaderStringBuffer;
+        FragmentShaderStringBuffer << ShaderFile.rdbuf();
+        auto FragmentShaderString = FragmentShaderStringBuffer.str();
+        FragmentShader = CreateFragmentShader(FragmentShaderString.data(), (int)FragmentShaderString.length());
+
+        ShaderFile.close();
+    }
+
+    Cleanup();
+    ID = CreateProgram(VertexShader, FragmentShader);
+    glDeleteShader(VertexShader);
+    glDeleteShader(FragmentShader);
+    SProgram::InitUniforms();
+    InitUniforms();
+
+    Log::Draw<ELogLevel::Debug>("Reloading SProgram");
+}
+#endif
 
 void SProgramPostProcess::InitUniforms()
 {

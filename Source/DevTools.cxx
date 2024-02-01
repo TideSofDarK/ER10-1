@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <glad/gl.h>
 #include <imgui/imgui.h>
@@ -864,6 +863,11 @@ void SDevTools::Update(SGame& Game)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F4)))
+    {
+        Game.Renderer.ProgramHUD.Reload();
+    }
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))
     {

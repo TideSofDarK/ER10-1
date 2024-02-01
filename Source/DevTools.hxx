@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <filesystem>
 #include <imgui/imgui.h>
 #include "Level.hxx"
 
@@ -31,8 +32,8 @@ struct SLevelEditor
 
     void Show();
 
-    void SaveTilemapToFile(const class std::filesystem::path& Path) const;
-    void LoadTilemapFromFile(const class std::filesystem::path& Path);
+    void SaveTilemapToFile(const std::filesystem::path& Path) const;
+    void LoadTilemapFromFile(const std::filesystem::path& Path);
 
     void ScanForLevels();
 

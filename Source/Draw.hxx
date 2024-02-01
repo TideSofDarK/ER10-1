@@ -32,9 +32,9 @@ private:
 
     static void CheckProgram(unsigned ProgramID);
 
-    static unsigned int CreateVertexShader(const SAsset& Asset);
+    static unsigned int CreateVertexShader(const char* Data, int Length);
 
-    static unsigned int CreateFragmentShader(const SAsset& Asset);
+    static unsigned int CreateFragmentShader(const char* Data, int Length);
 
     static unsigned int CreateProgram(unsigned int VertexShader, unsigned int FragmentShader);
 
@@ -47,8 +47,15 @@ public:
     int UniformModeControlAID{};
     int UniformModeControlBID{};
 
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    const SAsset* VertexShaderAsset{};
+    const SAsset* FragmentShaderAsset{};
+
+    void Reload();
+#endif
+
     void
-    Init(const SAsset& VertexShaderData, const SAsset& FragmentShaderData);
+    Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentShaderAsset);
 
     void Cleanup() const;
 

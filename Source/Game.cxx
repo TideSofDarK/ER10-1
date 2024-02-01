@@ -71,13 +71,6 @@ SGame::SGame()
     PrimaryAtlas3D.AddSprite(
         Asset::Tileset::Hotel::AtlasPNG);
     PrimaryAtlas3D.Build();
-//
-//#ifdef EQUINOX_REACH_DEVELOPMENT
-//    Log::Game<ELogLevel::Info>("Path: %s", Asset::Tileset::Hotel::AtlasPNG.Path);
-//#endif
-
-    // TestGeometry.InitFromRawMesh(CRawMesh(
-    //     Asset::Common::PillarOBJ));
 
     Tileset.InitBasic(
         Asset::Tileset::Hotel::FloorOBJ,

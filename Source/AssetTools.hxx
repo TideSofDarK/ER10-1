@@ -3,6 +3,10 @@
 #include "Memory.hxx"
 #include "Math.hxx"
 
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    #include <filesystem>
+#endif
+
 #define EXTERN_ASSET(NAME) extern const SAsset NAME;
 
 struct SAsset
@@ -10,13 +14,11 @@ struct SAsset
     const unsigned char* Data;
     size_t Length;
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    const char* Path;
+    std::filesystem::path Path;
 
-    explicit SAsset(const char* InData, size_t InLength, const char* InPath)
-        : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength), Path(InPath){};
+    explicit SAsset(const char* InData, size_t InLength, const char* BasePath, const char* RelativeAssetPath);
 #else
-    explicit SAsset(const char* InData, size_t InLength)
-        : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength){};
+    explicit SAsset(const char* InData, size_t InLength);
 #endif
 
     [[nodiscard]] std::string ToString() const { return { AsSignedCharPtr(), Length }; }
