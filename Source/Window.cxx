@@ -1,12 +1,11 @@
 #include "Window.hxx"
 
-#include "Constants.hxx"
 #include <glad/gl.h>
 #include <SDL3/SDL.h>
 #include "Log.hxx"
 #include "Memory.hxx"
-#include "SDL_oldnames.h"
 #include "SDL_video.h"
+#include "Constants.hxx"
 
 void SWindow::SwapBuffers() const
 {
@@ -30,16 +29,18 @@ SWindow::SWindow()
     SDL_SetEventEnabled(SDL_EVENT_TEXT_INPUT, SDL_FALSE);
 #endif
 
+    int DisplayCount{};
+    SDL_DisplayID* Displays = SDL_GetDisplays(&DisplayCount);
+    UVec2Int Resolution = CalculateOptimalWindowedResolution(Displays[0]);
+
     Window = SDL_CreateWindow(GAME_NAME,
-        WINDOW_WIDTH, WINDOW_HEIGHT,
+        Resolution.X, Resolution.Y,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-
-    SetOptimalWindowedResolution();
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(Window);
     SDL_GL_MakeCurrent(Window, gl_context);
@@ -54,7 +55,7 @@ SWindow::SWindow()
         exit(1);
     }
 
-    SDL_GetWindowSizeInPixels(Window, &Width, &Height);
+    OnWindowResized();
 }
 
 SWindow::~SWindow()
@@ -64,10 +65,9 @@ SWindow::~SWindow()
     SDL_Quit();
 }
 
-void SWindow::OnWindowResized(int InWidth, int InHeight)
+void SWindow::OnWindowResized()
 {
-    Width = InWidth;
-    Height = InHeight;
+    SDL_GetWindowSize(Window, &Width, &Height);
     BlitWidth = Width;
     BlitHeight = static_cast<int>(static_cast<float>(BlitWidth) / SCREEN_ASPECT);
     if (Height < BlitHeight)
@@ -84,26 +84,29 @@ void SWindow::ToggleBorderlessFullscreen() const
     SDL_SetWindowFullscreen(Window, !IsAnyFullscreen());
 }
 
-void SWindow::SetOptimalWindowedResolution() const
+UVec2Int SWindow::CalculateOptimalWindowedResolution(unsigned DisplayID)
 {
     SDL_Rect UsableBounds;
-
-    SDL_DisplayID DisplayID = SDL_GetDisplayForWindow(Window);
 
     SDL_GetDisplayUsableBounds(DisplayID, &UsableBounds);
 
     int ScaleFactorY = UsableBounds.h / SCREEN_HEIGHT;
     int ScaleFactorX = UsableBounds.w / SCREEN_WIDTH;
 
-    int ScaleFactor = std::max(1, (std::min(ScaleFactorX, ScaleFactorY) - 1));
+    int ScaleFactor = std::max(1, (std::min(ScaleFactorX, ScaleFactorY)));
 
-    SDL_SetWindowSize(Window, SCREEN_WIDTH * ScaleFactor, SCREEN_HEIGHT * ScaleFactor);
+    return { SCREEN_WIDTH * ScaleFactor, SCREEN_HEIGHT * ScaleFactor };
+}
+
+void SWindow::SetOptimalWindowedResolution() const
+{
+    SDL_DisplayID DisplayID = SDL_GetDisplayForWindow(Window);
+
+    auto Resolution = CalculateOptimalWindowedResolution(DisplayID);
+
+    SDL_SetWindowSize(Window, Resolution.X, Resolution.Y);
     SDL_SetWindowPosition(Window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-
-    SDL_Log(
-        "DisplayID: %u, ScaleFactor: %d",
-        DisplayID,
-        ScaleFactor);
+    SDL_SetWindowFullscreen(Window, false);
 }
 
 namespace Platform

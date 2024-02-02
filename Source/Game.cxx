@@ -188,7 +188,7 @@ void SGame::Run()
             switch (Event.type)
             {
                 case SDL_EVENT_WINDOW_RESIZED:
-                    Window.OnWindowResized(Event.window.data1, Event.window.data2);
+                    Window.OnWindowResized();
                     break;
                 case SDL_EVENT_QUIT:
                     Window.bQuit = true;
