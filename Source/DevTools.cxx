@@ -891,7 +891,7 @@ void SDevTools::Update(SGame& Game)
             if (ImGui::TreeNode("System Info"))
             {
                 ImGui::Text("Frames Per Second: %.f", 1000.0f / Game.Window.DeltaTime / 1000.0f);
-                ImGui::Text("Number Of Blocks: %zu", CMemory::NumberOfBlocks());
+                ImGui::Text("Number Of Blocks: %zu", Memory::NumberOfBlocks());
                 ImGui::TreePop();
             }
             if (ImGui::TreeNode("Player Info"))

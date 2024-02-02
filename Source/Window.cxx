@@ -20,12 +20,6 @@ bool SWindow::IsAnyFullscreen() const
 
 SWindow::SWindow()
 {
-    SDL_LogSetAllPriority(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
-    SDL_LogSetOutputFunction([](void* Userdata, int Category, SDL_LogPriority Priority, const char* message) {
-        Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", message);
-    },
-        nullptr);
-
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
@@ -110,4 +104,22 @@ void SWindow::SetOptimalWindowedResolution() const
         "DisplayID: %u, ScaleFactor: %d",
         DisplayID,
         ScaleFactor);
+}
+
+namespace Platform
+{
+    void Init()
+    {
+        SDL_LogSetAllPriority(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
+        SDL_LogSetOutputFunction([](void* Userdata, int Category, SDL_LogPriority Priority, const char* message) {
+            Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", message);
+        },
+            nullptr);
+
+        if (SDL_SetMemoryFunctions(&Memory::Malloc, &Memory::Calloc, &Memory::Realloc, &Memory::Free))
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
+            exit(1);
+        }
+    }
 }

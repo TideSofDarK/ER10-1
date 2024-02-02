@@ -24,17 +24,17 @@
 
 void* STBIMalloc(size_t Length)
 {
-    return CMemory::Malloc(Length);
+    return Memory::Malloc(Length);
 }
 
 void* STBIRealloc(void* Pointer, size_t Length)
 {
-    return CMemory::Realloc(Pointer, Length);
+    return Memory::Realloc(Pointer, Length);
 }
 
 void STBIFree(void* Pointer)
 {
-    CMemory::Free(Pointer);
+    Memory::Free(Pointer);
 }
 
 #include <stb/stb_image.h>

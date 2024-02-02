@@ -20,3 +20,8 @@ struct SWindow : SWindowData
 
     void SetOptimalWindowedResolution() const;
 };
+
+namespace Platform
+{
+    void Init();
+}

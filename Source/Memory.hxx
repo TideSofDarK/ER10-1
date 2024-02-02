@@ -77,7 +77,7 @@ class CTopmostResource final : public std::pmr::memory_resource
 
 class CMemory final
 {
-protected:
+public:
     CTopmostResource TopmostResource;
     CInlineResource InlineResource;
     std::pmr::synchronized_pool_resource PoolResource;
@@ -94,29 +94,6 @@ protected:
     }
 
 public:
-    inline static void* Malloc(size_t Bytes)
-    {
-        void* Ptr = Get().InlineResource.do_allocate(Bytes, alignof(std::max_align_t));
-        return Ptr;
-    }
-
-    inline static void* Calloc(size_t Num, size_t Bytes)
-    {
-        void* Ptr = Get().InlineResource.do_allocate(Num * Bytes, alignof(std::max_align_t));
-        std::memset(Ptr, 0, Bytes * Num);
-        return Ptr;
-    }
-
-    inline static void* Realloc(void* Ptr, size_t Bytes)
-    {
-        return Get().InlineResource.do_reallocate(Ptr, Bytes);
-    }
-
-    inline static void Free(void* Ptr)
-    {
-        Get().InlineResource.do_deallocate(Ptr, 0, alignof(std::max_align_t));
-    }
-
     template <typename T>
     inline static std::shared_ptr<T> MakeShared()
     {
@@ -128,6 +105,13 @@ public:
     {
         return std::pmr::vector<T>(&Get().PoolResource);
     }
-
-    static std::size_t NumberOfBlocks();
 };
+
+namespace Memory
+{
+    void* Malloc(size_t Bytes);
+    void* Calloc(size_t Num, size_t Bytes);
+    void* Realloc(void* Ptr, size_t Bytes);
+    void Free(void* Ptr);
+    std::size_t NumberOfBlocks();
+}
