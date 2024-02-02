@@ -1026,12 +1026,12 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                     continue;
                 }
 
-                if (SideCounter < 0 & ForwardCounter == 0 && !Tile->IsEdgeEmpty(POVDirection.Side().Inverted()))
+                if (SideCounter < 0 && ForwardCounter == 0 && !Tile->IsEdgeEmpty(POVDirection.Side().Inverted()))
                 {
                     continue;
                 }
 
-                if (SideCounter > 0 & ForwardCounter == 0 && !Tile->IsEdgeEmpty(POVDirection.Side()))
+                if (SideCounter > 0 && ForwardCounter == 0 && !Tile->IsEdgeEmpty(POVDirection.Side()))
                 {
                     continue;
                 }

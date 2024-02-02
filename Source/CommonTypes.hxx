@@ -145,31 +145,32 @@ enum class EKeyState : unsigned
     Held,
 };
 
+struct SKeys
+{
+    EKeyState Up : 2;
+    EKeyState Right : 2;
+    EKeyState Down : 2;
+    EKeyState Left : 2;
+    EKeyState Accept : 2;
+    EKeyState Cancel : 2;
+    EKeyState L : 2;
+    EKeyState ZL : 2;
+    EKeyState R : 2;
+    EKeyState ZR : 2;
+
+    EKeyState ToggleFullscreen : 2;
+
+#ifdef EQUINOX_REACH_DEVELOPMENT
+    EKeyState ToggleLevelEditor : 2;
+#endif
+};
+
 struct SInputState
 {
     union
     {
         unsigned long Value;
-        struct
-        {
-
-            EKeyState Up : 2;
-            EKeyState Right : 2;
-            EKeyState Down : 2;
-            EKeyState Left : 2;
-            EKeyState Accept : 2;
-            EKeyState Cancel : 2;
-            EKeyState L : 2;
-            EKeyState ZL : 2;
-            EKeyState R : 2;
-            EKeyState ZR : 2;
-
-            EKeyState ToggleFullscreen : 2;
-
-#ifdef EQUINOX_REACH_DEVELOPMENT
-            EKeyState ToggleLevelEditor : 2;
-#endif
-        };
+        SKeys Keys;
     };
 
     void Buffer(const SInputState& Other)

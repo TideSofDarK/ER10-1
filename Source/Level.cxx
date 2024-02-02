@@ -13,9 +13,9 @@ void STilemap::PostProcess()
         return;
     }
     UVec2Int Coords{};
-    for (; Coords.X < Width; ++Coords.X)
+    for (; Coords.X < (int)Width; ++Coords.X)
     {
-        for (Coords.Y = 0; Coords.Y < Height; ++Coords.Y)
+        for (Coords.Y = 0; Coords.Y < (int)Height; ++Coords.Y)
         {
             auto CurrentTile = GetTileAtMutable(Coords);
             if (CurrentTile == nullptr)
@@ -79,8 +79,6 @@ void STilemap::Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
 
     for (auto& Direction : SDirection::All())
     {
-        auto& EdgeFlags = Tile->EdgeFlags;
-
         auto NeighborTile = GetTileAtMutable(Coords + Direction.GetVector<int>());
         if (NeighborTile != nullptr)
         {

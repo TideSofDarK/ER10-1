@@ -310,7 +310,7 @@ struct SRenderQueue
 
     void Enqueue(const TEntry& Entry)
     {
-        if (CurrentIndex >= Entries.size())
+        if (CurrentIndex >= (int)Entries.size())
         {
             CurrentIndex = 0;
         }

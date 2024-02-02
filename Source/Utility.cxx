@@ -36,7 +36,7 @@ namespace Utility
         float Output = Target + (Change + Temp) * Exp;
 
         // Prevent overshooting
-        if (OriginalTo - Current > 0.0f == Output > OriginalTo)
+        if ((OriginalTo - Current > 0.0f) == (Output > OriginalTo))
         {
             Output = OriginalTo;
             CurrentVelocity = (Output - OriginalTo) / DeltaTime;

@@ -44,8 +44,8 @@ namespace ELevelDirtyFlags
 
 struct STilemap
 {
-    uint32_t Width{};
-    uint32_t Height{};
+    int32_t Width{};
+    int32_t Height{};
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
     std::bitset<(MAX_LEVEL_WIDTH + 1) * (MAX_LEVEL_HEIGHT + 1)> WallJoints{};
     uint32_t bUseWallJoints = true;
@@ -111,7 +111,7 @@ struct STilemap
         return Coord >= 0 && Coord < Height;
     }
 
-    [[nodiscard]] inline std::size_t CoordsToIndex(int X, int Y) const { return (Y * (int)Width) + X; }
+    [[nodiscard]] inline std::size_t CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
 
     [[nodiscard]] inline std::size_t CoordsToIndex(const UVec2Int& Coords) const { return CoordsToIndex(Coords.X, Coords.Y); }
 
@@ -156,7 +156,7 @@ struct SLevel : STilemap
     int Z{};
 
     /* Draw State */
-    SDrawDoorInfo DoorInfo;
+    SDrawDoorInfo DoorInfo{};
     uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
     SVec2<std::size_t> DirtyRange{};
 

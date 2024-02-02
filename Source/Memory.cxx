@@ -33,6 +33,7 @@ void CInlineResource::DestroyBlock(SAllocationHeader* AllocationHeader)
 size_t CInlineResource::NumberOfBlocks()
 {
     std::unique_lock Lock{ Mutex };
+
     if (FirstAllocation == nullptr)
     {
         return 0;
@@ -56,7 +57,7 @@ void* CInlineResource::do_allocate(size_t bytes, size_t alignment)
     return AllocateInline(nullptr, bytes, alignment);
 }
 
-void CInlineResource::do_deallocate(void* ptr, size_t bytes, size_t alignment)
+void CInlineResource::do_deallocate(void* ptr, [[maybe_unused]] size_t bytes, [[maybe_unused]] size_t alignment)
 {
     std::unique_lock Lock{ Mutex };
     AllocateInline(ptr, 0);
@@ -161,7 +162,7 @@ void* CInlineResource::AllocateInline(void* SrcPtr, size_t Bytes, const size_t A
         }
         else
         {
-            if (reinterpret_cast<std::byte*>(FirstAllocation) > Buffer.data() && reinterpret_cast<std::byte*>(FirstAllocation) - Buffer.data() >= BytesWithHeader)
+            if (reinterpret_cast<std::byte*>(FirstAllocation) > Buffer.data() && reinterpret_cast<std::byte*>(FirstAllocation) - Buffer.data() >= (int)BytesWithHeader)
             {
                 NewPtr = Buffer.data();
                 NewNextBlock = FirstAllocation;
@@ -274,7 +275,7 @@ void* CTopmostResource::do_allocate(size_t Bytes, size_t Align)
     return ::operator new(Bytes, std::align_val_t(Align));
 }
 
-void CTopmostResource::do_deallocate(void* Pointer, size_t Bytes, size_t Align) noexcept
+void CTopmostResource::do_deallocate(void* Pointer, [[maybe_unused]] size_t Bytes, size_t Align) noexcept
 
 {
     Log::Memory<ELogLevel::Critical>("Freeing %p through topmost resource", Pointer);

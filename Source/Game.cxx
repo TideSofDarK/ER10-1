@@ -208,7 +208,7 @@ void SGame::Run()
         //     Window.bQuit = true;
         // }
 
-        if (InputState.ToggleFullscreen == EKeyState::Pressed)
+        if (InputState.Keys.ToggleFullscreen == EKeyState::Pressed)
         {
             Window.ToggleBorderlessFullscreen();
         }
@@ -227,12 +227,12 @@ void SGame::Run()
             //     SpriteDemoState = std::min(5, SpriteDemoState + 1);
             // }
 
-            if (InputState.ZR == EKeyState::Pressed)
+            if (InputState.Keys.ZR == EKeyState::Pressed)
             {
                 bMapMaximized = !bMapMaximized;
             }
 
-            if (InputState.Accept == EKeyState::Pressed)
+            if (InputState.Keys.Accept == EKeyState::Pressed)
             {
                 Audio.TestAudio();
             }
@@ -299,19 +299,19 @@ void SGame::UpdateInputState()
 {
     OldInputState = InputState;
     const Uint8* KeyboardState = SDL_GetKeyboardState(nullptr);
-    InputState.Up = UpdateKeyState(OldInputState.Up, KeyboardState, SDL_SCANCODE_W);
-    InputState.Right = UpdateKeyState(OldInputState.Right, KeyboardState, SDL_SCANCODE_D);
-    InputState.Down = UpdateKeyState(OldInputState.Down, KeyboardState, SDL_SCANCODE_S);
-    InputState.Left = UpdateKeyState(OldInputState.Left, KeyboardState, SDL_SCANCODE_A);
-    InputState.L = UpdateKeyState(OldInputState.L, KeyboardState, SDL_SCANCODE_Q);
-    InputState.R = UpdateKeyState(OldInputState.R, KeyboardState, SDL_SCANCODE_E);
-    InputState.ZL = UpdateKeyState(OldInputState.ZL, KeyboardState, SDL_SCANCODE_Z);
-    InputState.ZR = UpdateKeyState(OldInputState.ZR, KeyboardState, SDL_SCANCODE_C);
-    InputState.Accept = UpdateKeyState(OldInputState.Accept, KeyboardState, SDL_SCANCODE_SPACE);
-    InputState.Cancel = UpdateKeyState(OldInputState.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
-    InputState.ToggleFullscreen = UpdateKeyState(OldInputState.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
+    InputState.Keys.Up = UpdateKeyState(OldInputState.Keys.Up, KeyboardState, SDL_SCANCODE_W);
+    InputState.Keys.Right = UpdateKeyState(OldInputState.Keys.Right, KeyboardState, SDL_SCANCODE_D);
+    InputState.Keys.Down = UpdateKeyState(OldInputState.Keys.Down, KeyboardState, SDL_SCANCODE_S);
+    InputState.Keys.Left = UpdateKeyState(OldInputState.Keys.Left, KeyboardState, SDL_SCANCODE_A);
+    InputState.Keys.L = UpdateKeyState(OldInputState.Keys.L, KeyboardState, SDL_SCANCODE_Q);
+    InputState.Keys.R = UpdateKeyState(OldInputState.Keys.R, KeyboardState, SDL_SCANCODE_E);
+    InputState.Keys.ZL = UpdateKeyState(OldInputState.Keys.ZL, KeyboardState, SDL_SCANCODE_Z);
+    InputState.Keys.ZR = UpdateKeyState(OldInputState.Keys.ZR, KeyboardState, SDL_SCANCODE_C);
+    InputState.Keys.Accept = UpdateKeyState(OldInputState.Keys.Accept, KeyboardState, SDL_SCANCODE_SPACE);
+    InputState.Keys.Cancel = UpdateKeyState(OldInputState.Keys.Cancel, KeyboardState, SDL_SCANCODE_ESCAPE);
+    InputState.Keys.ToggleFullscreen = UpdateKeyState(OldInputState.Keys.ToggleFullscreen, KeyboardState, SDL_SCANCODE_F11);
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    InputState.ToggleLevelEditor = UpdateKeyState(OldInputState.ToggleLevelEditor, KeyboardState, SDL_SCANCODE_F9);
+    InputState.Keys.ToggleLevelEditor = UpdateKeyState(OldInputState.Keys.ToggleLevelEditor, KeyboardState, SDL_SCANCODE_F9);
 #endif
 }
 
@@ -331,7 +331,7 @@ void SGame::HandleBlobMovement()
             BufferedInputState.Buffer(InputState);
 
             /* Moving */
-            if (BufferedInputState.L == EKeyState::Held)
+            if (BufferedInputState.Keys.L == EKeyState::Held)
             {
                 auto PlayerDirection = Blob.Direction;
                 PlayerDirection.CycleCCW();
@@ -340,7 +340,7 @@ void SGame::HandleBlobMovement()
                     Blob.HijackLF();
                 }
             }
-            if (BufferedInputState.R == EKeyState::Held)
+            if (BufferedInputState.Keys.R == EKeyState::Held)
             {
                 auto PlayerDirection = Blob.Direction;
                 PlayerDirection.CycleCW();
@@ -349,12 +349,12 @@ void SGame::HandleBlobMovement()
                     Blob.HijackRF();
                 }
             }
-            if (BufferedInputState.Up == EKeyState::Held)
+            if (BufferedInputState.Keys.Up == EKeyState::Held)
             {
                 auto PlayerDirection = Blob.Direction;
                 AttemptBlobStep(PlayerDirection);
             }
-            if (BufferedInputState.Down == EKeyState::Held)
+            if (BufferedInputState.Keys.Down == EKeyState::Held)
             {
                 auto PlayerDirection = Blob.Direction;
                 if (!AttemptBlobStep(PlayerDirection.Inverted()))
@@ -364,11 +364,11 @@ void SGame::HandleBlobMovement()
             }
 
             /* Turning */
-            if (BufferedInputState.Left == EKeyState::Held)
+            if (BufferedInputState.Keys.Left == EKeyState::Held)
             {
                 Blob.Turn(false);
             }
-            else if (BufferedInputState.Right == EKeyState::Held)
+            else if (BufferedInputState.Keys.Right == EKeyState::Held)
             {
                 Blob.Turn(true);
             }

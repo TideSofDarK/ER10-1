@@ -107,7 +107,7 @@ struct STile
         Tile.Flags = TILE_FLOOR_BIT;
         Tile.EdgeFlags = TILE_EDGE_WALL_BIT;
         return Tile;
-    };
+    }
 
     static STile WallE()
     {
@@ -115,7 +115,7 @@ struct STile
         Tile.Flags = TILE_FLOOR_BIT;
         Tile.EdgeFlags = TILE_EDGE_WALL_EAST_BIT;
         return Tile;
-    };
+    }
 
     static STile WallS()
     {
@@ -123,7 +123,7 @@ struct STile
         Tile.Flags = TILE_FLOOR_BIT;
         Tile.EdgeFlags = TILE_EDGE_WALL_SOUTH_BIT;
         return Tile;
-    };
+    }
 
     static STile WallW()
     {

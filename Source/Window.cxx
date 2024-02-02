@@ -111,8 +111,8 @@ namespace Platform
     void Init()
     {
         SDL_LogSetAllPriority(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
-        SDL_LogSetOutputFunction([](void* Userdata, int Category, SDL_LogPriority Priority, const char* message) {
-            Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", message);
+        SDL_LogSetOutputFunction([]([[maybe_unused]] void* Userdata, [[maybe_unused]] int Category, [[maybe_unused]] SDL_LogPriority Priority, const char* Message) {
+            Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", Message);
         },
             nullptr);
 

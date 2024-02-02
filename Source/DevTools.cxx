@@ -47,7 +47,7 @@ SLevelEditor::SLevelEditor()
     bDrawWallJoints = false;
     bDrawEdges = true;
     bDrawGridLines = false;
-    Level = SLevel{ 8, 8 };
+    Level = SLevel{ {8, 8} };
 }
 
 void SLevelEditor::Show()
@@ -104,7 +104,7 @@ void SLevelEditor::Show()
         ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
         if (ImGui::Button("Accept"))
         {
-            Level = SLevel{ (uint32_t)NewLevelSize.X, (uint32_t)NewLevelSize.Y };
+            Level = SLevel{ {NewLevelSize.X, NewLevelSize.Y} };
             FitTilemapToWindow();
             ImGui::CloseCurrentPopup();
         }
@@ -217,8 +217,8 @@ void SLevelEditor::Show()
 
                 ImGui::SetNextItemWidth(ImGui::GetFontSize() * 100);
                 ImGui::Separator();
-                const char* TileTypes[] = { "Empty", "Floor", "Hole" };
-                const char* EdgeTypes[] = { "Empty", "Wall", "Door" };
+                // const char* TileTypes[] = { "Empty", "Floor", "Hole" };
+                // const char* EdgeTypes[] = { "Empty", "Wall", "Door" };
 
                 for (auto Direction = 0u; Direction < 4; Direction++)
                 {
@@ -287,7 +287,7 @@ void SLevelEditor::FitTilemapToWindow()
 void SLevelEditor::ShowLevel()
 {
     ImGuiIO& IO = ImGui::GetIO();
-    const float WindowPadding = (float)LevelEditorCellSize * 0.1f;
+    const float WindowPadding = LevelEditorCellSize * 0.1f;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
     if (ImGui::Begin("Grid", nullptr,
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
@@ -370,10 +370,10 @@ void SLevelEditor::ShowLevel()
         }
 
         /* Draw edges. */
-        const float EdgeThickness = (float)LevelEditorCellSize * 0.03f;
-        const float EdgeOffset = (float)LevelEditorCellSize * 0.049f;
-        const float DoorOffsetX = (float)LevelEditorCellSize * 0.15f;
-        const float DoorOffsetY = (float)LevelEditorCellSize * 0.12f;
+        const float EdgeThickness = LevelEditorCellSize * 0.03f;
+        const float EdgeOffset = LevelEditorCellSize * 0.049f;
+        const float DoorOffsetX = LevelEditorCellSize * 0.15f;
+        const float DoorOffsetY = LevelEditorCellSize * 0.12f;
         if (bDrawEdges)
         {
             for (int Y = 0; Y <= Level.Height; Y += 1)
@@ -571,11 +571,11 @@ void SLevelEditor::ShowLevel()
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
                     {
-                        SelectedTileCoords->Y = std::min((int)(Level.Height - 1), SelectedTileCoords->Y + 1);
+                        SelectedTileCoords->Y = std::min(Level.Height - 1, SelectedTileCoords->Y + 1);
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
                     {
-                        SelectedTileCoords->X = std::min((int)(Level.Width - 1), SelectedTileCoords->X + 1);
+                        SelectedTileCoords->X = std::min(Level.Width - 1, SelectedTileCoords->X + 1);
                     }
                 }
                 if (LevelEditorMode == ELevelEditorMode::Block)
@@ -622,7 +622,6 @@ void SLevelEditor::ShowLevel()
                 }
                 else if (LevelEditorMode == ELevelEditorMode::ToggleDoor)
                 {
-                    auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
                     auto ToggleDoor = [this](SDirection Direction) {
                         Level.ToggleEdge(*SelectedTileCoords, Direction, TILE_EDGE_DOOR_BIT);
                         LevelEditorMode = ELevelEditorMode::Normal;
@@ -720,7 +719,7 @@ void SLevelEditor::ShowLevel()
     }
 }
 
-void SDevTools::DrawParty(SParty& Party, float Scale, bool bReversed)
+void SDevTools::DrawParty(SParty& Party, float Scale, [[maybe_unused]] bool bReversed)
 {
     // if (ImGui::Begin("Player Party", nullptr, 0)) { //ImGuiWindowFlags_AlwaysAutoResize
     auto* DrawList = ImGui::GetWindowDrawList();

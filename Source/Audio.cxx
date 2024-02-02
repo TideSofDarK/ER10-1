@@ -15,7 +15,7 @@ namespace Asset::Common
     EXTERN_ASSET(TestMusicWAV)
 }
 
-void SDLCALL CAudio::Callback(void* Userdata, struct SDL_AudioStream* Stream, int AdditionalAmount, int TotalAmount)
+void SDLCALL CAudio::Callback(void* Userdata, struct SDL_AudioStream* Stream, int AdditionalAmount, [[maybe_unused]] int TotalAmount)
 {
     auto Audio = static_cast<CAudio*>(Userdata);
     if (AdditionalAmount > 0)

@@ -17,8 +17,8 @@ struct TileData
 /* Binding Point: 1 */
 layout (std140) uniform ub_map
 {
-    uint width;
-    uint height;
+    int width;
+    int height;
     float povX;
     float povY;
     TileData[MAX_LEVEL_TILE_COUNT] tiles;
