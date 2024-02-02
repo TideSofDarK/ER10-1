@@ -13,11 +13,10 @@ void EquinoxReach()
 #ifdef __cplusplus
 extern "C"
 #endif
-int
-main(int argc, char* argv[])
+    int
+    main(int argc, char* argv[])
 {
     EquinoxReach();
 
     return 0;
 }
-
