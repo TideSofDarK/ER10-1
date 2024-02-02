@@ -848,7 +848,7 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
     ImFontConfig FontConfig;
     FontConfig.FontDataOwnedByAtlas = false;
-    io.Fonts->AddFontFromMemoryTTF(Asset::Common::IBMPlexSansTTF.AsVoidPtr(), (int)Asset::Common::IBMPlexSansTTF.Length, std::floor(22.0f * WindowScale), &FontConfig);
+    io.Fonts->AddFontFromMemoryTTF(Asset::Common::IBMPlexSansTTF.VoidPtr(), (int)Asset::Common::IBMPlexSansTTF.Length, std::floor(22.0f * WindowScale), &FontConfig);
 }
 
 void SDevTools::Cleanup()

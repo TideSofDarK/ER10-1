@@ -96,7 +96,7 @@ CAudio::~CAudio()
 
 void CAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
 {
-    auto TestRW = SDL_RWFromConstMem(Asset.AsVoidPtr(), Asset.Length);
+    auto TestRW = SDL_RWFromConstMem(Asset.VoidPtr(), Asset.Length);
 
     SDL_AudioSpec TempSpec;
     uint32_t TempLength{};

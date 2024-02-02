@@ -14,21 +14,24 @@ struct SAsset
     const unsigned char* Data;
     size_t Length;
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    std::filesystem::path Path;
+    const char* BasePath;
+    const char* RelativeAssetPath;
 
-    explicit SAsset(const char* InData, size_t InLength, const char* BasePath, const char* RelativeAssetPath);
+    explicit SAsset(const char* InData, size_t InLength, const char* InBasePath, const char* InRelativeAssetPath);
+
+    [[nodiscard]] std::filesystem::path Path() const;
 #else
     explicit SAsset(const char* InData, size_t InLength);
 #endif
 
-    [[nodiscard]] std::string ToString() const { return { AsSignedCharPtr(), Length }; }
+    [[nodiscard]] std::string String() const { return { SignedCharPtr(), Length }; }
 
-    [[nodiscard]] const char* AsSignedCharPtr() const
+    [[nodiscard]] const char* SignedCharPtr() const
     {
         return reinterpret_cast<const char*>(Data);
     }
 
-    [[nodiscard]] void* AsVoidPtr() const
+    [[nodiscard]] void* VoidPtr() const
     {
         return reinterpret_cast<void*>(const_cast<unsigned char*>(Data));
     }

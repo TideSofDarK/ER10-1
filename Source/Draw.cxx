@@ -79,7 +79,7 @@ unsigned int SProgram::CreateVertexShader(const char* Data, int Length)
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
-        Asset::Shader::SharedGLSL.AsSignedCharPtr(),
+        Asset::Shader::SharedGLSL.SignedCharPtr(),
         &SharedConstants[0],
         Data
     };
@@ -100,7 +100,7 @@ unsigned int SProgram::CreateFragmentShader(const char* Data, int Length)
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
-        Asset::Shader::SharedGLSL.AsSignedCharPtr(),
+        Asset::Shader::SharedGLSL.SignedCharPtr(),
         &SharedConstants[0],
         Data
     };
@@ -139,8 +139,8 @@ void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentS
     VertexShaderAsset = &InVertexShaderAsset;
     FragmentShaderAsset = &InFragmentShaderAsset;
 #endif
-    unsigned VertexShader = CreateVertexShader(InVertexShaderAsset.AsSignedCharPtr(), (int)InVertexShaderAsset.Length);
-    unsigned FragmentShader = CreateFragmentShader(InFragmentShaderAsset.AsSignedCharPtr(), (int)InFragmentShaderAsset.Length);
+    unsigned VertexShader = CreateVertexShader(InVertexShaderAsset.SignedCharPtr(), (int)InVertexShaderAsset.Length);
+    unsigned FragmentShader = CreateFragmentShader(InFragmentShaderAsset.SignedCharPtr(), (int)InFragmentShaderAsset.Length);
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
@@ -172,7 +172,7 @@ void SProgram::Reload()
     unsigned VertexShader, FragmentShader;
 
     {
-        ShaderFile.open(VertexShaderAsset->Path, std::ifstream::in);
+        ShaderFile.open(VertexShaderAsset->Path(), std::ifstream::in);
         std::stringstream VertexShaderStringBuffer;
         VertexShaderStringBuffer << ShaderFile.rdbuf();
         auto VertexShaderString = VertexShaderStringBuffer.str();
@@ -182,7 +182,7 @@ void SProgram::Reload()
     }
 
     {
-        ShaderFile.open(FragmentShaderAsset->Path, std::ifstream::in);
+        ShaderFile.open(FragmentShaderAsset->Path(), std::ifstream::in);
         std::stringstream FragmentShaderStringBuffer;
         FragmentShaderStringBuffer << ShaderFile.rdbuf();
         auto FragmentShaderString = FragmentShaderStringBuffer.str();

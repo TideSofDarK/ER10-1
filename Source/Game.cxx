@@ -548,7 +548,7 @@ void SGame::ChangeLevel(const SLevel& NewLevel)
 
 void SGame::ChangeLevel(const SAsset& LevelAsset)
 {
-    Serialization::MemoryStream LevelStream(LevelAsset.AsSignedCharPtr(), LevelAsset.Length);
+    Serialization::MemoryStream LevelStream(LevelAsset.SignedCharPtr(), LevelAsset.Length);
     Level.Deserialize(LevelStream);
     ChangeLevel();
 }
