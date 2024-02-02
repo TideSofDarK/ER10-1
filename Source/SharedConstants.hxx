@@ -4,7 +4,7 @@
 #else
     #include <cstdint>
 
-    using UFlagType = uint32_t;
+using UFlagType = uint32_t;
 
     #define SHARED_CONST(NAME, INDEX) \
         constexpr int32_t NAME = INDEX;

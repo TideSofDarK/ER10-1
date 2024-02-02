@@ -14,9 +14,10 @@ struct SVec2
 
     SVec2() = default;
 
-    SVec2(T InX, T InY) : X(InX), Y(InY) {};
+    SVec2(T InX, T InY)
+        : X(InX), Y(InY){};
 
-    template<typename AnotherT, typename = typename std::enable_if<std::is_same<T, AnotherT>::value == false>::type>
+    template <typename AnotherT, typename = typename std::enable_if<std::is_same<T, AnotherT>::value == false>::type>
     explicit SVec2(const SVec2<AnotherT>& Another)
     {
         X = static_cast<T>(Another.X);
@@ -84,7 +85,8 @@ struct SVec3
 
     SVec3() = default;
 
-    SVec3(T InX, T InY, T InZ) : X(InX), Y(InY), Z(InZ) {};
+    SVec3(T InX, T InY, T InZ)
+        : X(InX), Y(InY), Z(InZ){};
 
     explicit SVec3(SVec2<T> Vec2)
     {
@@ -219,7 +221,7 @@ struct SRect
 
     SRect() = default;
 
-    template<typename AnotherT>
+    template <typename AnotherT>
     explicit SRect(SRect<AnotherT> Another)
     {
         Min.X = static_cast<T>(Another.Min.X);

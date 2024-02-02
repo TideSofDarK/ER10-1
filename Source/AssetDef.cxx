@@ -55,13 +55,13 @@
 #endif
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-#define DEFINE_ASSET(NAME, PATH) \
-    INCBIN(NAME, PATH)           \
-    EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length, __FILE__, PATH);
+    #define DEFINE_ASSET(NAME, PATH) \
+        INCBIN(NAME, PATH)           \
+        EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length, __FILE__, PATH);
 #else
-#define DEFINE_ASSET(NAME, PATH) \
-    INCBIN(NAME, PATH)           \
-    EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length);
+    #define DEFINE_ASSET(NAME, PATH) \
+        INCBIN(NAME, PATH)           \
+        EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length);
 #endif
 
 namespace Asset::Common

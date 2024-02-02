@@ -47,7 +47,7 @@ SLevelEditor::SLevelEditor()
     bDrawWallJoints = false;
     bDrawEdges = true;
     bDrawGridLines = false;
-    Level = SLevel{ {8, 8} };
+    Level = SLevel{ { 8, 8 } };
 }
 
 void SLevelEditor::Show()
@@ -104,7 +104,7 @@ void SLevelEditor::Show()
         ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
         if (ImGui::Button("Accept"))
         {
-            Level = SLevel{ {NewLevelSize.X, NewLevelSize.Y} };
+            Level = SLevel{ { NewLevelSize.X, NewLevelSize.Y } };
             FitTilemapToWindow();
             ImGui::CloseCurrentPopup();
         }
