@@ -2,12 +2,22 @@
 #include "Memory.hxx"
 #include "Game.hxx"
 
-int main([[maybe_unused]] int ArgCount, [[maybe_unused]] char* Arguments[])
+void EquinoxReach()
 {
     Platform::Init();
 
     auto Game = Memory::MakeShared<SGame>();
     Game->Run();
+}
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int
+main(int argc, char* argv[])
+{
+    EquinoxReach();
 
     return 0;
 }
+
