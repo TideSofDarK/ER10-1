@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include "AssetTools.hxx"
 
 struct SAudioSpec

@@ -10,6 +10,7 @@
 #include "Constants.hxx"
 #include "Utility.hxx"
 #include "Math.hxx"
+#include "Memory.hxx"
 
 #define SIZE_OF_VECTOR_ELEMENT(Vector) ((GLsizeiptr)sizeof(decltype(Vector)::value_type))
 

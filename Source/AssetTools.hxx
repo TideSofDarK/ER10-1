@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Memory.hxx"
+#include <string>
+#include <memory_resource>
 #include "Math.hxx"
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
