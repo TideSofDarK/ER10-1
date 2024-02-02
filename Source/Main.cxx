@@ -6,7 +6,7 @@ int main([[maybe_unused]] int ArgCount, [[maybe_unused]] char* Arguments[])
 {
     Platform::Init();
 
-    auto Game = CMemory::MakeShared<SGame>();
+    auto Game = Memory::MakeShared<SGame>();
     Game->Run();
 
     return 0;

@@ -1,10 +1,8 @@
 #include "AssetTools.hxx"
 
-#include <iostream>
 #include <algorithm>
 #include <string>
 #include <array>
-#include <algorithm>
 #include "Utility.hxx"
 #include "Memory.hxx"
 
@@ -18,24 +16,9 @@
 #define STBI_NO_HDR
 #define STBI_NO_TGA
 #define STBI_NO_FAILURE_STRINGS
-#define STBI_MALLOC STBIMalloc
-#define STBI_REALLOC STBIRealloc
-#define STBI_FREE STBIFree
-
-void* STBIMalloc(size_t Length)
-{
-    return Memory::Malloc(Length);
-}
-
-void* STBIRealloc(void* Pointer, size_t Length)
-{
-    return Memory::Realloc(Pointer, Length);
-}
-
-void STBIFree(void* Pointer)
-{
-    Memory::Free(Pointer);
-}
+#define STBI_MALLOC Memory::Malloc
+#define STBI_REALLOC Memory::Realloc
+#define STBI_FREE Memory::Free
 
 #include <stb/stb_image.h>
 
@@ -53,19 +36,19 @@ std::filesystem::path SAsset::Path() const
     Path = Path / fs::path(RelativeAssetPath);
     Path = fs::absolute(Path);
     return Path;
-};
+}
 #else
 SAsset::SAsset(const char* InData, size_t InLength)
     : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength){};
 #endif
 
 CRawMesh::CRawMesh(const SAsset& Resource)
-    : Positions(CMemory::GetVector<UVec3>()), TexCoords(CMemory::GetVector<UVec2>()), Normals(CMemory::GetVector<UVec3>()), Indices(CMemory::GetVector<unsigned short>())
+    : Positions(Memory::GetVector<UVec3>()), TexCoords(Memory::GetVector<UVec2>()), Normals(Memory::GetVector<UVec3>()), Indices(Memory::GetVector<unsigned short>())
 {
-    auto ScratchPositions = CMemory::GetVector<UVec3>();
-    auto ScratchTexCoords = CMemory::GetVector<UVec2>();
-    auto ScratchNormals = CMemory::GetVector<UVec3>();
-    auto ScratchOBJIndices = CMemory::GetVector<UVec3Size>();
+    auto ScratchPositions = Memory::GetVector<UVec3>();
+    auto ScratchTexCoords = Memory::GetVector<UVec2>();
+    auto ScratchNormals = Memory::GetVector<UVec3>();
+    auto ScratchOBJIndices = Memory::GetVector<UVec3Size>();
 
     Positions.clear();
     Normals.clear();

@@ -161,7 +161,6 @@ void SProgram::Use() const
 }
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    #include <filesystem>
     #include <sstream>
 void SProgram::Reload()
 {
@@ -348,9 +347,9 @@ void STileset::InitBasic(
     const SAsset& DoorFrame,
     const SAsset& Door)
 {
-    auto Positions = CMemory::GetVector<UVec3>();
-    auto TexCoords = CMemory::GetVector<UVec2>();
-    auto Indices = CMemory::GetVector<unsigned short>();
+    auto Positions = Memory::GetVector<UVec3>();
+    auto TexCoords = Memory::GetVector<UVec2>();
+    auto Indices = Memory::GetVector<unsigned short>();
 
     int LastElementOffset = 0;
     int LastVertexOffset = 0;

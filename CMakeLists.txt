@@ -97,7 +97,7 @@ macro(add_equinox_reach_target)
     endif ()
 
     if (CMAKE_BUILD_TYPE MATCHES Debug)
-        #        target_compile_options(${NAME} PRIVATE -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wall -Wextra -Wpedantic)
+        # target_compile_options(${TARGET_NAME} PRIVATE -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wall -Wextra -Wpedantic)
     endif ()
 endmacro()
 

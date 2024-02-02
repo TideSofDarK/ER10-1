@@ -75,43 +75,27 @@ class CTopmostResource final : public std::pmr::memory_resource
     }
 };
 
-class CMemory final
+namespace Memory
 {
-public:
-    CTopmostResource TopmostResource;
-    CInlineResource InlineResource;
-    std::pmr::synchronized_pool_resource PoolResource;
+    std::pmr::memory_resource* GetInlineResource();
+    std::pmr::memory_resource* GetPoolResource();
 
-    explicit CMemory()
-        : InlineResource(&this->TopmostResource)
-        , PoolResource(std::pmr::pool_options{ .max_blocks_per_chunk = 0, .largest_required_pool_block = 0 }, &InlineResource){};
-
-    static CMemory Instance;
-
-    static CMemory& Get()
-    {
-        return Instance;
-    }
-
-public:
     template <typename T>
     inline static std::shared_ptr<T> MakeShared()
     {
-        return std::allocate_shared<T, std::pmr::polymorphic_allocator<T>>(&Get().InlineResource);
+        return std::allocate_shared<T, std::pmr::polymorphic_allocator<T>>(GetInlineResource());
     }
 
     template <typename T>
     inline static auto GetVector()
     {
-        return std::pmr::vector<T>(&Get().PoolResource);
+        return std::pmr::vector<T>(GetPoolResource());
     }
-};
 
-namespace Memory
-{
     void* Malloc(size_t Bytes);
     void* Calloc(size_t Num, size_t Bytes);
     void* Realloc(void* Ptr, size_t Bytes);
     void Free(void* Ptr);
+
     std::size_t NumberOfBlocks();
 }

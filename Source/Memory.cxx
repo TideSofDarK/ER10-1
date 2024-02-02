@@ -281,35 +281,47 @@ void CTopmostResource::do_deallocate(void* Pointer, size_t Bytes, size_t Align) 
     ::operator delete(Pointer, std::align_val_t(Align));
 }
 
-CMemory CMemory::Instance{};
-
 namespace Memory
 {
+    CTopmostResource TopmostResource;
+    CInlineResource InlineResource(&TopmostResource);
+    std::pmr::synchronized_pool_resource PoolResource(&InlineResource);
+
+    std::pmr::memory_resource* GetInlineResource()
+    {
+        return &InlineResource;
+    }
+
+    std::pmr::memory_resource* GetPoolResource()
+    {
+        return &PoolResource;
+    }
+
     void* Malloc(size_t Bytes)
     {
-        void* Ptr = CMemory::Instance.InlineResource.do_allocate(Bytes, alignof(std::max_align_t));
+        void* Ptr = InlineResource.do_allocate(Bytes, alignof(std::max_align_t));
         return Ptr;
     }
 
     void* Calloc(size_t Num, size_t Bytes)
     {
-        void* Ptr = CMemory::Instance.InlineResource.do_allocate(Num * Bytes, alignof(std::max_align_t));
+        void* Ptr = InlineResource.do_allocate(Num * Bytes, alignof(std::max_align_t));
         std::memset(Ptr, 0, Bytes * Num);
         return Ptr;
     }
 
     void* Realloc(void* Ptr, size_t Bytes)
     {
-        return CMemory::Instance.InlineResource.do_reallocate(Ptr, Bytes);
+        return InlineResource.do_reallocate(Ptr, Bytes);
     }
 
     void Free(void* Ptr)
     {
-        CMemory::Instance.InlineResource.do_deallocate(Ptr, 0, alignof(std::max_align_t));
+        InlineResource.do_deallocate(Ptr, 0, alignof(std::max_align_t));
     }
 
     std::size_t NumberOfBlocks()
     {
-        return CMemory::Instance.InlineResource.NumberOfBlocks();
+        return InlineResource.NumberOfBlocks();
     }
 }
