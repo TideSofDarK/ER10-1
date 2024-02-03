@@ -521,7 +521,8 @@ void SLevelEditor::FitTilemapToWindow()
     auto MapSizePixels = CalculateMapSize();
 
     auto Viewport = ImGui::GetMainViewport();
-    MapScale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y) * 0.8f;
+    MapScale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y);
+    MapScale = std::max(1.0f, (std::floor(MapScale) - 1.0f));
     bResetGridPosition = true;
 }
 
