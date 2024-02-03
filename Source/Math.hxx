@@ -12,56 +12,59 @@ struct SVec2
     T X{};
     T Y{};
 
-    SVec2() = default;
+    constexpr SVec2() = default;
 
     constexpr SVec2(T InX, T InY)
         : X(InX), Y(InY){};
 
+    explicit constexpr SVec2(T InValue)
+        : X(InValue), Y(InValue){};
+
     template <typename AnotherT, typename = typename std::enable_if<std::is_same<T, AnotherT>::value == false>::type>
-    explicit SVec2(const SVec2<AnotherT>& Another)
+    explicit constexpr SVec2(const SVec2<AnotherT>& Another)
     {
         X = static_cast<T>(Another.X);
         Y = static_cast<T>(Another.Y);
     }
 
-    SVec2<T> operator-(const SVec2<T>& Other) const
+    constexpr SVec2<T> operator-(const SVec2<T>& Other) const
     {
         return { X - Other.X, Y - Other.Y };
     }
 
-    SVec2<T> operator+(const SVec2<T>& Other) const
+    constexpr SVec2<T> operator+(const SVec2<T>& Other) const
     {
         return { X + Other.X, Y + Other.Y };
     }
 
-    SVec2<T>& operator+=(const SVec2<T>& Other)
+    constexpr SVec2<T>& operator+=(const SVec2<T>& Other)
     {
         X += Other.X;
         Y += Other.Y;
         return *this;
     }
 
-    SVec2<T> operator-() const
+    constexpr SVec2<T> operator-() const
     {
         return { -X, -Y };
     }
 
-    SVec2<T> operator*(const T A) const
+    constexpr SVec2<T> operator*(const T A) const
     {
         return { X * A, Y * A };
     }
 
-    bool operator==(const SVec2<T>& Other) const
+    constexpr bool operator==(const SVec2<T>& Other) const
     {
         return X == Other.X && Y == Other.Y;
     }
 
-    bool operator!=(const SVec2<T>& Other) const
+    constexpr bool operator!=(const SVec2<T>& Other) const
     {
         return X != Other.X || Y != Other.Y;
     }
 
-    SVec2<T> Swapped() const
+    constexpr SVec2<T> Swapped() const
     {
         return { Y, X };
     }
@@ -83,38 +86,41 @@ struct SVec3
     T Y{};
     T Z{};
 
-    SVec3() = default;
+    constexpr SVec3() = default;
 
-    SVec3(T InX, T InY, T InZ)
+    constexpr SVec3(T InX, T InY, T InZ)
         : X(InX), Y(InY), Z(InZ){};
 
-    explicit SVec3(SVec2<T> Vec2)
+    explicit constexpr SVec3(SVec2<T> Vec2)
     {
         X = Vec2.X;
         Y = Vec2.Y;
     }
 
-    SVec3<T> operator+(const SVec3<T>& Other) const
+    explicit constexpr SVec3(T InValue)
+        : X(InValue), Y(InValue), Z(InValue){};
+
+    constexpr SVec3<T> operator+(const SVec3<T>& Other) const
     {
         return { X + Other.X, Y + Other.Y, Z + Other.Z };
     }
 
-    SVec3<T> operator-(const SVec3<T>& Other) const
+    constexpr SVec3<T> operator-(const SVec3<T>& Other) const
     {
         return { X - Other.X, Y - Other.Y, Z - Other.Z };
     }
 
-    SVec3<T> operator*(const T A) const
+    constexpr SVec3<T> operator*(const T A) const
     {
         return { X * A, Y * A, Z * A };
     }
 
-    SVec3<T> operator/(const T A) const
+    constexpr SVec3<T> operator/(const T A) const
     {
         return { X / A, Y / A, Z / A };
     }
 
-    SVec3<T>& operator+=(const SVec3<T>& Other)
+    constexpr SVec3<T>& operator+=(const SVec3<T>& Other)
     {
         X += Other.X;
         Y += Other.Y;
@@ -122,29 +128,29 @@ struct SVec3
         return *this;
     }
 
-    SVec3<T> operator-() const
+    constexpr SVec3<T> operator-() const
     {
         return { -X, -Y, -Z };
     }
 
-    bool operator==(const SVec3<T>& Other) const
+    constexpr bool operator==(const SVec3<T>& Other) const
     {
         return X == Other.X && Y == Other.Y && Z == Other.Z;
     }
 
-    [[nodiscard]] SVec3<T> Normalized() const
+    [[nodiscard]] constexpr SVec3<T> Normalized() const
     {
         SVec3<T> NormalizedVector = *this;
         float Sqr = NormalizedVector.X * NormalizedVector.X + NormalizedVector.Y * NormalizedVector.Y + NormalizedVector.Z * NormalizedVector.Z;
         return NormalizedVector * (1.0f / std::sqrt(Sqr));
     }
 
-    [[nodiscard]] T Dot(const SVec3<T>& Other) const
+    [[nodiscard]] constexpr T Dot(const SVec3<T>& Other) const
     {
         return X * Other.X + Y * Other.Y + Z * Other.Z;
     }
 
-    [[nodiscard]] SVec3<T> Cross(const SVec3<T>& Other) const
+    [[nodiscard]] constexpr SVec3<T> Cross(const SVec3<T>& Other) const
     {
         SVec3<T> Result{};
         Result.X = Y * Other.Z - Z * Other.Y;
@@ -153,7 +159,7 @@ struct SVec3
         return Result;
     }
 
-    [[nodiscard]] static inline SVec3<T> Mix(const SVec3<T>& A, const SVec3<T>& B, const T Alpha)
+    [[nodiscard]] static inline constexpr SVec3<T> Mix(const SVec3<T>& A, const SVec3<T>& B, const T Alpha)
     {
         SVec3<T> Result = (B - A) * Alpha;
         return A + Result;
@@ -168,29 +174,32 @@ struct SVec4
     T Z{};
     T W{};
 
-    SVec4<T>() = default;
+    constexpr SVec4<T>() = default;
 
-    SVec4<T>(T InX, T InY, T InZ, T InW)
+    constexpr SVec4<T>(T InX, T InY, T InZ, T InW)
         : X(InX), Y(InY), Z(InZ), W(InW)
     {
     }
 
-    SVec4<T>(const SVec3<T> FromVector3, T InW)
+    explicit constexpr SVec4(T InValue)
+        : X(InValue), Y(InValue), Z(InValue), W(InValue){};
+
+    constexpr SVec4<T>(const SVec3<T> FromVector3, T InW)
         : X(FromVector3.X), Y(FromVector3.Y), Z(FromVector3.Z), W(InW)
     {
     }
 
-    SVec4<T> operator+(const SVec4<T>& Other) const
+    constexpr SVec4<T> operator+(const SVec4<T>& Other) const
     {
         return { X + Other.X, Y + Other.Y, Z + Other.Z, W + Other.W };
     }
 
-    SVec4<T> operator*(const float A) const
+    constexpr SVec4<T> operator*(const float A) const
     {
         return { X * A, Y * A, Z * A, W * A };
     }
 
-    SVec4<T>& operator+=(const SVec4<T>& Other)
+    constexpr SVec4<T>& operator+=(const SVec4<T>& Other)
     {
         X += Other.X;
         Y += Other.Y;
@@ -199,7 +208,7 @@ struct SVec4
         return *this;
     }
 
-    SVec4<T> operator-() const
+    constexpr SVec4<T> operator-() const
     {
         return { -X, -Y, -Z, -W };
     }
@@ -219,10 +228,10 @@ struct SRect
     SVec2<T> Min{};
     SVec2<T> Max{};
 
-    SRect() = default;
+    constexpr SRect() = default;
 
     template <typename AnotherT>
-    explicit SRect(SRect<AnotherT> Another)
+    explicit constexpr SRect(SRect<AnotherT> Another)
     {
         Min.X = static_cast<T>(Another.Min.X);
         Min.Y = static_cast<T>(Another.Min.Y);
@@ -230,7 +239,7 @@ struct SRect
         Max.Y = static_cast<T>(Another.Max.Y);
     }
 
-    explicit SRect(T X, T Y, T Z, T W)
+    explicit constexpr SRect(T X, T Y, T Z, T W)
     {
         Min.X = X;
         Min.Y = Y;
@@ -238,13 +247,13 @@ struct SRect
         Max.Y = W;
     }
 
-    explicit SRect(const SVec2<T>& A, const SVec2<T>& B)
+    explicit constexpr SRect(const SVec2<T>& A, const SVec2<T>& B)
     {
         Min = A;
         Max = B;
     }
 
-    static SRect FromTwo(const SVec2<T>& A, const SVec2<T>& B)
+    static constexpr SRect FromTwo(const SVec2<T>& A, const SVec2<T>& B)
     {
         SRect NewRect;
 
@@ -260,17 +269,17 @@ struct SRect
         return NewRect;
     }
 
-    SRect<T> operator+(const SRect<T>& Other) const
+    constexpr SRect<T> operator+(const SRect<T>& Other) const
     {
         return SRect<T>{ Min + Other.Min, Max + Other.Max };
     }
 
-    SRect<T> operator-(const SRect<T>& Other) const
+    constexpr SRect<T> operator-(const SRect<T>& Other) const
     {
         return SRect<T>{ Min - Other.Min, Max - Other.Max };
     }
 
-    SRect<T> operator*(const T A) const
+    constexpr SRect<T> operator*(const T A) const
     {
         return SRect<T>{ Min * A, Max * A };
     }
@@ -287,12 +296,12 @@ struct SMat4x4
     UVec4 Z{};
     UVec4 W{};
 
-    void Translate(const SVec3<T>& Vector)
+    constexpr void Translate(const SVec3<T>& Vector)
     {
         W = X * Vector.X + Y * Vector.Y + Z * Vector.Z + W;
     }
 
-    void Rotate(const float Angle, SVec3<T> Axis = SVec3<T>{ 0, 1, 0 })
+    constexpr void Rotate(const float Angle, SVec3<T> Axis = SVec3<T>{ 0, 1, 0 })
     {
         T const Cos = std::cos(Angle);
         T const Sin = std::sin(Angle);
@@ -319,7 +328,7 @@ struct SMat4x4
         Z = Current.X * Rotate.Z.X + Current.Y * Rotate.Z.Y + Current.Z * Rotate.Z.Z;
     }
 
-    static inline SMat4x4<T> One()
+    static inline constexpr SMat4x4<T> One()
     {
         return { { T(1), T(1), T(1), T(1) },
             { T(1), T(1), T(1), T(1) },
@@ -327,7 +336,7 @@ struct SMat4x4
             { T(1), T(1), T(1), T(1) } };
     }
 
-    static inline SMat4x4<T> Identity()
+    static inline constexpr SMat4x4<T> Identity()
     {
         return { { T(1), T(0), T(0), T(0) },
             { T(0), T(1), T(0), T(0) },
@@ -335,7 +344,7 @@ struct SMat4x4
             { T(0), T(0), T(0), T(1) } };
     }
 
-    static inline SMat4x4<T> LookAtRH(const SVec3<T>& Eye, const SVec3<T>& Center, const SVec3<T>& Up)
+    static inline constexpr SMat4x4<T> LookAtRH(const SVec3<T>& Eye, const SVec3<T>& Center, const SVec3<T>& Up)
     {
         SVec3<T> const F((Center - Eye).Normalized());
         SVec3<T> const S = F.Cross(Up).Normalized();
