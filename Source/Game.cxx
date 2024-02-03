@@ -248,7 +248,7 @@ void SGame::Run()
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
 
             MapRect = Math::Mix(MapRect, URect(bMapMaximized ? MapRectMax : MapRectMin), Window.DeltaTime * 10.0f);
-            Renderer.DrawHUDMap(Level, UVec3(MapRect.Min), UVec2Int((int)std::round(MapRect.Max.X), (int)std::round(MapRect.Max.Y)), Blob.UnreliableCoords());
+            Renderer.DrawMap(Level, UVec3(MapRect.Min), UVec2Int((int)std::round(MapRect.Max.X), (int)std::round(MapRect.Max.Y)), Blob.UnreliableCoords());
 
             switch (SpriteDemoState)
             {

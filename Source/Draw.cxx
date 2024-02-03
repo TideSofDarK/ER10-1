@@ -178,25 +178,21 @@ void SProgram::Reload()
 
     unsigned VertexShader, FragmentShader;
 
-    {
-        ShaderFile.open(VertexShaderAsset->Path(), std::ifstream::in);
-        std::stringstream VertexShaderStringBuffer;
-        VertexShaderStringBuffer << ShaderFile.rdbuf();
-        auto VertexShaderString = VertexShaderStringBuffer.str();
-        VertexShader = CreateVertexShader(VertexShaderString.data(), (int)VertexShaderString.length());
+    ShaderFile.open(VertexShaderAsset->Path(), std::ifstream::in);
+    std::stringstream VertexShaderStringBuffer;
+    VertexShaderStringBuffer << ShaderFile.rdbuf();
+    auto VertexShaderString = VertexShaderStringBuffer.str();
+    VertexShader = CreateVertexShader(VertexShaderString.data(), (int)VertexShaderString.length());
 
-        ShaderFile.close();
-    }
+    ShaderFile.close();
 
-    {
-        ShaderFile.open(FragmentShaderAsset->Path(), std::ifstream::in);
-        std::stringstream FragmentShaderStringBuffer;
-        FragmentShaderStringBuffer << ShaderFile.rdbuf();
-        auto FragmentShaderString = FragmentShaderStringBuffer.str();
-        FragmentShader = CreateFragmentShader(FragmentShaderString.data(), (int)FragmentShaderString.length());
+    ShaderFile.open(FragmentShaderAsset->Path(), std::ifstream::in);
+    std::stringstream FragmentShaderStringBuffer;
+    FragmentShaderStringBuffer << ShaderFile.rdbuf();
+    auto FragmentShaderString = FragmentShaderStringBuffer.str();
+    FragmentShader = CreateFragmentShader(FragmentShaderString.data(), (int)FragmentShaderString.length());
 
-        ShaderFile.close();
-    }
+    ShaderFile.close();
 
     Cleanup();
     ID = CreateProgram(VertexShader, FragmentShader);
@@ -227,6 +223,11 @@ void SProgram2D::InitUniforms()
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Common2D);
     UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
+}
+
+void SProgramUber2D::InitUniforms()
+{
+    SProgram2D::InitUniforms();
     UniformUVRectID = glGetUniformLocation(ID, "u_uvRect");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
@@ -234,16 +235,13 @@ void SProgram2D::InitUniforms()
 
 void SProgramHUD::InitUniforms()
 {
-    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
-    UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
-    UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
+    SProgram2D::InitUniforms();
 }
 
 void SProgramMap::InitUniforms()
 {
+    SProgram2D::InitUniforms();
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
-    UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
-    UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
 }
 
 void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
@@ -644,11 +642,11 @@ void SRenderer::Init(int Width, int Height)
     /* Initialize shaders. */
     ProgramHUD.Init(Asset::Shader::HUDVERT, Asset::Shader::HUDFRAG);
     ProgramHUD.Use();
-    glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    // glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 
     ProgramMap.Init(Asset::Shader::MapVERT, Asset::Shader::MapFRAG);
     ProgramMap.Use();
-    glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    // glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 
     ProgramUber2D.Init(Asset::Shader::Uber2DVERT, Asset::Shader::Uber2DFRAG);
     ProgramUber2D.Use();
@@ -793,6 +791,9 @@ void SRenderer::Flush(const SWindowData& WindowData)
             case EProgram2DType::HUD:
                 Program = &ProgramHUD;
                 break;
+            case EProgram2DType::Map:
+                Program = &ProgramMap;
+                break;
             case EProgram2DType::Uber2D:
                 Program = &ProgramUber2D;
                 break;
@@ -803,18 +804,19 @@ void SRenderer::Flush(const SWindowData& WindowData)
 
         glUniform2f(Program->UniformPositionScreenSpaceID, Entry.Position.X, Entry.Position.Y);
         glUniform2f(Program->UniformSizeScreenSpaceID, (float)Entry.SizePixels.X, (float)Entry.SizePixels.Y);
-        glUniform4fv(Program->UniformUVRectID, 1, &Entry.UVRect.X);
 
         const SEntryMode& Mode = Entry.Mode;
-        if (Mode.ID > UBER2D_MODE_TEXTURE)
-        {
-            glUniform4fv(Program->UniformModeControlAID, 1, &Mode.ControlA.X);
-            glUniform4fv(Program->UniformModeControlBID, 1, &Mode.ControlB.X);
-        }
         glUniform1i(Program->UniformModeID, Mode.ID);
 
         if (Entry.Program2DType == EProgram2DType::Uber2D)
         {
+            glUniform4fv(ProgramUber2D.UniformUVRectID, 1, &Entry.UVRect.X);
+
+            if (Mode.ID > UBER2D_MODE_TEXTURE)
+            {
+                glUniform4fv(ProgramUber2D.UniformModeControlAID, 1, &Mode.ControlA.X);
+                glUniform4fv(ProgramUber2D.UniformModeControlBID, 1, &Mode.ControlB.X);
+            }
             if (Mode.ID == UBER2D_MODE_BACK_BLUR)
             {
                 glDrawElementsInstanced(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr,
@@ -824,9 +826,6 @@ void SRenderer::Flush(const SWindowData& WindowData)
         }
         else if (Entry.Program2DType == EProgram2DType::HUD)
         {
-            if (Mode.ID == HUD_MODE_MAP)
-            {
-            }
         }
 
         glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
@@ -869,7 +868,7 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin)
+void SRenderer::DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
     if (Level.DirtyFlags & ELevelDirtyFlags::POVChanged)
@@ -894,11 +893,11 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     SEntry2D Entry;
-    Entry.Program2DType = EProgram2DType::HUD;
+    Entry.Program2DType = EProgram2DType::Map;
     Entry.Position = Position;
     Entry.SizePixels = Size;
 
-    Entry.Mode = SEntryMode{ HUD_MODE_MAP };
+    Entry.Mode = SEntryMode{ MAP_MODE_GAME_NORMAL };
 
     Queue2D.Enqueue(Entry);
 }

@@ -684,8 +684,8 @@ void SDevTools::Update(SGame& Game)
     {
         Game.Renderer.ProgramHUD.Reload();
         Game.Renderer.ProgramMap.Reload();
-        Game.Renderer.ProgramUber2D.Reload();
-        Game.Renderer.ProgramUber3D.Reload();
+        // Game.Renderer.ProgramUber2D.Reload();
+        // Game.Renderer.ProgramUber3D.Reload();
     }
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))

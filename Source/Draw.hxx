@@ -96,6 +96,16 @@ protected:
     void InitUniforms() override;
 
 public:
+    int UniformPositionScreenSpaceID{};
+    int UniformSizeScreenSpaceID{};
+};
+
+struct SProgramUber2D : SProgram2D
+{
+protected:
+    void InitUniforms() override;
+
+public:
     int UniformBlockCommon2D{};
     int UniformPositionScreenSpaceID{};
     int UniformSizeScreenSpaceID{};
@@ -108,19 +118,14 @@ struct SProgramHUD : SProgram2D
 {
 protected:
     void InitUniforms() override;
-
-public:
-    int UniformMap{};
 };
 
-struct SProgramMap : SProgram
+struct SProgramMap : SProgram2D
 {
 protected:
     void InitUniforms() override;
 
 public:
-    int UniformPositionScreenSpaceID{};
-    int UniformSizeScreenSpaceID{};
     int UniformMap{};
 };
 
@@ -273,6 +278,7 @@ enum class EProgram2DType
 {
     HUD,
     Uber2D,
+    Map
 };
 
 struct SEntryMode
@@ -401,7 +407,7 @@ struct SRenderer
 
     SProgramHUD ProgramHUD;
     SProgramMap ProgramMap;
-    SProgram2D ProgramUber2D;
+    SProgramUber2D ProgramUber2D;
     SProgram3D ProgramUber3D;
     SProgramPostProcess ProgramPostProcess;
 
@@ -426,7 +432,7 @@ struct SRenderer
 
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
-    void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
+    void DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
 
     void DrawMapImmediate(const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time);
 

@@ -99,31 +99,41 @@ void main()
     vec2 texCoordOriginal = texCoord;
     texCoord *= u_sizeScreenSpace;
 
-// #define ISOMETRIC 1
-#ifdef ISOMETRIC
-    const float tileSize = 16.0;
+    float tileSize = 0.0;
+    if (u_mode == MAP_MODE_GAME_NORMAL)
+    {
+        tileSize = MAP_TILE_SIZE_PIXELS;
 
-    texCoord = cartesianToIsometric(texCoord);
-    texCoordOriginal = cartesianToIsometric(texCoordOriginal);
+        float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize);
+        float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize);
 
-    vec2 sizeIso = round(cartesianToIsometric(u_sizeScreenSpace / 2.0));
+        texCoord += vec2(-centerOffsetX, -centerOffsetY);
+    }
+    else if (u_mode == MAP_MODE_GAME_ISO)
+    {
+        tileSize = MAP_ISO_TILE_SIZE_PIXELS;
 
-    float centerOffsetX = round(sizeIso.x - (povX + 0.5) * tileSize);
-    float centerOffsetY = round(sizeIso.y - (povY + 0.5) * tileSize);
+        texCoord = cartesianToIsometric(texCoord);
+        texCoordOriginal = cartesianToIsometric(texCoordOriginal);
 
-    texCoord -= vec2(centerOffsetX, centerOffsetY);
-#else
-    const float tileSize = MAP_TILE_SIZE_PIXELS;
+        vec2 sizeIso = round(cartesianToIsometric(u_sizeScreenSpace / 2.0));
 
-    // float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize);
-    // float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize);
-    float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX) * tileSize);
-    float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY) * tileSize);
+        float centerOffsetX = round(sizeIso.x - (povX + 0.5) * tileSize);
+        float centerOffsetY = round(sizeIso.y - (povY + 0.5) * tileSize);
 
-    texCoord += vec2(-centerOffsetX, -centerOffsetY);
-#endif
+        texCoord -= vec2(centerOffsetX, centerOffsetY);
+    }
+    else if (u_mode == MAP_MODE_EDITOR)
+    {
+        tileSize = MAP_TILE_SIZE_PIXELS;
 
-    const float tileSizeReciprocal = 1.0 / tileSize;
+        float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX) * tileSize);
+        float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY) * tileSize);
+
+        texCoord += vec2(-centerOffsetX, -centerOffsetY);
+    }
+
+    float tileSizeReciprocal = 1.0 / tileSize;
 
     vec4 tileInfo = pixelToTile(texCoord, tileSize);
     TileData tileData = getTileData(tileInfo.x, tileInfo.y, levelWidth, levelHeight);
