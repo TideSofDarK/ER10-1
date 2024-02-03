@@ -536,7 +536,7 @@ void SGame::OnBlobMoved()
 void SGame::ChangeLevel()
 {
     Level.PostProcess();
-    Renderer.UploadLevelMapData(Level, { 0.0f, 0.0f }, nullptr);
+    Renderer.UploadMapData(Level, { 0.0f, 0.0f }, nullptr);
     OnBlobMoved();
 }
 

@@ -416,7 +416,7 @@ struct SRenderer
     void SetupLevelDrawData(const STileset& TileSet);
 
     void BindMapUniformBlock(const SUniformBlock* UniformBlock) const;
-    void UploadLevelMapData(const SLevel& Level, UVec2 POVOrigin, const SUniformBlock* UniformBlock) const;
+    void UploadMapData(const SLevel& Level, UVec2 POVOrigin, const SUniformBlock* UniformBlock) const;
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -428,7 +428,7 @@ struct SRenderer
 
     void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
 
-    void DrawMapImmediate(SLevel& Level, const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time);
+    void DrawMapImmediate(const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

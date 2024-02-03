@@ -706,7 +706,7 @@ void SRenderer::BindMapUniformBlock(const SUniformBlock* UniformBlock) const
     }
 }
 
-void SRenderer::UploadLevelMapData(const SLevel& Level, UVec2 POVOrigin, const SUniformBlock* UniformBlock) const
+void SRenderer::UploadMapData(const SLevel& Level, UVec2 POVOrigin, const SUniformBlock* UniformBlock) const
 {
     SShaderMapData ShaderMapData{};
 
@@ -903,15 +903,12 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMapImmediate(SLevel& Level, const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time)
+void SRenderer::DrawMapImmediate(const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time)
 {
-    ProgramMap.Use();
-
-    // GlobalsUniformBlock.Bind(0);
-    // MapUniformBlock.Bind(1);
-
     GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScreenSize);
     GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
+
+    ProgramMap.Use();
 
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_EDITOR);
     glUniform2f(ProgramMap.UniformPositionScreenSpaceID, Position.X, Position.Y);
