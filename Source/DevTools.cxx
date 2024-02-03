@@ -18,6 +18,7 @@
 #include "Math.hxx"
 #include "Memory.hxx"
 #include "SDL_video.h"
+#include "Utility.hxx"
 
 #define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
 #define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
@@ -50,12 +51,16 @@ void SLevelEditor::Init()
     bDrawGridLines = false;
     Level = SLevel{ { 8, 8 } };
 
-    MapFrameBuffer.Init(TEXTURE_UNIT_MAP_FRAMEBUFFER, MAP_MAX_WIDTH_PIXELS, MAP_MAX_HEIGHT_PIXELS, SVec3{ 1.0f, 0.0f, 0.0f });
+    MapFramebuffer.Init(
+        TEXTURE_UNIT_MAP_FRAMEBUFFER,
+        Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
+        Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS),
+        SVec3{ 1.0f, 0.0f, 0.0f });
 }
 
 void SLevelEditor::Cleanup()
 {
-    MapFrameBuffer.Cleanup();
+    MapFramebuffer.Cleanup();
 }
 
 void SLevelEditor::Show(SGame& Game)
@@ -250,25 +255,26 @@ void SLevelEditor::Show(SGame& Game)
 
 void SLevelEditor::ShowLevel(SGame& Game)
 {
+    auto OriginalMapSize = CalculateMapSize();
+
+    /* Render level to framebuffer. */
+    UVec2Int MapFramebufferSize{ MapFramebuffer.Width, MapFramebuffer.Height };
+    MapFramebuffer.BindForDrawing();
+    MapFramebuffer.ResetViewport();
+    Game.Renderer.DrawMapImmediate(Level, SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());
+    SFramebuffer::Unbind();
+
     float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * MapScale;
     float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * MapScale;
-    constexpr UVec2Int MapSizePixelsMax{ MAP_MAX_WIDTH_PIXELS, MAP_MAX_HEIGHT_PIXELS };
-
-    auto MapSizePixels = CalculateMapSize();
     auto ScaledMapSize = UVec2{
-        ScaledTileSize * (float)Level.Width + ScaledTileEdgeSize,
-        ScaledTileSize * float(Level.Height) + ScaledTileEdgeSize
+        (float)OriginalMapSize.X * MapScale,
+        (float)OriginalMapSize.Y * MapScale
     };
-
-    MapFrameBuffer.BindForDrawing();
-    glViewport(0, 0, MapSizePixelsMax.X, MapSizePixelsMax.Y);
-    Game.Renderer.DrawMapImmediate(Level, SVec3(0.0f, 0.0f, 0.0f), MapSizePixels, (float)ImGui::GetTime());
-    SFrameBuffer::Unbind();
 
     ImGuiIO& IO = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::SetNextWindowSize(ImVec2{ std::round(ScaledMapSize.X), std::round(ScaledMapSize.Y) });
+    ImGui::SetNextWindowSize(ImVec2{ ScaledMapSize.X, ScaledMapSize.Y });
     if (ImGui::Begin("Grid", nullptr,
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
     {
@@ -276,14 +282,13 @@ void SLevelEditor::ShowLevel(SGame& Game)
         ImVec2 GridSize = ImVec2((MapScale * (float)Level.Width),
             (MapScale * (float)Level.Height));
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
-        ImVec2 WindowSize = ImGui::GetWindowSize();
 
         ImGui::GetWindowDrawList()->AddImage(
-            (void*)MapFrameBuffer.ColorID,
+            (void*)MapFramebuffer.ColorID,
             CursorPos,
-            ImVec2(CursorPos.x + WindowSize.x,
-                CursorPos.y + WindowSize.y),
-            ImVec2(0, 1), ImVec2(1, 0));
+            ImVec2(CursorPos.x + ScaledMapSize.X,
+                CursorPos.y + ScaledMapSize.Y),
+            ImVec2(0, 1.0f), ImVec2((float)OriginalMapSize.X / 512.0f, 1.0f - (float)OriginalMapSize.Y / 512.0f));
 
         if (ImGui::IsWindowHovered())
         {

@@ -28,7 +28,7 @@ struct SLevelEditor
     std::optional<UVec2Int> SelectedTileCoords{};
     std::optional<UVec2Int> BlockModeTileCoords{};
     SLevel Level{};
-    SFrameBuffer MapFrameBuffer;
+    SFramebuffer MapFramebuffer;
 
     void Init();
     void Cleanup();

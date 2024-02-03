@@ -449,7 +449,7 @@ void SCamera::Update()
     View = UMat4x4::LookAtRH(Position, Target, UVec3{ 0.0f, 1.0f, 0.0f });
 }
 
-void SFrameBuffer::Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InClearColor, bool bLinearFiltering)
+void SFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InClearColor, bool bLinearFiltering)
 {
     Width = InWidth;
     Height = InHeight;
@@ -492,7 +492,7 @@ void SFrameBuffer::Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InCl
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void SFrameBuffer::Cleanup()
+void SFramebuffer::Cleanup()
 {
     glDeleteFramebuffers(1, &FBO);
     glDeleteTextures(1, &ColorID);
@@ -501,7 +501,12 @@ void SFrameBuffer::Cleanup()
     Log::Draw<ELogLevel::Debug>("Deleting SFrameBuffer");
 }
 
-void SFrameBuffer::BindForDrawing() const
+void SFramebuffer::ResetViewport() const
+{
+    glViewport(0, 0, Width, Height);
+}
+
+void SFramebuffer::BindForDrawing() const
 {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
@@ -509,13 +514,13 @@ void SFrameBuffer::BindForDrawing() const
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void SFrameBuffer::BindForReading() const
+void SFramebuffer::BindForReading() const
 {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
 }
 
-void SFrameBuffer::Unbind()
+void SFramebuffer::Unbind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -687,17 +692,19 @@ void SRenderer::SetupLevelDrawData(const STileset& TileSet)
     }
 }
 
-void SRenderer::UploadLevelMapData(const SLevel& Level) const
+void SRenderer::UploadLevelMapData(const SLevel& Level, UVec2 POVOrigin) const
 {
     SShaderMapData ShaderMapData{};
 
     ShaderMapData.Width = (int)Level.Width;
     ShaderMapData.Height = (int)Level.Height;
+    ShaderMapData.POVX = POVOrigin.X;
+    ShaderMapData.POVY = POVOrigin.Y;
 
     ShaderMapData.Tiles = Level.Tiles;
 
     glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderMapData), &ShaderMapData);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, offsetof(SShaderMapData, Tiles) + sizeof(STile) * (Level.Width * Level.Height), &ShaderMapData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -887,17 +894,16 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMapImmediate(SLevel& Level, UVec3 Position, UVec2Int Size, float Time)
+void SRenderer::DrawMapImmediate(SLevel& Level, UVec2 Position, UVec2Int Size, UVec2Int ScreenSize, float Time)
 {
     UVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
-    int Count = Level.Width * Level.Height;
 
     ProgramMap.Use();
 
     Queue2D.CommonUniformBlock.Bind(0);
     MapUniformBlock.Bind(1);
 
-    Queue2D.CommonUniformBlock.SetVector2(0, { (float)Size.X, (float)Size.Y });
+    Queue2D.CommonUniformBlock.SetVector2(0, { (float)ScreenSize.X, (float)ScreenSize.Y });
     Queue2D.CommonUniformBlock.SetFloat(8, Time);
 
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_EDITOR);
@@ -905,12 +911,7 @@ void SRenderer::DrawMapImmediate(SLevel& Level, UVec3 Position, UVec2Int Size, f
     glUniform2f(ProgramMap.UniformSizeScreenSpaceID, (float)Size.X, (float)Size.Y);
 
     /* @TODO: Update tiles every frame for now. */
-    UploadLevelMapData(Level);
-    glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
-    // glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
-    // glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles), Count * (GLsizeiptr)sizeof(STile), &Level.Tiles[0]);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    UploadLevelMapData(Level, POVOrigin);
 
     glBindVertexArray(Quad2D.VAO);
 

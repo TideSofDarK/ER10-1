@@ -118,7 +118,7 @@ public:
     int UniformPrimaryAtlasID{};
 };
 
-struct SFrameBuffer
+struct SFramebuffer
 {
     int Width{};
     int Height{};
@@ -130,6 +130,8 @@ struct SFrameBuffer
     void Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InClearColor, bool bLinearFiltering = false);
 
     void Cleanup();
+
+    void ResetViewport() const;
 
     void BindForDrawing() const;
 
@@ -395,7 +397,7 @@ struct SRenderer
     SProgram3D ProgramUber3D;
     SProgramPostProcess ProgramPostProcess;
 
-    SFrameBuffer MainFrameBuffer;
+    SFramebuffer MainFrameBuffer;
     SGeometry Quad2D;
     SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;
 
@@ -405,7 +407,7 @@ struct SRenderer
 
     void SetupLevelDrawData(const STileset& TileSet);
 
-    void UploadLevelMapData(const SLevel& Level) const;
+    void UploadLevelMapData(const SLevel& Level, UVec2 POVOrigin) const;
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -417,7 +419,7 @@ struct SRenderer
 
     void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
 
-    void DrawMapImmediate(SLevel& Level, UVec3 Position, UVec2Int Size, float Time);
+    void DrawMapImmediate(SLevel& Level, UVec2 Position, UVec2Int Size, UVec2Int ScreenSize, float Time);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

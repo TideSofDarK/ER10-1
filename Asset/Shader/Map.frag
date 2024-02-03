@@ -92,10 +92,6 @@ float exploredMask(uint flags)
 
 void main()
 {
-    vec2 pixelPos = f_texCoord * u_sizeScreenSpace;
-
-    // float editorMask = 1.0 - saturate(abs(u_mode - MAP_MODE_EDITOR));
-
     vec3 finalColor = mix(vec3(0.0, 0.0, 0.0), vec3(0.03, 0.03, 0.08), 1.0 - f_texCoord.y);
 
     float levelWidth = float(u_map.width);

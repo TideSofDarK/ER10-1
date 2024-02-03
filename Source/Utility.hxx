@@ -36,4 +36,17 @@ namespace Utility
     void ParseFloats(const char* Start, const char* End, float* Floats, int FloatCount);
 
     void ParseInts(const char* Start, const char* End, int* Ints, int IntCount);
+
+    inline constexpr uint32_t NextPowerOfTwo(uint32_t Number)
+    {
+        --Number;
+
+        Number |= Number >> 1;
+        Number |= Number >> 2;
+        Number |= Number >> 4;
+        Number |= Number >> 8;
+        Number |= Number >> 16;
+
+        return Number + 1;
+    }
 }
