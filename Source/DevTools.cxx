@@ -258,7 +258,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
     auto OriginalMapSize = CalculateMapSize();
 
     /* Render level to framebuffer. */
-    UVec2Int MapFramebufferSize{ MapFramebuffer.Width, MapFramebuffer.Height };
+    UVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
     MapFramebuffer.BindForDrawing();
     MapFramebuffer.ResetViewport();
     Game.Renderer.DrawMapImmediate(Level, SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());

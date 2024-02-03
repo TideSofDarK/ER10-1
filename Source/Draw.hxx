@@ -43,6 +43,7 @@ protected:
 
 public:
     unsigned ID{};
+    int UniformGlobals{};
     int UniformModeID{};
     int UniformModeControlAID{};
     int UniformModeControlBID{};
@@ -389,6 +390,7 @@ struct SRenderer
     SRenderQueue<SEntry3D, RENDERER_QUEUE3D_SIZE> Queue3D;
     SAtlas Atlases[3];
 
+    SUniformBlock GlobalsUniformBlock;
     SUniformBlock MapUniformBlock;
 
     SProgramHUD ProgramHUD;
@@ -419,7 +421,7 @@ struct SRenderer
 
     void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
 
-    void DrawMapImmediate(SLevel& Level, UVec2 Position, UVec2Int Size, UVec2Int ScreenSize, float Time);
+    void DrawMapImmediate(SLevel& Level, UVec2 Position, UVec2Int Size, UVec2 ScreenSize, float Time);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

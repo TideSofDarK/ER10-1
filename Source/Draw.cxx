@@ -44,6 +44,13 @@ struct SShaderMapData
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles;
 };
 
+struct SShaderGlobals
+{
+    UVec2 ScreenSize;
+    float Time{};
+    float Random{};
+};
+
 void SProgram::CheckShader(unsigned int ShaderID)
 {
     int Success;
@@ -134,6 +141,9 @@ void SProgram::InitUniforms()
     UniformModeID = glGetUniformLocation(ID, "u_mode");
     UniformModeControlAID = glGetUniformLocation(ID, "u_modeControlA");
     UniformModeControlBID = glGetUniformLocation(ID, "u_modeControlB");
+
+    UniformGlobals = glGetUniformBlockIndex(ID, "ub_globals");
+    glUniformBlockBinding(ID, UniformGlobals, 0);
 }
 
 void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentShaderAsset)
@@ -212,7 +222,7 @@ void SProgramPostProcess::InitUniforms()
 void SProgram3D::InitUniforms()
 {
     UniformBlockCommon3D = glGetUniformBlockIndex(ID, "ub_common");
-    glUniformBlockBinding(ID, UniformBlockCommon3D, 0);
+    glUniformBlockBinding(ID, UniformBlockCommon3D, 1);
     UniformModelID = glGetUniformLocation(ID, "u_model");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
@@ -221,7 +231,7 @@ void SProgram3D::InitUniforms()
 void SProgram2D::InitUniforms()
 {
     UniformBlockCommon2D = glGetUniformBlockIndex(ID, "ub_common");
-    glUniformBlockBinding(ID, UniformBlockCommon2D, 0);
+    glUniformBlockBinding(ID, UniformBlockCommon2D, 1);
     UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
     UniformUVRectID = glGetUniformLocation(ID, "u_uvRect");
@@ -234,14 +244,11 @@ void SProgramHUD::InitUniforms()
     SProgram2D::InitUniforms();
 
     UniformMap = glGetUniformBlockIndex(ID, "ub_map");
-    glUniformBlockBinding(ID, UniformMap, 1);
+    glUniformBlockBinding(ID, UniformMap, 2);
 }
 
 void SProgramMap::InitUniforms()
 {
-    UniformBlockCommon2D = glGetUniformBlockIndex(ID, "ub_common");
-    glUniformBlockBinding(ID, UniformBlockCommon2D, 0);
-
     UniformMap = glGetUniformBlockIndex(ID, "ub_map");
     glUniformBlockBinding(ID, UniformMap, 1);
 
@@ -639,6 +646,8 @@ void SRenderer::Init(int Width, int Height)
     Atlases[ATLAS_PRIMARY3D].Init(TEXTURE_UNIT_ATLAS_PRIMARY3D);
 
     /** Initialize shaders */
+    GlobalsUniformBlock.Init(sizeof(SShaderGlobals));
+    GlobalsUniformBlock.Bind(0);
     MapUniformBlock.Init(16 * MAX_LEVEL_TILE_COUNT + 16);
 
     ProgramHUD.Init(Asset::Shader::HUDVERT, Asset::Shader::HUDFRAG);
@@ -718,7 +727,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     glEnable(GL_CULL_FACE);
     glViewport(SCENE_OFFSET, SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
 
-    Queue3D.CommonUniformBlock.Bind(0);
+    Queue3D.CommonUniformBlock.Bind(1);
 
     ProgramUber3D.Use();
 
@@ -764,8 +773,8 @@ void SRenderer::Flush(const SWindowData& WindowData)
     glDisable(GL_CULL_FACE);
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    Queue2D.CommonUniformBlock.Bind(0);
-    MapUniformBlock.Bind(1);
+    Queue2D.CommonUniformBlock.Bind(1);
+    MapUniformBlock.Bind(2);
 
     Queue2D.CommonUniformBlock.SetVector2(0, { SCREEN_WIDTH, SCREEN_HEIGHT });
     Queue2D.CommonUniformBlock.SetFloat(8, WindowData.Seconds);
@@ -894,17 +903,17 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMapImmediate(SLevel& Level, UVec2 Position, UVec2Int Size, UVec2Int ScreenSize, float Time)
+void SRenderer::DrawMapImmediate(SLevel& Level, UVec2 Position, UVec2Int Size, UVec2 ScreenSize, float Time)
 {
     UVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
 
     ProgramMap.Use();
 
-    Queue2D.CommonUniformBlock.Bind(0);
+    GlobalsUniformBlock.Bind(0);
     MapUniformBlock.Bind(1);
 
-    Queue2D.CommonUniformBlock.SetVector2(0, { (float)ScreenSize.X, (float)ScreenSize.Y });
-    Queue2D.CommonUniformBlock.SetFloat(8, Time);
+    GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScreenSize );
+    GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
 
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_EDITOR);
     glUniform2f(ProgramMap.UniformPositionScreenSpaceID, Position.X, Position.Y);

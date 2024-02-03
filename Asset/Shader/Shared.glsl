@@ -6,6 +6,13 @@
 #define HALF_PI 1.5707963267948966
 #endif
 
+layout (std140) uniform ub_globals
+{
+    vec2 screenSize;
+    float time;
+    float random;
+} u_globals;
+
 float degToRad(float deg)
 {
     return PI * deg / 180.0;
