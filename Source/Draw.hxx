@@ -5,6 +5,7 @@
 #include "AssetTools.hxx"
 #include "SharedConstants.hxx"
 #include "Math.hxx"
+#include "Tile.hxx"
 
 #define RENDERER_QUEUE2D_SIZE 16
 #define RENDERER_QUEUE3D_SIZE 8
@@ -24,6 +25,23 @@
 #define ATLAS_PRIMARY3D 2
 
 struct SLevel;
+
+/* @TODO: Redesign so it's easier to upload. */
+struct SShaderMapData
+{
+    int32_t Width{};
+    int32_t Height{};
+    float POVX{};
+    float POVY{};
+    std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
+};
+
+struct SShaderGlobals
+{
+    UVec2 ScreenSize;
+    float Time{};
+    float Random{};
+};
 
 struct SProgram
 {
@@ -101,7 +119,6 @@ protected:
     void InitUniforms() override;
 
 public:
-    int UniformBlockCommon2D{};
     int UniformPositionScreenSpaceID{};
     int UniformSizeScreenSpaceID{};
     int UniformMap{};
@@ -113,7 +130,6 @@ protected:
     void InitUniforms() override;
 
 public:
-    int UniformBlockCommon3D{};
     int UniformModelID{};
     int UniformCommonAtlasID{};
     int UniformPrimaryAtlasID{};
@@ -341,16 +357,6 @@ struct SRenderQueue
     {
         CurrentIndex = 0;
     }
-
-    void Init(int CommonUniformBlockSize)
-    {
-        CommonUniformBlock.Init(CommonUniformBlockSize);
-    }
-
-    void Cleanup()
-    {
-        CommonUniformBlock.Cleanup();
-    }
 };
 
 struct SSpriteHandle
@@ -409,7 +415,8 @@ struct SRenderer
 
     void SetupLevelDrawData(const STileset& TileSet);
 
-    void UploadLevelMapData(const SLevel& Level, UVec2 POVOrigin) const;
+    void BindMapUniformBlock(const SUniformBlock* UniformBlock) const;
+    void UploadLevelMapData(const SLevel& Level, UVec2 POVOrigin, const SUniformBlock* UniformBlock) const;
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -421,7 +428,7 @@ struct SRenderer
 
     void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
 
-    void DrawMapImmediate(SLevel& Level, UVec2 Position, UVec2Int Size, UVec2 ScreenSize, float Time);
+    void DrawMapImmediate(SLevel& Level, const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 

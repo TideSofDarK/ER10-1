@@ -56,6 +56,8 @@ void SLevelEditor::Init()
         Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
         Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS),
         SVec3{ 1.0f, 0.0f, 0.0f });
+
+    MapUniformBlock.Init(sizeof(SShaderMapData));
 }
 
 void SLevelEditor::Cleanup()
@@ -256,6 +258,10 @@ void SLevelEditor::Show(SGame& Game)
 void SLevelEditor::ShowLevel(SGame& Game)
 {
     auto OriginalMapSize = CalculateMapSize();
+
+    /* @TODO: Update tiles every frame for now. */
+    UVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
+    Game.Renderer.UploadLevelMapData(Level, POVOrigin, &MapUniformBlock);
 
     /* Render level to framebuffer. */
     UVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
@@ -677,16 +683,28 @@ void SDevTools::Update(SGame& Game)
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F4)))
     {
         Game.Renderer.ProgramHUD.Reload();
+        Game.Renderer.ProgramMap.Reload();
+        Game.Renderer.ProgramUber2D.Reload();
+        Game.Renderer.ProgramUber3D.Reload();
     }
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))
     {
         LevelEditor.bLevelEditorActive = !LevelEditor.bLevelEditorActive;
-        static bool bFirstTime = true;
-        if (bFirstTime && LevelEditor.bLevelEditorActive)
+        if (LevelEditor.bLevelEditorActive)
         {
-            LevelEditor.FitTilemapToWindow();
-            bFirstTime = false;
+            static bool bFirstTime = true;
+            if (bFirstTime)
+            {
+                LevelEditor.FitTilemapToWindow();
+                bFirstTime = false;
+            }
+
+            Game.Renderer.BindMapUniformBlock(&LevelEditor.MapUniformBlock);
+        }
+        else
+        {
+            Game.Renderer.BindMapUniformBlock(nullptr);
         }
     }
 

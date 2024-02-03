@@ -222,10 +222,10 @@ void SGame::Run()
             //     SpriteDemoState = std::max(0, SpriteDemoState - 1);
             // }
             //
-            // if (InputState.ZR == EKeyState::Pressed)
-            // {
-            //     SpriteDemoState = std::min(5, SpriteDemoState + 1);
-            // }
+            if (InputState.Keys.ZL == EKeyState::Pressed)
+            {
+                SpriteDemoState = std::min(5, SpriteDemoState + 1);
+            }
 
             if (InputState.Keys.ZR == EKeyState::Pressed)
             {
@@ -536,7 +536,7 @@ void SGame::OnBlobMoved()
 void SGame::ChangeLevel()
 {
     Level.PostProcess();
-    Renderer.UploadLevelMapData(Level, { 0.0f, 0.0f });
+    Renderer.UploadLevelMapData(Level, { 0.0f, 0.0f }, nullptr);
     OnBlobMoved();
 }
 

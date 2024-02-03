@@ -1,9 +1,3 @@
-layout (std140) uniform ub_common
-{
-    vec2 u_screenSize;
-    float u_time;
-    float u_random;
-};
 uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
@@ -27,7 +21,7 @@ void main()
         float xIntensity = u_modeControlA.x;
         float yIntensity = u_modeControlA.y;
         float speed = u_modeControlA.z;
-        texCoordAtlasSpace.x += sin(f_texCoord.y * yIntensity * 3.14159 + (u_time * speed)) * sizeAtlasSpace.x * xIntensity;
+        texCoordAtlasSpace.x += sin(f_texCoord.y * yIntensity * 3.14159 + (u_globals.time * speed)) * sizeAtlasSpace.x * xIntensity;
         texCoordAtlasSpace = clampUV(texCoordAtlasSpace, u_uvRect);
     }
 
@@ -37,7 +31,7 @@ void main()
         float step = 1.0 / u_modeControlA.x;
         float from = step * f_modeControlOutA.x;
         float to = from + step;
-        color.a *= 1.0 - (mix(from, to, fract(u_time * u_modeControlA.y)));
+        color.a *= 1.0 - (mix(from, to, fract(u_globals.time * u_modeControlA.y)));
         color.a *= 0.5;
     }
 
@@ -53,7 +47,7 @@ void main()
         texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, -pixelSizeY), u_uvRect)).a,
         0.0, 1.0);
 
-        float pulse = abs((fract(f_texCoord.y + u_time) * 2) - 1.0);
+        float pulse = abs((fract(f_texCoord.y + u_globals.time) * 2) - 1.0);
         pulse *= pulse;
         float outlineColorAlpha = outlineMask * (0.4 + mix(0.0, 0.6, pulse));
 
@@ -61,7 +55,7 @@ void main()
     }
 
     if (u_mode == UBER2D_MODE_DISINTEGRATE) {
-        vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(1.0, 1.0), vec2(u_time / 10.0, u_time / 10.0), u_modeControlB);
+        vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(1.0, 1.0), vec2(u_globals.time / 10.0, u_globals.time / 10.0), u_modeControlB);
         float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).g;
         float progress = fract(u_modeControlA.x);
         progress = sineIn(progress);
@@ -77,7 +71,7 @@ void main()
     }
 
     if (u_mode == UBER2D_MODE_DISINTEGRATE_PLASMA) {
-        vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(0.65, 0.65), vec2(u_random), u_modeControlB);
+        vec2 noiseTexCoordAtlasSpace = tileAndOffsetUV(f_texCoord, vec2(0.65, 0.65), vec2(u_globals.random), u_modeControlB);
         float noise = texture(u_commonAtlas, noiseTexCoordAtlasSpace).b;
         float progress = fract(u_modeControlA.x);
         float mask = round(noise * 2.0 - progress);

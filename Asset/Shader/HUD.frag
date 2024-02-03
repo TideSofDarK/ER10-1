@@ -1,11 +1,3 @@
-
-/* Binding Point: 0 */
-layout (std140) uniform ub_common
-{
-    vec2 u_screenSize;
-    float u_time;
-};
-
 struct TileData
 {
     uint flags;
@@ -14,7 +6,11 @@ struct TileData
     uint specialEdgeFlags;
 };
 
-/* Binding Point: 1 */
+layout (std140) uniform ub_common
+{
+    vec4 temp;
+};
+
 layout (std140) uniform ub_map
 {
     int width;
@@ -27,7 +23,7 @@ layout (std140) uniform ub_map
 uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
-uniform vec4 u_uvRect;// minX, minY, maxX, maxY
+uniform vec4 u_uvRect; // minX, minY, maxX, maxY
 uniform vec2 u_sizeScreenSpace;
 uniform sampler2D u_commonAtlas;
 uniform sampler2D u_primaryAtlas;
@@ -85,7 +81,7 @@ void main()
     {
         // Border dash
         float borderDashSize = 8.0;
-        float borderDashSpeed = u_time * 10.0;
+        float borderDashSpeed = u_globals.time * 10.0;
         float borderDashDirectionX = sign(texCoordNDC.x);
         float borderDashDirectionY = sign(texCoordNDC.y);
         borderX = borderX * (round(mod(pixelPos.y + (borderDashSpeed * -borderDashDirectionX), borderDashSize) / borderDashSize));
@@ -169,7 +165,7 @@ void main()
 
         // Current POV
         float povTileMask = (1.0 - min(abs(tileInfo.x - povX), 1.0)) * (1.0 - min(abs(tileInfo.y - povY), 1.0));
-        float povAnim = (abs(sin((u_time * 10.0))) * 0.6) + 0.4;
+        float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;
         float povMask = saturate((povTileMask * (1.0 - distance(vec2(map1to1(tileInfo.z - tileSizeReciprocal / 2.0), map1to1(tileInfo.w - tileSizeReciprocal / 2.0)) * 2.0, vec2(0.0, 0.0))))) * povAnim;
         vec3 povColor = vec3(1.0, 1.0, 1.0);
         finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
@@ -269,9 +265,9 @@ void main()
 
         // Grid
         float gridMasks = edgeMask;
-        float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_time * 0.25)) * 2.0) - 1.0));
+        float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_globals.time * 0.25)) * 2.0) - 1.0));
         gridPulseX = pow(gridPulseX, 4);
-        float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_time * 0.15)) * 2.0) - 1.0));
+        float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_globals.time * 0.15)) * 2.0) - 1.0));
         gridPulseY = pow(gridPulseY, 4);
         float gridPulse = (max(gridPulseX, gridPulseY) * 0.5) + 0.5;
         vec3 grid = mix(vec3(0.05, 0.15, 0.6) * gridPulse, vec3(0.15, 0.25, 0.5) * 1.2, floorTileMask * 0.7f);
