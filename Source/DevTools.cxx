@@ -14,6 +14,7 @@
 #include "GameSystem.hxx"
 #include "AssetTools.hxx"
 #include "Level.hxx"
+#include "Log.hxx"
 #include "Math.hxx"
 #include "Memory.hxx"
 #include "SDL_video.h"
@@ -38,25 +39,34 @@ namespace Asset::Common
 static const std::filesystem::path MapExtension = ".erm";
 static std::vector<std::filesystem::path> AvailableMaps(20);
 
-SLevelEditor::SLevelEditor()
+void SLevelEditor::Init()
 {
     bLevelEditorActive = false;
     LevelEditorMode = ELevelEditorMode::Normal;
     NewLevelSize = UVec2Int{ 8, 8 };
-    LevelEditorCellSize = 32.0f;
+    MapScale = 1.0f;
     bDrawWallJoints = false;
     bDrawEdges = true;
     bDrawGridLines = false;
     Level = SLevel{ { 8, 8 } };
+
+    MapFrameBuffer.Init(TEXTURE_UNIT_MAP_FRAMEBUFFER, MAP_MAX_WIDTH_PIXELS, MAP_MAX_HEIGHT_PIXELS, SVec3{ 1.0f, 0.0f, 0.0f });
 }
 
-void SLevelEditor::Show()
+void SLevelEditor::Cleanup()
+{
+    MapFrameBuffer.Cleanup();
+}
+
+void SLevelEditor::Show(SGame& Game)
 {
     bool bNewLevel = false;
     bool bLoadLevel = false;
     bool bSaveLevel = false;
     bool bLevelProperties = false;
     bool bFitToScreen = false;
+
+    // TestWindow(Game);
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -235,319 +245,56 @@ void SLevelEditor::Show()
         }
     }
 
-    ShowLevel();
+    ShowLevel(Game);
 }
 
-void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path) const
+void SLevelEditor::ShowLevel(SGame& Game)
 {
-    const auto& Tilemap = Level;
+    float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * MapScale;
+    float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * MapScale;
+    constexpr UVec2Int MapSizePixelsMax{ MAP_MAX_WIDTH_PIXELS, MAP_MAX_HEIGHT_PIXELS };
 
-    std::ofstream TilemapFile;
-    TilemapFile.open(Path, std::ofstream::binary);
-    Tilemap.Serialize(TilemapFile);
-    TilemapFile.close();
-}
+    auto MapSizePixels = CalculateMapSize();
+    auto ScaledMapSize = UVec2{
+        ScaledTileSize * (float)Level.Width + ScaledTileEdgeSize,
+        ScaledTileSize * float(Level.Height) + ScaledTileEdgeSize
+    };
 
-void SLevelEditor::LoadTilemapFromFile(const std::filesystem::path& Path)
-{
-    auto& Tilemap = Level;
-    std::ifstream TilemapFile;
-    TilemapFile.open(Path, std::ifstream::binary);
-    Tilemap.Deserialize(TilemapFile);
-    TilemapFile.close();
-    FitTilemapToWindow();
-}
+    MapFrameBuffer.BindForDrawing();
+    glViewport(0, 0, MapSizePixelsMax.X, MapSizePixelsMax.Y);
+    Game.Renderer.DrawMapImmediate(Level, SVec3(0.0f, 0.0f, 0.0f), MapSizePixels, (float)ImGui::GetTime());
+    SFrameBuffer::Unbind();
 
-void SLevelEditor::ScanForLevels()
-{
-    namespace fs = std::filesystem;
-    AvailableMaps.clear();
-    auto CWD = fs::current_path().parent_path().parent_path() / "Asset\\Map";
-    for (const auto& File : fs::recursive_directory_iterator(CWD))
-    {
-        if (!File.is_regular_file())
-        {
-            continue;
-        }
-        if (File.path().extension() != MapExtension)
-        {
-            continue;
-        }
-        AvailableMaps.emplace_back(File);
-    }
-}
-
-void SLevelEditor::FitTilemapToWindow()
-{
-    auto Viewport = ImGui::GetMainViewport();
-    LevelEditorCellSize = std::min((float)Viewport->Size.x / (float)Level.Width, (float)Viewport->Size.y / (float)Level.Height) * 0.8f;
-    bResetGridPosition = true;
-}
-
-void SLevelEditor::ShowLevel()
-{
     ImGuiIO& IO = ImGui::GetIO();
-    const float WindowPadding = LevelEditorCellSize * 0.1f;
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    ImGui::SetNextWindowSize(ImVec2{ std::round(ScaledMapSize.X), std::round(ScaledMapSize.Y) });
     if (ImGui::Begin("Grid", nullptr,
-            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
     {
         auto* DrawList = ImGui::GetWindowDrawList();
-        ImVec2 GridSize = ImVec2((LevelEditorCellSize * (float)Level.Width),
-            (LevelEditorCellSize * (float)Level.Height));
-        ImVec2 PosMin = ImGui::GetCursorScreenPos();
-        ImVec2 PosMax = ImVec2(PosMin.x + GridSize.x,
-            PosMin.y + GridSize.y);
+        ImVec2 GridSize = ImVec2((MapScale * (float)Level.Width),
+            (MapScale * (float)Level.Height));
+        ImVec2 CursorPos = ImGui::GetCursorScreenPos();
+        ImVec2 WindowSize = ImGui::GetWindowSize();
 
-        /* Draw background. */
-        DrawList->AddRectFilled(PosMin, PosMax,
-            BG_COLOR);
+        ImGui::GetWindowDrawList()->AddImage(
+            (void*)MapFrameBuffer.ColorID,
+            CursorPos,
+            ImVec2(CursorPos.x + WindowSize.x,
+                CursorPos.y + WindowSize.y),
+            ImVec2(0, 1), ImVec2(1, 0));
 
         if (ImGui::IsWindowHovered())
         {
-            LevelEditorCellSize += IO.MouseWheel * 2.0f;
+            MapScale += IO.MouseWheel * 1.0f;
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             {
                 auto MousePos = ImGui::GetMousePos();
-                MousePos = ImVec2(MousePos.x - PosMin.x, MousePos.y - PosMin.y);
-                SelectedTileCoords = UVec2Int{ (int)(MousePos.x / LevelEditorCellSize),
-                    (int)(MousePos.y / LevelEditorCellSize) };
-            }
-        }
-
-        /* Draw tiles. */
-        for (int X = 0; X <= Level.Width; X += 1)
-        {
-            for (int Y = 0; Y <= Level.Height; Y += 1)
-            {
-                auto CurrentTile = Level.GetTileAt({ X, Y });
-                if (CurrentTile == nullptr)
-                {
-                    continue;
-                }
-                auto TilePosMin = ImVec2(PosMin.x + ((float)X * LevelEditorCellSize),
-                    PosMin.y + ((float)Y * LevelEditorCellSize));
-                auto TilePosMax = ImVec2(TilePosMin.x + (float)LevelEditorCellSize,
-                    TilePosMin.y + (float)LevelEditorCellSize);
-
-                auto TileOffset = (float)LevelEditorCellSize * 0.045f;
-                if (CurrentTile->CheckFlag(TILE_FLOOR_BIT))
-                {
-                    auto EdgePosMin = TilePosMin;
-                    EdgePosMin.x += TileOffset;
-                    EdgePosMin.y += TileOffset;
-                    auto EdgePosMax = TilePosMax;
-                    EdgePosMax.x -= TileOffset;
-                    EdgePosMax.y -= TileOffset;
-                    DrawList->AddRectFilled(EdgePosMin, EdgePosMax,
-                        FLOOR_COLOR);
-                }
-
-                if (bDrawWallJoints)
-                {
-                    auto WallJointRadius = TileOffset;
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::North()) && CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::West()))
-                    {
-                        DrawList->AddCircleFilled(TilePosMin, WallJointRadius, WALL_JOINT_COLOR);
-                    }
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::North()) && CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::East()))
-                    {
-                        DrawList->AddCircleFilled(ImVec2(TilePosMax.x, TilePosMin.y), WallJointRadius,
-                            WALL_JOINT_COLOR);
-                    }
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::South()) && CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::East()))
-                    {
-                        DrawList->AddCircleFilled(TilePosMax, WallJointRadius, WALL_JOINT_COLOR);
-                    }
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::South()) && CurrentTile->CheckEdgeFlag(TILE_EDGE_WALL_BIT, SDirection::West()))
-                    {
-                        DrawList->AddCircleFilled(ImVec2(TilePosMin.x, TilePosMax.y), WallJointRadius,
-                            WALL_JOINT_COLOR);
-                    }
-                }
-            }
-        }
-
-        /* Draw edges. */
-        const float EdgeThickness = LevelEditorCellSize * 0.03f;
-        const float EdgeOffset = LevelEditorCellSize * 0.049f;
-        const float DoorOffsetX = LevelEditorCellSize * 0.15f;
-        const float DoorOffsetY = LevelEditorCellSize * 0.12f;
-        if (bDrawEdges)
-        {
-            for (int Y = 0; Y <= Level.Height; Y += 1)
-            {
-                ImVec2 NorthPosMin;
-                ImVec2 NorthPosMax;
-                bool bNorthEdge{};
-
-                ImVec2 SouthPosMin;
-                ImVec2 SouthPosMax;
-                bool bSouthEdge{};
-
-                for (int X = 0; X <= Level.Width; X += 1)
-                {
-                    auto CurrentTile = Level.GetTileAt({ X, Y });
-                    if (CurrentTile == nullptr)
-                    {
-                        continue;
-                    }
-                    auto TilePosMin = ImVec2(PosMin.x + ((float)X * LevelEditorCellSize),
-                        PosMin.y + ((float)Y * LevelEditorCellSize));
-                    auto TilePosMax = ImVec2(TilePosMin.x + (float)LevelEditorCellSize,
-                        TilePosMin.y + (float)LevelEditorCellSize);
-
-                    auto bShouldDrawNorthEdge = CurrentTile->IsWallBasedEdge(SDirection::North());
-                    if (bShouldDrawNorthEdge)
-                    {
-                        if (!bNorthEdge)
-                        {
-                            bNorthEdge = true;
-                            NorthPosMin = TilePosMin;
-                        }
-                        NorthPosMax = ImVec2(TilePosMax.x, TilePosMin.y);
-                    }
-                    if ((!bShouldDrawNorthEdge || X + 1 == Level.Width) && bNorthEdge)
-                    {
-                        NorthPosMin.y += EdgeOffset;
-                        NorthPosMax.y += EdgeOffset;
-                        NorthPosMin.x += EdgeOffset;
-                        NorthPosMax.x -= EdgeOffset;
-                        DrawList->AddLine(NorthPosMin, NorthPosMax, WALL_COLOR, EdgeThickness);
-                        bNorthEdge = false;
-                    }
-
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_DOOR_BIT, SDirection::North()))
-                    {
-                        auto DoorPosMin = ImVec2(TilePosMin.x + DoorOffsetX, TilePosMin.y + (EdgeThickness * 1.5f));
-                        auto DoorPosMax = ImVec2(TilePosMax.x - DoorOffsetX, TilePosMin.y + DoorOffsetY);
-                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
-                    }
-
-                    auto bShouldDrawSouthEdge = CurrentTile->IsWallBasedEdge(SDirection::South());
-                    if (bShouldDrawSouthEdge)
-                    {
-                        if (!bSouthEdge)
-                        {
-                            bSouthEdge = true;
-                            SouthPosMin = TilePosMin;
-                            SouthPosMin.y = TilePosMax.y;
-                        }
-                        SouthPosMax = TilePosMax;
-                    }
-                    if ((!bShouldDrawSouthEdge || X + 1 == Level.Width) && bSouthEdge)
-                    {
-                        SouthPosMin.y -= EdgeOffset;
-                        SouthPosMax.y -= EdgeOffset;
-                        SouthPosMin.x += EdgeOffset;
-                        SouthPosMax.x -= EdgeOffset;
-                        DrawList->AddLine(SouthPosMin, SouthPosMax, WALL_COLOR, EdgeThickness);
-                        bSouthEdge = false;
-                    }
-
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_DOOR_BIT, SDirection::South()))
-                    {
-                        auto DoorPosMin = ImVec2(TilePosMin.x + DoorOffsetX, TilePosMax.y - DoorOffsetY);
-                        auto DoorPosMax = ImVec2(TilePosMax.x - DoorOffsetX, TilePosMax.y - (EdgeThickness * 1.5f));
-                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
-                    }
-                }
-            }
-
-            for (int X = 0; X <= Level.Width; X += 1)
-            {
-                ImVec2 WestPosMin;
-                ImVec2 WestPosMax;
-                bool bWestEdge{};
-
-                ImVec2 EastPosMin;
-                ImVec2 EastPosMax;
-                bool bEastEdge{};
-
-                for (int Y = 0; Y <= Level.Height; Y += 1)
-                {
-                    auto CurrentTile = Level.GetTileAt({ X, Y });
-                    if (CurrentTile == nullptr)
-                    {
-                        continue;
-                    }
-                    auto TilePosMin = ImVec2(PosMin.x + ((float)X * LevelEditorCellSize),
-                        PosMin.y + ((float)Y * LevelEditorCellSize));
-                    auto TilePosMax = ImVec2(TilePosMin.x + (float)LevelEditorCellSize,
-                        TilePosMin.y + (float)LevelEditorCellSize);
-
-                    auto bShouldDrawWestEdge = CurrentTile->IsWallBasedEdge(SDirection::West());
-                    if (bShouldDrawWestEdge)
-                    {
-                        if (!bWestEdge)
-                        {
-                            bWestEdge = true;
-                            WestPosMin = TilePosMin;
-                        }
-                        WestPosMax = ImVec2(TilePosMin.x, TilePosMax.y);
-                    }
-                    if ((!bShouldDrawWestEdge || Y + 1 == Level.Height) && bWestEdge)
-                    {
-                        WestPosMin.x += EdgeOffset;
-                        WestPosMax.x += EdgeOffset;
-                        WestPosMin.y += EdgeOffset;
-                        WestPosMax.y -= EdgeOffset;
-                        DrawList->AddLine(WestPosMin, WestPosMax, WALL_COLOR, EdgeThickness);
-                        bWestEdge = false;
-                    }
-
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_DOOR_BIT, SDirection::West()))
-                    {
-                        auto DoorPosMin = ImVec2(TilePosMin.x + (EdgeThickness * 1.5f), TilePosMin.y + DoorOffsetX);
-                        auto DoorPosMax = ImVec2(TilePosMin.x + DoorOffsetY, TilePosMax.y - DoorOffsetX);
-                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
-                    }
-
-                    auto bShouldDrawEastEdge = CurrentTile->IsWallBasedEdge(SDirection::East());
-                    if (bShouldDrawEastEdge)
-                    {
-                        if (!bEastEdge)
-                        {
-                            bEastEdge = true;
-                            EastPosMin = TilePosMin;
-                            EastPosMin.x = TilePosMax.x;
-                        }
-                        EastPosMax = TilePosMax;
-                    }
-                    if ((!bShouldDrawEastEdge || Y + 1 == Level.Height) && bEastEdge)
-                    {
-                        EastPosMin.x -= EdgeOffset;
-                        EastPosMax.x -= EdgeOffset;
-                        EastPosMin.y += EdgeOffset;
-                        EastPosMax.y -= EdgeOffset;
-                        DrawList->AddLine(EastPosMin, EastPosMax, WALL_COLOR, EdgeThickness);
-                        bEastEdge = false;
-                    }
-
-                    if (CurrentTile->CheckEdgeFlag(TILE_EDGE_DOOR_BIT, SDirection::East()))
-                    {
-                        auto DoorPosMin = ImVec2(TilePosMax.x - DoorOffsetY, TilePosMin.y + DoorOffsetX);
-                        auto DoorPosMax = ImVec2(TilePosMax.x - (EdgeThickness * 1.5f), TilePosMax.y - DoorOffsetX);
-                        DrawList->AddRectFilled(DoorPosMin, DoorPosMax, WALL_COLOR);
-                    }
-                }
-            }
-        }
-
-        /* Draw grid lines. */
-        if (bDrawGridLines)
-        {
-            for (int X = 0; X <= (int)GridSize.x; X += (int)LevelEditorCellSize)
-            {
-                DrawList->AddLine(ImVec2(PosMin.x + (float)X, PosMin.y), ImVec2(PosMin.x + (float)X, PosMax.y - 1),
-                    GRID_LINE_COLOR);
-            }
-
-            for (int Y = 0; Y <= (int)GridSize.y; Y += (int)LevelEditorCellSize)
-            {
-                DrawList->AddLine(ImVec2(PosMin.x, PosMin.y + (float)Y), ImVec2(PosMax.x + 1, PosMin.y + (float)Y),
-                    GRID_LINE_COLOR);
+                MousePos = ImVec2(MousePos.x - CursorPos.x, MousePos.y - CursorPos.y);
+                SelectedTileCoords = UVec2Int{ (int)(MousePos.x / ScaledTileSize),
+                    (int)(MousePos.y / ScaledTileSize) };
             }
         }
 
@@ -657,24 +404,24 @@ void SLevelEditor::ShowLevel()
                     auto BlockHeight = MaxTileY - MinTileY + 1;
 
                     auto SelectedTilePosMin = ImVec2(
-                        PosMin.x + ((float)MinTileX * LevelEditorCellSize),
-                        PosMin.y + ((float)MinTileY * LevelEditorCellSize));
+                        CursorPos.x + ((float)MinTileX * ScaledTileSize),
+                        CursorPos.y + ((float)MinTileY * ScaledTileSize));
                     auto SelectedTilePosMax = ImVec2(
-                        SelectedTilePosMin.x + ((float)LevelEditorCellSize * (float)BlockWidth),
-                        SelectedTilePosMin.y + ((float)LevelEditorCellSize * (float)BlockHeight));
+                        SelectedTilePosMin.x + (ScaledTileSize * (float)BlockWidth) + ScaledTileEdgeSize,
+                        SelectedTilePosMin.y + (ScaledTileSize * (float)BlockHeight) + ScaledTileEdgeSize);
 
-                    auto Thickness = (float)LevelEditorCellSize * 0.04f;
+                    auto Thickness = ScaledTileEdgeSize;
 
                     DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
                         BLOCK_SELECTION_COLOR, 0.0f, 0, Thickness);
                 }
                 else /* Outline single tile. */
                 {
-                    auto SelectedTilePosMin = ImVec2(PosMin.x + ((float)SelectedTileCoords->X * LevelEditorCellSize),
-                        PosMin.y + ((float)SelectedTileCoords->Y * LevelEditorCellSize));
-                    auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + (float)LevelEditorCellSize + 1,
-                        SelectedTilePosMin.y + (float)LevelEditorCellSize + 1);
-                    auto Thickness = (float)LevelEditorCellSize * 0.04f;
+                    auto SelectedTilePosMin = ImVec2(CursorPos.x + ((float)SelectedTileCoords->X * ScaledTileSize),
+                        CursorPos.y + ((float)SelectedTileCoords->Y * ScaledTileSize));
+                    auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + ScaledTileSize + ScaledTileEdgeSize,
+                        SelectedTilePosMin.y + ScaledTileSize + ScaledTileEdgeSize);
+                    auto Thickness = ScaledTileEdgeSize;
                     if (LevelEditorMode == ELevelEditorMode::Normal)
                     {
                         DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
@@ -690,8 +437,6 @@ void SLevelEditor::ShowLevel()
             }
         }
 
-        ImGui::Dummy(ImVec2(1 + GridSize.x, 1 + GridSize.y));
-
         // if (!ImGui::IsWindowFocused())
         // {
         //     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -704,19 +449,76 @@ void SLevelEditor::ShowLevel()
         {
             ImGui::SetWindowPos(
                 ImVec2(
-                    IO.DisplaySize.x * 0.5f - GridSize.x * 0.5f,
-                    IO.DisplaySize.y * 0.5f - GridSize.y * 0.5f));
+                    IO.DisplaySize.x * 0.5f - ScaledMapSize.X * 0.5f,
+                    IO.DisplaySize.y * 0.5f - ScaledMapSize.Y * 0.5f));
             bResetGridPosition = false;
         }
 
         ImGui::End();
     }
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(2);
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
     {
         FitTilemapToWindow();
     }
+}
+
+void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path) const
+{
+    const auto& Tilemap = Level;
+
+    std::ofstream TilemapFile;
+    TilemapFile.open(Path, std::ofstream::binary);
+    Tilemap.Serialize(TilemapFile);
+    TilemapFile.close();
+}
+
+void SLevelEditor::LoadTilemapFromFile(const std::filesystem::path& Path)
+{
+    auto& Tilemap = Level;
+    std::ifstream TilemapFile;
+    TilemapFile.open(Path, std::ifstream::binary);
+    Tilemap.Deserialize(TilemapFile);
+    TilemapFile.close();
+    FitTilemapToWindow();
+}
+
+void SLevelEditor::ScanForLevels()
+{
+    namespace fs = std::filesystem;
+    AvailableMaps.clear();
+    auto CWD = fs::current_path().parent_path().parent_path() / "Asset\\Map";
+    for (const auto& File : fs::recursive_directory_iterator(CWD))
+    {
+        if (!File.is_regular_file())
+        {
+            continue;
+        }
+        if (File.path().extension() != MapExtension)
+        {
+            continue;
+        }
+        AvailableMaps.emplace_back(File);
+    }
+}
+
+UVec2Int SLevelEditor::CalculateMapSize()
+{
+    return {
+        MAP_TILE_SIZE_PIXELS * Level.Width + MAP_TILE_EDGE_SIZE_PIXELS,
+        MAP_TILE_SIZE_PIXELS * Level.Height + MAP_TILE_EDGE_SIZE_PIXELS
+    };
+}
+
+void SLevelEditor::FitTilemapToWindow()
+{
+    auto MapSizePixels = CalculateMapSize();
+
+    auto Viewport = ImGui::GetMainViewport();
+    MapScale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y) * 0.8f;
+    MapScale = 1.0f;
+    bResetGridPosition = true;
 }
 
 void SDevTools::DrawParty(SParty& Party, float Scale, [[maybe_unused]] bool bReversed)
@@ -840,6 +642,8 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     ImGui_ImplSDL3_InitForOpenGL(Window, Context);
     ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
 
+    LevelEditor.Init();
+
     float WindowScale = SDL_GetWindowDisplayScale(Window);
 
     ImGui::GetStyle().ScaleAllSizes(WindowScale);
@@ -852,6 +656,8 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
 
 void SDevTools::Cleanup()
 {
+    LevelEditor.Cleanup();
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
@@ -881,7 +687,7 @@ void SDevTools::Update(SGame& Game)
 
     if (LevelEditor.bLevelEditorActive)
     {
-        LevelEditor.Show();
+        LevelEditor.Show(Game);
     }
     else
     {

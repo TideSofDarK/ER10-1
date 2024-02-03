@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <imgui/imgui.h>
 #include "Level.hxx"
+#include "Draw.hxx"
 
 struct SParty;
 
@@ -19,7 +20,7 @@ struct SLevelEditor
     bool bLevelEditorActive{};
     ELevelEditorMode LevelEditorMode{};
     UVec2Int NewLevelSize{};
-    float LevelEditorCellSize{};
+    float MapScale{};
     bool bDrawWallJoints{};
     bool bDrawEdges{};
     bool bDrawGridLines{};
@@ -27,18 +28,20 @@ struct SLevelEditor
     std::optional<UVec2Int> SelectedTileCoords{};
     std::optional<UVec2Int> BlockModeTileCoords{};
     SLevel Level{};
+    SFrameBuffer MapFrameBuffer;
 
-    SLevelEditor();
+    void Init();
+    void Cleanup();
 
-    void Show();
+    void Show(struct SGame& Game);
+    void ShowLevel(struct SGame& Game);
 
     void SaveTilemapToFile(const std::filesystem::path& Path) const;
     void LoadTilemapFromFile(const std::filesystem::path& Path);
 
     void ScanForLevels();
 
-    void ShowLevel();
-
+    UVec2Int CalculateMapSize();
     void FitTilemapToWindow();
 };
 
@@ -48,7 +51,7 @@ struct SDevTools
 
     void Init(struct SDL_Window* Window, void* Context);
 
-    static void Cleanup();
+    void Cleanup();
 
     static void ProcessEvent(const union SDL_Event* Event);
 

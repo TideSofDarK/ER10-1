@@ -25,6 +25,8 @@ namespace Asset::Shader
     EXTERN_ASSET(SharedGLSL)
     EXTERN_ASSET(HUDVERT)
     EXTERN_ASSET(HUDFRAG)
+    EXTERN_ASSET(MapVERT)
+    EXTERN_ASSET(MapFRAG)
     EXTERN_ASSET(Uber2DVERT)
     EXTERN_ASSET(Uber2DFRAG)
     EXTERN_ASSET(Uber3DVERT)
@@ -235,6 +237,18 @@ void SProgramHUD::InitUniforms()
     glUniformBlockBinding(ID, UniformMap, 1);
 }
 
+void SProgramMap::InitUniforms()
+{
+    UniformBlockCommon2D = glGetUniformBlockIndex(ID, "ub_common");
+    glUniformBlockBinding(ID, UniformBlockCommon2D, 0);
+
+    UniformMap = glGetUniformBlockIndex(ID, "ub_map");
+    glUniformBlockBinding(ID, UniformMap, 1);
+
+    UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
+    UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
+}
+
 void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
 {
     glGenVertexArrays(1, &VAO);
@@ -435,21 +449,37 @@ void SCamera::Update()
     View = UMat4x4::LookAtRH(Position, Target, UVec3{ 0.0f, 1.0f, 0.0f });
 }
 
-void SFrameBuffer::Init(int TextureUnitID, int Width, int Height, UVec3 InClearColor)
+void SFrameBuffer::Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InClearColor, bool bLinearFiltering)
 {
+    Width = InWidth;
+    Height = InHeight;
     ClearColor = InClearColor;
 
     glActiveTexture(GL_TEXTURE0 + TextureUnitID);
     glGenTextures(1, &ColorID);
     glBindTexture(GL_TEXTURE_2D, ColorID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, InWidth, InHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    if (bLinearFiltering)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+    else
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    /* @TODO: Why is it transient? */
     glActiveTexture(GL_TEXTURE0 + TEXTURE_UNIT_TRANSIENT);
 
     glGenTextures(1, &DepthID);
     glBindTexture(GL_TEXTURE_2D, DepthID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, Width, Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, InWidth, InHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -483,6 +513,11 @@ void SFrameBuffer::BindForReading() const
 {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
+}
+
+void SFrameBuffer::Unbind()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void SUniformBlock::Init(int Size)
@@ -605,6 +640,10 @@ void SRenderer::Init(int Width, int Height)
     ProgramHUD.Use();
     glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 
+    ProgramMap.Init(Asset::Shader::MapVERT, Asset::Shader::MapFRAG);
+    ProgramMap.Use();
+    glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+
     ProgramUber2D.Init(Asset::Shader::Uber2DVERT, Asset::Shader::Uber2DFRAG);
     ProgramUber2D.Use();
     glUniform1i(ProgramUber2D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
@@ -630,6 +669,7 @@ void SRenderer::Cleanup()
     Quad2D.Cleanup();
     MapUniformBlock.Cleanup();
     ProgramHUD.Cleanup();
+    ProgramMap.Cleanup();
     ProgramUber2D.Cleanup();
     ProgramUber3D.Cleanup();
     ProgramPostProcess.Cleanup();
@@ -720,6 +760,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     Queue2D.CommonUniformBlock.Bind(0);
     MapUniformBlock.Bind(1);
 
+    Queue2D.CommonUniformBlock.SetVector2(0, { SCREEN_WIDTH, SCREEN_HEIGHT });
     Queue2D.CommonUniformBlock.SetFloat(8, WindowData.Seconds);
 
     glBindVertexArray(Quad2D.VAO);
@@ -844,6 +885,38 @@ void SRenderer::DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const U
     Entry.Mode = SEntryMode{ HUD_MODE_MAP };
 
     Queue2D.Enqueue(Entry);
+}
+
+void SRenderer::DrawMapImmediate(SLevel& Level, UVec3 Position, UVec2Int Size, float Time)
+{
+    UVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
+    int Count = Level.Width * Level.Height;
+
+    ProgramMap.Use();
+
+    Queue2D.CommonUniformBlock.Bind(0);
+    MapUniformBlock.Bind(1);
+
+    Queue2D.CommonUniformBlock.SetVector2(0, { (float)Size.X, (float)Size.Y });
+    Queue2D.CommonUniformBlock.SetFloat(8, Time);
+
+    glUniform1i(ProgramMap.UniformModeID, MAP_MODE_EDITOR);
+    glUniform2f(ProgramMap.UniformPositionScreenSpaceID, Position.X, Position.Y);
+    glUniform2f(ProgramMap.UniformSizeScreenSpaceID, (float)Size.X, (float)Size.Y);
+
+    /* @TODO: Update tiles every frame for now. */
+    UploadLevelMapData(Level);
+    glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
+    // glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
+    // glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles), Count * (GLsizeiptr)sizeof(STile), &Level.Tiles[0]);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindVertexArray(Quad2D.VAO);
+
+    glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
+
+    glBindVertexArray(0);
 }
 
 void SRenderer::Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle)

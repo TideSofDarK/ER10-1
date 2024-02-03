@@ -83,6 +83,8 @@ namespace Asset::Shader
     DEFINE_ASSET(SharedGLSL, "../Asset/Shader/Shared.glsl")
     DEFINE_ASSET(HUDVERT, "../Asset/Shader/HUD.vert")
     DEFINE_ASSET(HUDFRAG, "../Asset/Shader/HUD.frag")
+    DEFINE_ASSET(MapVERT, "../Asset/Shader/Map.vert")
+    DEFINE_ASSET(MapFRAG, "../Asset/Shader/Map.frag")
     DEFINE_ASSET(Uber2DVERT, "../Asset/Shader/Uber2D.vert")
     DEFINE_ASSET(Uber2DFRAG, "../Asset/Shader/Uber2D.frag")
     DEFINE_ASSET(Uber3DVERT, "../Asset/Shader/Uber3D.vert")

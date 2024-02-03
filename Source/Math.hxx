@@ -14,7 +14,7 @@ struct SVec2
 
     SVec2() = default;
 
-    SVec2(T InX, T InY)
+    constexpr SVec2(T InX, T InY)
         : X(InX), Y(InY){};
 
     template <typename AnotherT, typename = typename std::enable_if<std::is_same<T, AnotherT>::value == false>::type>

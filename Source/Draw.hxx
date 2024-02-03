@@ -94,6 +94,18 @@ public:
     int UniformMap{};
 };
 
+struct SProgramMap : SProgram
+{
+protected:
+    void InitUniforms() override;
+
+public:
+    int UniformBlockCommon2D{};
+    int UniformPositionScreenSpaceID{};
+    int UniformSizeScreenSpaceID{};
+    int UniformMap{};
+};
+
 struct SProgram3D : SProgram
 {
 protected:
@@ -108,18 +120,22 @@ public:
 
 struct SFrameBuffer
 {
+    int Width{};
+    int Height{};
     unsigned FBO{};
     unsigned ColorID{};
     unsigned DepthID{};
     UVec3 ClearColor{};
 
-    void Init(int TextureUnitID, int Width, int Height, UVec3 InClearColor);
+    void Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InClearColor, bool bLinearFiltering = false);
 
     void Cleanup();
 
     void BindForDrawing() const;
 
     void BindForReading() const;
+
+    static void Unbind();
 };
 
 struct SGeometry
@@ -374,6 +390,7 @@ struct SRenderer
     SUniformBlock MapUniformBlock;
 
     SProgramHUD ProgramHUD;
+    SProgramMap ProgramMap;
     SProgram2D ProgramUber2D;
     SProgram3D ProgramUber3D;
     SProgramPostProcess ProgramPostProcess;
@@ -399,6 +416,8 @@ struct SRenderer
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
     void DrawHUDMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
+
+    void DrawMapImmediate(SLevel& Level, UVec3 Position, UVec2Int Size, float Time);
 
     void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
 
