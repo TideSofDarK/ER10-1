@@ -153,9 +153,11 @@ void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentS
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
+    Use();
     SProgram::InitUniforms();
     InitUniforms();
     InitUniformBlocks();
+    glUseProgram(0);
 }
 
 void SProgram::Cleanup() const
@@ -201,8 +203,10 @@ void SProgram::Reload()
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
+    Use();
     SProgram::InitUniforms();
     InitUniforms();
+    glUseProgram(0);
 
     Log::Draw<ELogLevel::Debug>("Reloading SProgram");
 }
@@ -211,6 +215,8 @@ void SProgram::Reload()
 void SProgramPostProcess::InitUniforms()
 {
     UniformColorTextureID = glGetUniformLocation(ID, "u_colorTexture");
+
+    glUniform1i(UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
 }
 
 void SProgram3D::InitUniforms()
@@ -219,6 +225,9 @@ void SProgram3D::InitUniforms()
     UniformModelID = glGetUniformLocation(ID, "u_model");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
+
+    glUniform1i(UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glUniform1i(UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
 }
 
 void SProgram2D::InitUniforms()
@@ -226,14 +235,18 @@ void SProgram2D::InitUniforms()
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Common2D);
     UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
+    UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
+
+    glUniform1i(UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 }
 
 void SProgramUber2D::InitUniforms()
 {
     SProgram2D::InitUniforms();
     UniformUVRectID = glGetUniformLocation(ID, "u_uvRect");
-    UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
+
+    glUniform1i(UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
 }
 
 void SProgramHUD::InitUniforms()
@@ -247,8 +260,6 @@ void SProgramMap::InitUniforms()
 
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::CommonMap);
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
-
-    UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
 }
 
 void SProgramMap::InitUniformBlocks()
@@ -660,26 +671,10 @@ void SRenderer::Init(int Width, int Height)
 
     /* Initialize shaders. */
     ProgramHUD.Init(Asset::Shader::HUDVERT, Asset::Shader::HUDFRAG);
-    ProgramHUD.Use();
-    // glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
-
     ProgramMap.Init(Asset::Shader::MapVERT, Asset::Shader::MapFRAG);
-    ProgramMap.Use();
-    glUniform1i(ProgramMap.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
-
     ProgramUber2D.Init(Asset::Shader::Uber2DVERT, Asset::Shader::Uber2DFRAG);
-    ProgramUber2D.Use();
-    glUniform1i(ProgramUber2D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
-    glUniform1i(ProgramUber2D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
-
     ProgramUber3D.Init(Asset::Shader::Uber3DVERT, Asset::Shader::Uber3DFRAG);
-    ProgramUber3D.Use();
-    glUniform1i(ProgramUber3D.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
-    glUniform1i(ProgramUber3D.UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
-
     ProgramPostProcess.Init(Asset::Shader::PostProcessVERT, Asset::Shader::PostProcessFRAG);
-    ProgramPostProcess.Use();
-    glUniform1i(ProgramPostProcess.UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
 }
 
 void SRenderer::Cleanup()

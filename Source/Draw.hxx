@@ -127,6 +127,7 @@ protected:
     void InitUniforms() override;
 
 public:
+    int UniformCommonAtlasID{};
     int UniformPositionScreenSpaceID{};
     int UniformSizeScreenSpaceID{};
 };
@@ -141,7 +142,6 @@ public:
     int UniformPositionScreenSpaceID{};
     int UniformSizeScreenSpaceID{};
     int UniformUVRectID{};
-    int UniformCommonAtlasID{};
     int UniformPrimaryAtlasID{};
 };
 

@@ -235,7 +235,7 @@ void main()
     // Corners hack
     vec4 tileInfoCorner = pixelToTile(texCoord + vec2(-1.0, -1.0), tileSize);
     float validTileMaskCorner = calculateValidTileMask(tileInfoWest.x, tileInfoCorner.y, levelWidth, levelHeight);
-    TileData tileDataCorner = getTileData(tileInfoCorner.x, tileInfoCorner.y, levelWidth, levelHeight);
+TileData tileDataCorner = getTileData(tileInfoCorner.x, tileInfoCorner.y, levelWidth, levelHeight);
     float exploredMaskCorner = exploredMask(tileDataCorner.specialFlags);
     validTileMaskCorner *= exploredMaskCorner;
 
