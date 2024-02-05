@@ -1,5 +1,5 @@
-layout (location = 0) in vec2 a_vertexPositionModelSpace;
-layout (location = 1) in vec2 a_texCoord;
+layout(location = 0) in vec2 a_vertexPositionModelSpace;
+layout(location = 1) in vec2 a_texCoord;
 
 uniform int u_mode;
 uniform vec4 u_modeControlA;
@@ -62,10 +62,10 @@ void main()
     }
 
     gl_Position = vec4(
-    ndcOrigin.x + (vertexPositionModelSpace.x * ndcSize.x),
-    -(ndcOrigin.y + (vertexPositionModelSpace.y * ndcSize.y)),
-    0.0,
-    1.0);
+            ndcOrigin.x + (vertexPositionModelSpace.x * ndcSize.x),
+            -(ndcOrigin.y + (vertexPositionModelSpace.y * ndcSize.y)),
+            0.0,
+            1.0);
 
     f_texCoord = a_texCoord;
 }

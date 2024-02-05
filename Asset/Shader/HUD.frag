@@ -1,17 +1,16 @@
-struct TileData
-{
+struct TileData {
     uint flags;
     uint specialFlags;
     uint edgeFlags;
     uint specialEdgeFlags;
 };
 
-layout (std140) uniform ub_common
+layout(std140) uniform ub_common
 {
     vec4 temp;
 };
 
-layout (std140) uniform ub_map
+layout(std140) uniform ub_map
 {
     int width;
     int height;
@@ -72,8 +71,8 @@ void main()
     vec3 finalColor = vec3(0.5, 0.5, 0.5);
     float borderSize = 2.0;
 
-    float borderX = clamp(abs((texCoordNDC.x * u_sizeScreenSpace.x))  - (u_sizeScreenSpace.x - borderSize), 0.0, 1.0);
-    float borderY = clamp(abs((texCoordNDC.y * u_sizeScreenSpace.y))  - (u_sizeScreenSpace.y - borderSize), 0.0, 1.0);
+    float borderX = clamp(abs((texCoordNDC.x * u_sizeScreenSpace.x)) - (u_sizeScreenSpace.x - borderSize), 0.0, 1.0);
+    float borderY = clamp(abs((texCoordNDC.y * u_sizeScreenSpace.y)) - (u_sizeScreenSpace.y - borderSize), 0.0, 1.0);
 
     if (u_mode == HUD_MODE_BORDER_DASHED)
     {

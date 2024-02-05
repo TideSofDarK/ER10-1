@@ -1,7 +1,7 @@
 uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
-uniform vec4 u_uvRect;// minX, minY, maxX, maxY
+uniform vec4 u_uvRect; // minX, minY, maxX, maxY
 uniform vec2 u_sizeScreenSpace;
 uniform sampler2D u_commonAtlas;
 uniform sampler2D u_primaryAtlas;
@@ -41,11 +41,11 @@ void main()
 
         float outlineMask = round(1.0 - color.a);
         outlineMask *= clamp(
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(pixelSizeX, 0.0), u_uvRect)).a +
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(-pixelSizeX, 0.0), u_uvRect)).a +
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, pixelSizeY), u_uvRect)).a +
-        texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, -pixelSizeY), u_uvRect)).a,
-        0.0, 1.0);
+                texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(pixelSizeX, 0.0), u_uvRect)).a +
+                    texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(-pixelSizeX, 0.0), u_uvRect)).a +
+                    texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, pixelSizeY), u_uvRect)).a +
+                    texture(u_primaryAtlas, clampUV(texCoordAtlasSpace + vec2(0.0, -pixelSizeY), u_uvRect)).a,
+                0.0, 1.0);
 
         float pulse = abs((fract(f_texCoord.y + u_globals.time) * 2) - 1.0);
         pulse *= pulse;

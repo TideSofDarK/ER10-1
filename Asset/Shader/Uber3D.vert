@@ -1,8 +1,8 @@
-layout (location = 0) in vec3 a_vertexPositionModelSpace;
-layout (location = 1) in vec2 a_texCoord;
-layout (location = 2) in vec3 a_normal;
+layout(location = 0) in vec3 a_vertexPositionModelSpace;
+layout(location = 1) in vec2 a_texCoord;
+layout(location = 2) in vec3 a_normal;
 
-layout (std140) uniform ub_common
+layout(std140) uniform ub_common
 {
     mat4 u_projection;
     mat4 u_view;
@@ -29,14 +29,15 @@ void main()
     vec3 vertexPositionCameraSpace = f_positionViewSpace.xyz;
     f_eyeDirectionCameraSpace = vec3(0, 0, 0) - vertexPositionCameraSpace;
 
-    //    f_distanceToCamera = length(vertexPositionCameraSpace);
-    //    f_distanceToCamera = length(f_positionWorldSpace);
-//    f_distanceToCamera = -vertexPositionCameraSpace.z;
+    // f_distanceToCamera = length(vertexPositionCameraSpace);
+    // f_distanceToCamera = length(f_positionWorldSpace);
+    // f_distanceToCamera = -vertexPositionCameraSpace.z;
 
-    //    f_vertexColor = vec4(1.0, 0.0, 0.0, 1.0);
+    // f_vertexColor = vec4(1.0, 0.0, 0.0, 1.0);
     f_vertexColor = vec4(a_texCoord.x, a_texCoord.y, 0.0, 1.0);
 
     f_texCoord = a_texCoord;
-    //    f_texCoord.x = 1.0 - f_texCoord.x;
+    // f_texCoord.x = 1.0 - f_texCoord.x;
     f_texCoord.y = 1.0 - f_texCoord.y;
 }
+

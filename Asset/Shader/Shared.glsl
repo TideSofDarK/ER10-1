@@ -15,7 +15,7 @@ struct Sprite
     int paddingB;
 };
 
-layout (std140) uniform ub_globals
+layout(std140) uniform ub_globals
 {
     vec2 screenSize;
     float time;
@@ -159,7 +159,7 @@ vec3 overlay(vec3 original, vec3 toAdd, float mask)
     return original * (1.0 - mask) + (mask * toAdd);
 }
 
-float inverseMix(float from, float to, float value){
+float inverseMix(float from, float to, float value) {
     return (value - from) / (to - from);
 }
 
@@ -198,8 +198,8 @@ vec2 rotateUV(vec2 uv, float rotation, float mid)
 
 mat2 rotationMatrix(float angle)
 {
-	angle *= PI / 180.0;
+    angle *= PI / 180.0;
     float sine = sin(angle), cosine = cos(angle);
-    return mat2( cosine, -sine,
-                 sine,    cosine );
+    return mat2(cosine, -sine,
+        sine, cosine);
 }

@@ -6,12 +6,12 @@ struct TileData
     uint specialEdgeFlags;
 };
 
-layout (std140) uniform ub_common
+layout(std140) uniform ub_common
 {
     Sprite[MAP_ICON_COUNT] icons;
 } u_common;
 
-layout (std140) uniform ub_map
+layout(std140) uniform ub_map
 {
     int width;
     int height;
@@ -91,9 +91,9 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, Spr
 {
     float rotatedMask = 1.0 - mod(direction + 1, 2);
     vec2 spriteSize = vec2(
-        sprite.height * rotatedMask + sprite.width * (1.0 - rotatedMask),
-        sprite.width * rotatedMask + sprite.height * (1.0 - rotatedMask)
-    );
+            sprite.height * rotatedMask + sprite.width * (1.0 - rotatedMask),
+            sprite.width * rotatedMask + sprite.height * (1.0 - rotatedMask)
+        );
 
     vec2 spriteOffset = vec2((spriteSize.x - tileSize) / 2, (spriteSize.y - tileSize) / 2);
     spriteOffset = floor(spriteOffset);
@@ -265,7 +265,7 @@ void main()
     wallMasks *= edgeMask;
     wallMasks *= levelBoundsMask;
 
-    vec3 wallColor = vec3(1.0, 1.0, 1.0);// - vec3((1.0 - visitedMask) * 0.25);
+    vec3 wallColor = vec3(1.0, 1.0, 1.0); // - vec3((1.0 - visitedMask) * 0.25);
     finalColor = mix(finalColor, wallColor, wallMasks);
 
     // Doors

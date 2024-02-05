@@ -25,3 +25,4 @@ void main()
 
     color = mix(vec4(0.0), color, getFogFactor(dist));
 }
+

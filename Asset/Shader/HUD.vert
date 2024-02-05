@@ -1,5 +1,5 @@
-layout (location = 0) in vec2 a_vertexPositionModelSpace;
-layout (location = 1) in vec2 a_texCoord;
+layout(location = 0) in vec2 a_vertexPositionModelSpace;
+layout(location = 1) in vec2 a_texCoord;
 
 uniform vec2 u_positionScreenSpace;
 uniform vec2 u_sizeScreenSpace;
