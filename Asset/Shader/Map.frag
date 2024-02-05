@@ -89,7 +89,12 @@ float exploredMask(uint flags)
 
 vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, Sprite sprite)
 {
-    vec2 spriteSize = vec2(sprite.width, sprite.height);
+    float rotatedMask = 1.0 - mod(direction + 1, 2);
+    vec2 spriteSize = vec2(
+        sprite.height * rotatedMask + sprite.width * (1.0 - rotatedMask),
+        sprite.width * rotatedMask + sprite.height * (1.0 - rotatedMask)
+    );
+
     vec2 spriteOffset = vec2((spriteSize.x - tileSize) / 2, (spriteSize.y - tileSize) / 2);
     spriteOffset = floor(spriteOffset);
 
