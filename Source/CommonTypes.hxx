@@ -152,7 +152,6 @@ struct SCoordsAndDirection
 {
     UVec2 Coords;
     SDirection Direction{};
-    int : 32;
 };
 
 enum class EKeyState : unsigned

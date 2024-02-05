@@ -34,6 +34,7 @@ struct SShaderMapData
     SCoordsAndDirection POV;
     int : 32;
     int : 32;
+    int : 32;
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
 };
 
