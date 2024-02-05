@@ -87,7 +87,8 @@ private:
 
 protected:
     virtual void InitUniforms();
-    virtual void CleanupUniforms() const {};
+    virtual void InitUniformBlocks() {};
+    virtual void CleanupUniformBlocks() const {};
 
 public:
     unsigned ID{};
@@ -154,7 +155,8 @@ struct SProgramMap : SProgram2D
 {
 protected:
     void InitUniforms() override;
-    void CleanupUniforms() const override;
+    void InitUniformBlocks() override;
+    void CleanupUniformBlocks() const override;
 
 public:
     SUniformBlock CommonUniformBlock{};

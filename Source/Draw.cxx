@@ -155,11 +155,12 @@ void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentS
     glDeleteShader(FragmentShader);
     SProgram::InitUniforms();
     InitUniforms();
+    InitUniformBlocks();
 }
 
 void SProgram::Cleanup() const
 {
-    CleanupUniforms();
+    CleanupUniformBlocks();
     glDeleteProgram(ID);
 
     Log::Draw<ELogLevel::Debug>("Deleting SProgram");
@@ -196,7 +197,7 @@ void SProgram::Reload()
 
     ShaderFile.close();
 
-    Cleanup();
+    glDeleteProgram(ID);
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
@@ -244,19 +245,22 @@ void SProgramMap::InitUniforms()
 {
     SProgram2D::InitUniforms();
 
-    CommonUniformBlock.Init(sizeof(SShaderSprite) * MAP_ICON_COUNT);
-    CommonUniformBlock.Bind(EUniformBlockBinding::CommonMap);
-
-    UniformBlock.Init(sizeof(SShaderMapData));
-    UniformBlock.Bind(EUniformBlockBinding::Map);
-
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::CommonMap);
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
 
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
 }
 
-void SProgramMap::CleanupUniforms() const
+void SProgramMap::InitUniformBlocks()
+{
+    CommonUniformBlock.Init(sizeof(SShaderSprite) * MAP_ICON_COUNT);
+    CommonUniformBlock.Bind(EUniformBlockBinding::CommonMap);
+
+    UniformBlock.Init(sizeof(SShaderMapData));
+    UniformBlock.Bind(EUniformBlockBinding::Map);
+}
+
+void SProgramMap::CleanupUniformBlocks() const
 {
     CommonUniformBlock.Cleanup();
     UniformBlock.Cleanup();
