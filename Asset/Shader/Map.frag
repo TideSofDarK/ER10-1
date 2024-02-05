@@ -6,23 +6,27 @@ struct TileData
     uint specialEdgeFlags;
 };
 
-/* Binding Point: 1 */
+layout (std140) uniform ub_common
+{
+    Sprite[MAP_ICON_COUNT] icons;
+} u_common;
+
 layout (std140) uniform ub_map
 {
     int width;
     int height;
     float povX;
     float povY;
+    uint povDirection;
+    uint paddingA;
     TileData[MAX_LEVEL_TILE_COUNT] tiles;
 } u_map;
 
 uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
-uniform vec4 u_uvRect;// minX, minY, maxX, maxY
 uniform vec2 u_sizeScreenSpace;
 uniform sampler2D u_commonAtlas;
-uniform sampler2D u_primaryAtlas;
 
 in vec2 f_texCoord;
 
@@ -83,6 +87,38 @@ float exploredMask(uint flags)
     }
 }
 
+vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, Sprite sprite)
+{
+    vec2 spriteSize = vec2(sprite.width, sprite.height);
+    vec2 spriteOffset = vec2((spriteSize.x - tileSize) / 2, (spriteSize.y - tileSize) / 2);
+    spriteOffset = floor(spriteOffset);
+
+    float edgeA = tileCoords.x * tileSize - spriteOffset.x;
+    float edgeB = edgeA + spriteSize.x;
+    float edgeC = tileCoords.y * tileSize - spriteOffset.y;
+    float edgeD = edgeC + spriteSize.y;
+
+    float maskA = step(edgeA, texCoord.x);
+    float maskB = 1.0 - step(edgeB, texCoord.x);
+    float maskC = step(edgeC, texCoord.y);
+    float maskD = 1.0 - step(edgeD, texCoord.y);
+    float masks = maskA * maskB * maskC * maskD;
+
+    vec2 sizeAtlasSpace = vec2(sprite.uvRect.z - sprite.uvRect.x, sprite.uvRect.w - sprite.uvRect.y);
+    vec2 pixelSize = sizeAtlasSpace / spriteSize;
+
+    float u = inverseMix(edgeA, edgeB, texCoord.x);
+    float v = inverseMix(edgeC, edgeD, texCoord.y);
+
+    vec2 spriteUV = vec2(u, v);
+    spriteUV += pixelSize / 2.0;
+    spriteUV = rotateUV(spriteUV, degToRad(float(direction) * 90.0));
+    spriteUV = convertUV(spriteUV, sprite.uvRect);
+    vec4 finalColor = texture2D(u_commonAtlas, spriteUV);
+    finalColor.a *= masks;
+    return finalColor;
+}
+
 void main()
 {
     vec3 finalColor = mix(vec3(0.0, 0.0, 0.0), vec3(0.03, 0.03, 0.08), 1.0 - f_texCoord.y);
@@ -98,6 +134,7 @@ void main()
     vec2 texCoord = f_texCoord;
     vec2 texCoordOriginal = texCoord;
     texCoord *= u_sizeScreenSpace;
+    texCoord = floor(texCoord);
 
     float tileSize = 0.0;
     if (u_mode == MAP_MODE_GAME_NORMAL)
@@ -159,16 +196,6 @@ void main()
     holeMask *= step(abs(map1to1(tileInfo.w - tileSizeReciprocal / 2.0)), 0.55);
     vec3 holeColor = vec3(0.0, 0.0, 0.1);
     finalColor = overlay(finalColor, holeColor, holeMask);
-
-    // Current POV
-    if (u_mode != MAP_MODE_EDITOR)
-    {
-        float povTileMask = (1.0 - min(abs(tileInfo.x - povX), 1.0)) * (1.0 - min(abs(tileInfo.y - povY), 1.0));
-        float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;
-        float povMask = saturate((povTileMask * (1.0 - distance(vec2(map1to1(tileInfo.z - tileSizeReciprocal / 2.0), map1to1(tileInfo.w - tileSizeReciprocal / 2.0)) * 2.0, vec2(0.0, 0.0))))) * povAnim;
-        vec3 povColor = vec3(1.0, 1.0, 1.0);
-        finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
-    }
 
     // Edges
     float edgeMaskHor = saturate(1.0 - abs(mod(texCoord.y, tileSize)));
@@ -277,6 +304,18 @@ void main()
     // gridForceMask = saturate(gridForceMask);
     // gridForceMask = 0.0;
     finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+
+    // Current POV
+    if (u_mode != MAP_MODE_EDITOR)
+    {
+        vec4 playerIcon = putIcon(texCoord, vec2(povX, povY), u_map.povDirection, tileSize, u_common.icons[MAP_ICON_PLAYER]);
+        finalColor = overlay(finalColor, playerIcon.rgb, playerIcon.a);
+
+        // float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;
+        // float povMask = saturate((povTileMask * (1.0 - distance(vec2(map1to1(tileInfo.z - tileSizeReciprocal / 2.0), map1to1(tileInfo.w - tileSizeReciprocal / 2.0)) * 2.0, vec2(0.0, 0.0))))) * povAnim;
+        // vec3 povColor = vec3(1.0, 1.0, 1.0);
+        // finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
+    }
 
     color = vec4(finalColor, 1.0);
 }

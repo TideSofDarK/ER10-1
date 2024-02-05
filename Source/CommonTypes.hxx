@@ -133,8 +133,9 @@ struct SDirection
 
 struct SCoordsAndDirection
 {
-    UVec2Int Coords;
+    UVec2 Coords;
     SDirection Direction{};
+    uint32_t PaddingA{};
 };
 
 enum class EKeyState : unsigned

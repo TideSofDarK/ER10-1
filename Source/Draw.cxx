@@ -27,6 +27,7 @@ namespace EUniformBlockBinding
         Globals,
         Common2D,
         Common3D,
+        CommonMap,
         Map
     };
 };
@@ -158,6 +159,7 @@ void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentS
 
 void SProgram::Cleanup() const
 {
+    CleanupUniforms();
     glDeleteProgram(ID);
 
     Log::Draw<ELogLevel::Debug>("Deleting SProgram");
@@ -241,7 +243,23 @@ void SProgramHUD::InitUniforms()
 void SProgramMap::InitUniforms()
 {
     SProgram2D::InitUniforms();
+
+    CommonUniformBlock.Init(sizeof(SShaderSprite) * MAP_ICON_COUNT);
+    CommonUniformBlock.Bind(EUniformBlockBinding::CommonMap);
+
+    UniformBlock.Init(sizeof(SShaderMapData));
+    UniformBlock.Bind(EUniformBlockBinding::Map);
+
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::CommonMap);
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
+
+    UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
+}
+
+void SProgramMap::CleanupUniforms() const
+{
+    CommonUniformBlock.Cleanup();
+    UniformBlock.Cleanup();
 }
 
 void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
@@ -528,7 +546,7 @@ void SUniformBlock::Init(int Size)
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void SUniformBlock::Cleanup()
+void SUniformBlock::Cleanup() const
 {
     glDeleteBuffers(1, &UBO);
 }
@@ -628,9 +646,6 @@ void SRenderer::Init(int Width, int Height)
     Queue3D.CommonUniformBlock.Init(sizeof(UMat4x4) * 2);
     Queue3D.CommonUniformBlock.Bind(EUniformBlockBinding::Common3D);
 
-    MapUniformBlock.Init(sizeof(SShaderMapData));
-    MapUniformBlock.Bind(EUniformBlockBinding::Map);
-
     /* Initialize framebuffers. */
     MainFrameBuffer.Init(TEXTURE_UNIT_MAIN_FRAMEBUFFER, Width, Height, WINDOW_CLEAR_COLOR);
 
@@ -646,7 +661,7 @@ void SRenderer::Init(int Width, int Height)
 
     ProgramMap.Init(Asset::Shader::MapVERT, Asset::Shader::MapFRAG);
     ProgramMap.Use();
-    // glUniform1i(ProgramHUD.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glUniform1i(ProgramMap.UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 
     ProgramUber2D.Init(Asset::Shader::Uber2DVERT, Asset::Shader::Uber2DFRAG);
     ProgramUber2D.Use();
@@ -671,7 +686,6 @@ void SRenderer::Cleanup()
         Atlas.Cleanup();
     }
     Quad2D.Cleanup();
-    MapUniformBlock.Cleanup();
     GlobalsUniformBlock.Cleanup();
     Queue2D.CommonUniformBlock.Cleanup();
     Queue3D.CommonUniformBlock.Cleanup();
@@ -680,6 +694,22 @@ void SRenderer::Cleanup()
     ProgramUber2D.Cleanup();
     ProgramUber3D.Cleanup();
     ProgramPostProcess.Cleanup();
+}
+
+void SRenderer::SetMapIcons(const std::array<SSpriteHandle, MAP_ICON_COUNT>& SpriteHandles) const
+{
+    std::array<SShaderSprite, MAP_ICON_COUNT> Sprites;
+
+    for (auto Index = 0; Index < (int)MAP_ICON_COUNT; Index++)
+    {
+        Sprites[Index].UVRect = SpriteHandles[Index].Sprite->UVRect;
+        Sprites[Index].SizeX = SpriteHandles[Index].Sprite->SizePixels.X;
+        Sprites[Index].SizeY = SpriteHandles[Index].Sprite->SizePixels.Y;
+    }
+
+    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.CommonUniformBlock.UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderSprite) * MAP_ICON_COUNT, Sprites.data());
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void SRenderer::SetupLevelDrawData(const STileset& TileSet)
@@ -700,24 +730,24 @@ void SRenderer::BindMapUniformBlock(const SUniformBlock* UniformBlock) const
     }
     else
     {
-        MapUniformBlock.Bind(EUniformBlockBinding::Map);
+        ProgramMap.UniformBlock.Bind(EUniformBlockBinding::Map);
     }
 }
 
-void SRenderer::UploadMapData(const SLevel& Level, UVec2 POVOrigin, const SUniformBlock* UniformBlock) const
+void SRenderer::UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV, const SUniformBlock* UniformBlock) const
 {
     SShaderMapData ShaderMapData{};
 
     ShaderMapData.Width = (int)Level.Width;
     ShaderMapData.Height = (int)Level.Height;
-    ShaderMapData.POVX = POVOrigin.X;
-    ShaderMapData.POVY = POVOrigin.Y;
+    ShaderMapData.POV = POV;
 
     ShaderMapData.Tiles = Level.Tiles;
 
-    auto TargetUniformBlock = UniformBlock != nullptr ? *UniformBlock : MapUniformBlock;
+    auto TargetUniformBlock = UniformBlock != nullptr ? UniformBlock->UBO : ProgramMap.UniformBlock.UBO;
 
-    glBindBuffer(GL_UNIFORM_BUFFER, TargetUniformBlock.UBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, TargetUniformBlock);
+    /* Upload only relevant tiles within (width * height) range. */
     glBufferSubData(GL_UNIFORM_BUFFER, 0, offsetof(SShaderMapData, Tiles) + sizeof(STile) * (Level.Width * Level.Height), &ShaderMapData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -868,16 +898,16 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin)
+void SRenderer::DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const SCoordsAndDirection& POV)
 {
-    glBindBuffer(GL_UNIFORM_BUFFER, MapUniformBlock.UBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlock.UBO);
     if (Level.DirtyFlags & ELevelDirtyFlags::POVChanged)
     {
-        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POVX), sizeof(POVOrigin), &POVOrigin);
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POV), sizeof(SCoordsAndDirection), &POV);
 
         Level.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
 
-        Log::Draw<ELogLevel::Verbose>("%s(): POVOrigin: { %.2f, %.2f }", __func__, POVOrigin.X, POVOrigin.Y);
+        Log::Draw<ELogLevel::Verbose>("%s(): POVOrigin: { %.2f, %.2f }", __func__, POV.Coords.X, POV.Coords.Y);
     }
 
     if (Level.DirtyFlags & ELevelDirtyFlags::DirtyRange)

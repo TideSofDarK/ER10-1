@@ -25,6 +25,14 @@ namespace Asset::Common
     EXTERN_ASSET(DoorCreekWAV)
 }
 
+namespace Asset::HUD
+{
+    /* Map Icons */
+    EXTERN_ASSET(MapIconPlayer)
+    EXTERN_ASSET(MapIconA)
+    EXTERN_ASSET(MapIconB)
+}
+
 namespace Asset::Tileset::Hotel
 {
     EXTERN_ASSET(FloorOBJ)
@@ -53,12 +61,17 @@ SGame::SGame()
 
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    auto& CommonAtlas2D = Renderer.Atlases[ATLAS_COMMON];
-    NoiseSprite = CommonAtlas2D.AddSprite(
+    auto& CommonAtlas = Renderer.Atlases[ATLAS_COMMON];
+    NoiseSprite = CommonAtlas.AddSprite(
         Asset::Common::NoisePNG);
-    RefSprite = CommonAtlas2D.AddSprite(
+    RefSprite = CommonAtlas.AddSprite(
         Asset::Common::RefPNG);
-    CommonAtlas2D.Build();
+    MapIcons[MAP_ICON_PLAYER] = CommonAtlas.AddSprite(Asset::HUD::MapIconPlayer);
+    MapIcons[MAP_ICON_A] = CommonAtlas.AddSprite(Asset::HUD::MapIconA);
+    MapIcons[MAP_ICON_B] = CommonAtlas.AddSprite(Asset::HUD::MapIconB);
+    CommonAtlas.Build();
+
+    Renderer.SetMapIcons(MapIcons);
 
     auto& PrimaryAtlas2D = Renderer.Atlases[ATLAS_PRIMARY2D];
     AngelSprite = PrimaryAtlas2D.AddSprite(
@@ -248,7 +261,7 @@ void SGame::Run()
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
 
             MapRect = Math::Mix(MapRect, URect(bMapMaximized ? MapRectMax : MapRectMin), Window.DeltaTime * 10.0f);
-            Renderer.DrawMap(Level, UVec3(MapRect.Min), UVec2Int((int)std::round(MapRect.Max.X), (int)std::round(MapRect.Max.Y)), Blob.UnreliableCoords());
+            Renderer.DrawMap(Level, UVec3(MapRect.Min), UVec2Int((int)std::round(MapRect.Max.X), (int)std::round(MapRect.Max.Y)), Blob.UnreliableCoordsAndDirection());
 
             switch (SpriteDemoState)
             {
@@ -536,7 +549,7 @@ void SGame::OnBlobMoved()
 void SGame::ChangeLevel()
 {
     Level.PostProcess();
-    Renderer.UploadMapData(Level, { 0.0f, 0.0f }, nullptr);
+    Renderer.UploadMapData(Level, Blob.UnreliableCoordsAndDirection(), nullptr);
     OnBlobMoved();
 }
 

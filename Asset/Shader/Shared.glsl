@@ -6,6 +6,15 @@
 #define HALF_PI 1.5707963267948966
 #endif
 
+struct Sprite
+{
+    vec4 uvRect;
+    int width;
+    int height;
+    int paddingA;
+    int paddingB;
+};
+
 layout (std140) uniform ub_globals
 {
     vec2 screenSize;
@@ -150,4 +159,47 @@ vec3 overlay(vec3 original, vec3 toAdd, float mask)
     return original * (1.0 - mask) + (mask * toAdd);
 }
 
+float inverseMix(float from, float to, float value){
+    return (value - from) / (to - from);
+}
 
+vec2 rotateUV(vec2 uv, float rotation)
+{
+    float cosAngle = cos(rotation);
+    float sinAngle = sin(rotation);
+    vec2 p = uv - vec2(0.5);
+    return vec2(
+        cosAngle * p.x + sinAngle * p.y + 0.5,
+        cosAngle * p.y - sinAngle * p.x + 0.5
+    );
+}
+
+vec2 rotateUV(vec2 uv, float rotation, vec2 mid)
+{
+    float cosAngle = cos(rotation);
+    float sinAngle = sin(rotation);
+    vec2 p = uv - mid;
+    return vec2(
+        cosAngle * p.x + sinAngle * p.y + mid.x,
+        cosAngle * p.y - sinAngle * p.x + mid.y
+    );
+}
+
+vec2 rotateUV(vec2 uv, float rotation, float mid)
+{
+    float cosAngle = cos(rotation);
+    float sinAngle = sin(rotation);
+    vec2 p = uv - vec2(mid);
+    return vec2(
+        cosAngle * p.x + sinAngle * p.y + mid,
+        cosAngle * p.y - sinAngle * p.x + mid
+    );
+}
+
+mat2 rotationMatrix(float angle)
+{
+	angle *= PI / 180.0;
+    float sine = sin(angle), cosine = cos(angle);
+    return mat2( cosine, -sine,
+                 sine,    cosine );
+}

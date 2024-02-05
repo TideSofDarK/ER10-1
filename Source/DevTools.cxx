@@ -261,7 +261,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
 
     /* @TODO: Update tiles every frame for now. */
     UVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
-    Game.Renderer.UploadMapData(Level, POVOrigin, &MapUniformBlock);
+    Game.Renderer.UploadMapData(Level, { POVOrigin, SDirection::North() }, &MapUniformBlock);
 
     /* Render level to framebuffer. */
     UVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
@@ -682,7 +682,7 @@ void SDevTools::Update(SGame& Game)
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F4)))
     {
-        Game.Renderer.ProgramHUD.Reload();
+        // Game.Renderer.ProgramHUD.Reload();
         Game.Renderer.ProgramMap.Reload();
         // Game.Renderer.ProgramUber2D.Reload();
         // Game.Renderer.ProgramUber3D.Reload();

@@ -31,8 +31,9 @@ struct SShaderMapData
 {
     int32_t Width{};
     int32_t Height{};
-    float POVX{};
-    float POVY{};
+    SCoordsAndDirection POV;
+    uint32_t PaddingA{};
+    uint32_t PaddingB{};
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
 };
 
@@ -41,6 +42,33 @@ struct SShaderGlobals
     UVec2 ScreenSize;
     float Time{};
     float Random{};
+};
+
+struct SShaderSprite
+{
+    UVec4 UVRect{};
+    int SizeX{};
+    int SizeY{};
+    int PaddingA{};
+    int PaddingB{};
+};
+
+struct SUniformBlock
+{
+    unsigned UBO{};
+    int Binding{};
+
+    void Init(int Size);
+
+    void Cleanup() const;
+
+    void Bind(int BindingPoint) const;
+
+    void SetMatrix(int Position, const UMat4x4& Value) const;
+
+    void SetVector2(int Position, const UVec2& Value) const;
+
+    void SetFloat(int Position, float Value) const;
 };
 
 struct SProgram
@@ -58,6 +86,7 @@ private:
 
 protected:
     virtual void InitUniforms();
+    virtual void CleanupUniforms() const {};
 
 public:
     unsigned ID{};
@@ -124,8 +153,12 @@ struct SProgramMap : SProgram2D
 {
 protected:
     void InitUniforms() override;
+    void CleanupUniforms() const override;
 
 public:
+    SUniformBlock CommonUniformBlock{};
+    SUniformBlock UniformBlock{};
+    int UniformCommonAtlasID{};
     int UniformMap{};
 };
 
@@ -254,24 +287,6 @@ struct STexture
     void Cleanup();
 
     void BindToTextureUnit(int TextureUnit) const;
-};
-
-struct SUniformBlock
-{
-    unsigned UBO{};
-    int Binding{};
-
-    void Init(int Size);
-
-    void Cleanup();
-
-    void Bind(int BindingPoint) const;
-
-    void SetMatrix(int Position, const UMat4x4& Value) const;
-
-    void SetVector2(int Position, const UVec2& Value) const;
-
-    void SetFloat(int Position, float Value) const;
 };
 
 enum class EProgram2DType
@@ -403,7 +418,6 @@ struct SRenderer
     SAtlas Atlases[3];
 
     SUniformBlock GlobalsUniformBlock;
-    SUniformBlock MapUniformBlock;
 
     SProgramHUD ProgramHUD;
     SProgramMap ProgramMap;
@@ -421,8 +435,10 @@ struct SRenderer
 
     void SetupLevelDrawData(const STileset& TileSet);
 
+    /* Map */
+    void SetMapIcons(const std::array<SSpriteHandle, MAP_ICON_COUNT>& SpriteHandles) const;
     void BindMapUniformBlock(const SUniformBlock* UniformBlock) const;
-    void UploadMapData(const SLevel& Level, UVec2 POVOrigin, const SUniformBlock* UniformBlock) const;
+    void UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV, const SUniformBlock* UniformBlock) const;
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -432,7 +448,7 @@ struct SRenderer
 
     void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
 
-    void DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const UVec2& POVOrigin);
+    void DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const SCoordsAndDirection& POV);
 
     void DrawMapImmediate(const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time);
 

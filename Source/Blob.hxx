@@ -81,6 +81,13 @@ public:
 
     EBlobAnimationType HandleAnimationEnd();
 
+    [[nodiscard]] SCoordsAndDirection UnreliableCoordsAndDirection() const
+    {
+        return {
+            UnreliableCoords(),
+            Direction
+        };
+    }
     [[nodiscard]] UVec2 UnreliableCoords() const { return UVec2{ EyePositionCurrent.X, EyePositionCurrent.Z }; }
     [[nodiscard]] static int ExploreRadius() { return 3; }
     [[nodiscard]] bool IsMoving() const { return AnimationType != EBlobAnimationType::Idle; }

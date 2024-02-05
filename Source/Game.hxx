@@ -43,6 +43,7 @@ public:
 
     SSoundClip DoorCreek{};
 
+    std::array<SSpriteHandle, MAP_ICON_COUNT> MapIcons;
     SSpriteHandle NoiseSprite;
     SSpriteHandle RefSprite;
     SSpriteHandle FrameSprite;

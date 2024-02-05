@@ -78,6 +78,14 @@ namespace Asset::Common
     DEFINE_ASSET(TestMusicWAV, "../Asset/Music/TestMusic.wav")
 }
 
+namespace Asset::HUD
+{
+    /* Map Icons */
+    DEFINE_ASSET(MapIconPlayer, "../Asset/HUD/Player.png")
+    DEFINE_ASSET(MapIconA, "../Asset/HUD/IconA.png")
+    DEFINE_ASSET(MapIconB, "../Asset/HUD/IconB.png")
+}
+
 namespace Asset::Shader
 {
     DEFINE_ASSET(SharedGLSL, "../Asset/Shader/Shared.glsl")
