@@ -437,7 +437,7 @@ void SGame::HandleBlobMovement()
             case EBlobAnimationType::Fall:
             {
                 Blob.Coords = {};
-                Blob.Direction = {};
+                Blob.Direction = SDirection::North();
                 Blob.ResetEye();
                 Blob.ApplyDirection(true);
                 OnBlobMoved();

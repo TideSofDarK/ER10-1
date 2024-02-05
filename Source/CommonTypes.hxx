@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include "Math.hxx"
 
 struct SWindowData
@@ -20,18 +21,30 @@ struct SWindowData
 
 struct SDirection
 {
-    using Type = unsigned;
+    using Type = uint32_t;
     static constexpr Type Count = 4;
-    Type Index : 2;
+    Type Index;
+
+    [[nodiscard]] Type Value() const { return Index; }
+
+    void RotateCW(Type Turns)
+    {
+        Index = (Index + Turns) & ~0x4;
+    }
+
+    void RotateCCW(Type Turns)
+    {
+        Index = (Index - Turns) & 0x3;
+    }
 
     void CycleCW()
     {
-        Index++;
+        RotateCW(1);
     }
 
     void CycleCCW()
     {
-        Index--;
+        RotateCCW(1);
     }
 
     constexpr static const char* Names[] = { "North", "East", "South", "West" };
@@ -78,18 +91,22 @@ struct SDirection
 
     static const std::array<SDirection, 4>& All()
     {
-        static std::array<SDirection, Count> Directions = { SDirection::North(), SDirection::East(), SDirection::South(), SDirection::West() };
+        static const std::array<SDirection, Count> Directions = { SDirection::North(), SDirection::East(), SDirection::South(), SDirection::West() };
         return Directions;
     }
 
     [[nodiscard]] inline SDirection Side() const
     {
-        return SDirection{ Index + 1u };
+        SDirection NewDirection{ Index };
+        NewDirection.CycleCW();
+        return NewDirection;
     }
 
     [[nodiscard]] inline SDirection Inverted() const
     {
-        return SDirection{ Index + 2u };
+        SDirection NewDirection{ Index };
+        NewDirection.RotateCCW(2);
+        return NewDirection;
     }
 
     template <typename T>
@@ -135,7 +152,7 @@ struct SCoordsAndDirection
 {
     UVec2 Coords;
     SDirection Direction{};
-    uint32_t PaddingA{};
+    int : 32;
 };
 
 enum class EKeyState : unsigned

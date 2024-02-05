@@ -741,7 +741,6 @@ void SRenderer::UploadMapData(const SLevel& Level, const SCoordsAndDirection& PO
     ShaderMapData.Width = (int)Level.Width;
     ShaderMapData.Height = (int)Level.Height;
     ShaderMapData.POV = POV;
-
     ShaderMapData.Tiles = Level.Tiles;
 
     auto TargetUniformBlock = UniformBlock != nullptr ? UniformBlock->UBO : ProgramMap.UniformBlock.UBO;
@@ -907,7 +906,7 @@ void SRenderer::DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const SCoo
 
         Level.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
 
-        Log::Draw<ELogLevel::Verbose>("%s(): POVOrigin: { %.2f, %.2f }", __func__, POV.Coords.X, POV.Coords.Y);
+        Log::Draw<ELogLevel::Verbose>("%s(): POV: { { %.2f, %.2f }, %d }", __func__, POV.Coords.X, POV.Coords.Y, POV.Direction.Index);
     }
 
     if (Level.DirtyFlags & ELevelDirtyFlags::DirtyRange)

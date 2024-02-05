@@ -32,8 +32,8 @@ struct SShaderMapData
     int32_t Width{};
     int32_t Height{};
     SCoordsAndDirection POV;
-    uint32_t PaddingA{};
-    uint32_t PaddingB{};
+    int : 32;
+    int : 32;
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
 };
 
@@ -49,8 +49,8 @@ struct SShaderSprite
     UVec4 UVRect{};
     int SizeX{};
     int SizeY{};
-    int PaddingA{};
-    int PaddingB{};
+    int : 32;
+    int : 32;
 };
 
 struct SUniformBlock
