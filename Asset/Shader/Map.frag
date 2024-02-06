@@ -99,9 +99,13 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, Spr
     spriteOffset = floor(spriteOffset);
 
     float edgeA = tileCoords.x * tileSize - spriteOffset.x;
+    edgeA = floor(edgeA);
     float edgeB = edgeA + spriteSize.x;
+    edgeB = floor(edgeB);
     float edgeC = tileCoords.y * tileSize - spriteOffset.y;
+    edgeC = floor(edgeC);
     float edgeD = edgeC + spriteSize.y;
+    edgeD = floor(edgeD);
 
     float maskA = step(edgeA, texCoord.x);
     float maskB = 1.0 - step(edgeB, texCoord.x);
@@ -235,7 +239,7 @@ void main()
     // Corners hack
     vec4 tileInfoCorner = pixelToTile(texCoord + vec2(-1.0, -1.0), tileSize);
     float validTileMaskCorner = calculateValidTileMask(tileInfoWest.x, tileInfoCorner.y, levelWidth, levelHeight);
-TileData tileDataCorner = getTileData(tileInfoCorner.x, tileInfoCorner.y, levelWidth, levelHeight);
+    TileData tileDataCorner = getTileData(tileInfoCorner.x, tileInfoCorner.y, levelWidth, levelHeight);
     float exploredMaskCorner = exploredMask(tileDataCorner.specialFlags);
     validTileMaskCorner *= exploredMaskCorner;
 
