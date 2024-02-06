@@ -223,64 +223,91 @@ void main()
     float edgeMask = 1.0 - step(saturate(edgeMaskHor + edgeMaskVert), 0.0);
     float bothEdgesMask = ceil(edgeMaskHor * edgeMaskVert);
 
-    vec4 tileInfoNorth = pixelToTile(texCoord + vec2(0.0, -tileEdgeSize), tileSize);
+    vec4 tileInfoNorth = pixelToTile(texCoord + vec2(-tileEdgeSize, -tileEdgeSize), tileSize);
     float validTileMaskNorth = calculateValidTileMask(tileInfoNorth.x, tileInfoNorth.y, levelWidth, levelHeight);
     TileData tileDataNorth = getTileData(tileInfoNorth.x, tileInfoNorth.y, levelWidth, levelHeight);
     float nonEmptyMaskNorth = nonEmptyMask(tileDataNorth.flags);
-    float exploredMaskNorth = exploredMask(tileDataNorth.specialFlags);
-    validTileMaskNorth *= exploredMaskNorth;
+    float exploredMaskNorth = exploredMask(tileDataNorth.specialFlags) * nonEmptyMaskNorth;
+    // validTileMaskNorth *= exploredMaskNorth;
 
-    vec4 tileInfoSouth = pixelToTile(texCoord + vec2(0.0, tileEdgeSize), tileSize);
+    vec4 tileInfoSouth = pixelToTile(texCoord + vec2(tileEdgeSize, tileEdgeSize), tileSize);
     float validTileMaskSouth = calculateValidTileMask(tileInfoSouth.x, tileInfoSouth.y, levelWidth, levelHeight);
     TileData tileDataSouth = getTileData(tileInfoSouth.x, tileInfoSouth.y, levelWidth, levelHeight);
     float nonEmptyMaskSouth = nonEmptyMask(tileDataSouth.flags);
-    float exploredMaskSouth = exploredMask(tileDataSouth.specialFlags);
-    validTileMaskSouth *= exploredMaskSouth;
+    float exploredMaskSouth = exploredMask(tileDataSouth.specialFlags) * nonEmptyMaskSouth;
+    // validTileMaskSouth *= exploredMaskSouth;
 
-    vec4 tileInfoEast = pixelToTile(texCoord + vec2(tileEdgeSize, 0.0), tileSize);
-    float validTileMaskEast = calculateValidTileMask(tileInfoEast.x, tileInfoEast.y, levelWidth, levelHeight);
-    TileData tileDataEast = getTileData(tileInfoEast.x, tileInfoEast.y, levelWidth, levelHeight);
-    float nonEmptyMaskEast = nonEmptyMask(tileDataEast.flags);
-    float exploredMaskEast = exploredMask(tileDataEast.specialFlags);
-    validTileMaskEast *= exploredMaskEast;
-
-    vec4 tileInfoWest = pixelToTile(texCoord + vec2(-tileEdgeSize, 0.0), tileSize);
+    vec4 tileInfoWest = pixelToTile(texCoord + vec2(-tileEdgeSize, tileEdgeSize), tileSize);
     float validTileMaskWest = calculateValidTileMask(tileInfoWest.x, tileInfoWest.y, levelWidth, levelHeight);
     TileData tileDataWest = getTileData(tileInfoWest.x, tileInfoWest.y, levelWidth, levelHeight);
     float nonEmptyMaskWest = nonEmptyMask(tileDataWest.flags);
-    float exploredMaskWest = exploredMask(tileDataWest.specialFlags);
-    validTileMaskWest *= exploredMaskWest;
+    float exploredMaskWest = exploredMask(tileDataWest.specialFlags) * nonEmptyMaskWest;
+    // validTileMaskWest *= exploredMaskWest;
 
-    // Corners hack
-    vec4 tileInfoCorner = pixelToTile(texCoord + vec2(-tileEdgeSize, -tileEdgeSize), tileSize);
-    float validTileMaskCorner = calculateValidTileMask(tileInfoWest.x, tileInfoCorner.y, levelWidth, levelHeight);
-    TileData tileDataCorner = getTileData(tileInfoCorner.x, tileInfoCorner.y, levelWidth, levelHeight);
-    float nonEmptyMaskCorner = nonEmptyMask(tileDataCorner.flags);
-    float exploredMaskCorner = exploredMask(tileDataCorner.specialFlags);
-    validTileMaskCorner *= exploredMaskCorner;
+    vec4 tileInfoEast = pixelToTile(texCoord + vec2(tileEdgeSize, -tileEdgeSize), tileSize);
+    float validTileMaskEast = calculateValidTileMask(tileInfoEast.x, tileInfoEast.y, levelWidth, levelHeight);
+    TileData tileDataEast = getTileData(tileInfoEast.x, tileInfoEast.y, levelWidth, levelHeight);
+    float nonEmptyMaskEast = nonEmptyMask(tileDataEast.flags);
+    float exploredMaskEast = exploredMask(tileDataEast.specialFlags) * nonEmptyMaskEast;
+    // validTileMaskEast *= exploredMaskEast;
+
+    // // Corners hack
+    // vec4 tileInfoCorner = pixelToTile(texCoord + vec2(-tileEdgeSize, -tileEdgeSize), tileSize);
+    // float validTileMaskCorner = calculateValidTileMask(tileInfoWest.x, tileInfoCorner.y, levelWidth, levelHeight);
+    // TileData tileDataCorner = getTileData(tileInfoCorner.x, tileInfoCorner.y, levelWidth, levelHeight);
+    // float nonEmptyMaskCorner = nonEmptyMask(tileDataCorner.flags);
+    // float exploredMaskCorner = exploredMask(tileDataCorner.specialFlags);
+    // validTileMaskCorner *= exploredMaskCorner;
 
     // Walls
 
     /* Hide walls unless there is at least one non empty tile. */
-    float validHorizontalWallMask = saturate(nonEmptyMaskNorth * validTileMaskNorth + nonEmptyMaskSouth * validTileMaskSouth);
-    float validVerticalWallMask = saturate(nonEmptyMaskEast * validTileMaskEast + nonEmptyMaskWest * validTileMaskWest);
-    float validCornerWallMask = saturate(nonEmptyMaskCorner * validTileMaskCorner);
+    // float validHorizontalWallMask = saturate(nonEmptyMaskNorth * validTileMaskNorth + nonEmptyMaskSouth * validTileMaskSouth);
+    // float validVerticalWallMask = saturate(nonEmptyMaskEast * validTileMaskEast + nonEmptyMaskWest * validTileMaskWest);
+    // float validCornerWallMask = saturate(nonEmptyMaskCorner * validTileMaskCorner);
 
-    float wallMaskNorth = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) * validHorizontalWallMask;
-    wallMaskNorth *= edgeMaskHor;
+    float wallMaskNorth;
+    wallMaskNorth += bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) * validTileMaskNorth * edgeMaskHor;
+    wallMaskNorth += bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * validTileMaskNorth * edgeMaskVert;
+    // wallMaskNorth *= edgeMaskHor;
     // wallMaskNorth = ceil(wallMaskNorth);
 
-    float wallMaskSouth = bitMask(tileDataSouth.edgeFlags, TILE_EDGE_WALL_BIT) * validHorizontalWallMask;
-    wallMaskSouth *= edgeMaskHor;
+    float wallMaskSouth;
+    wallMaskSouth += bitMask(tileDataSouth.edgeFlags, TILE_EDGE_WALL_BIT) * edgeMaskHor * validTileMaskSouth;
+    wallMaskSouth += bitMask(tileDataSouth.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * edgeMaskVert * validTileMaskSouth;
+
+    float wallMaskWest;
+    wallMaskWest += bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_BIT) * edgeMaskHor * validTileMaskWest;
+    wallMaskWest += bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * edgeMaskVert * validTileMaskWest;
+
+    float wallMaskEast;
+    wallMaskEast += bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) * edgeMaskHor * validTileMaskEast;
+    wallMaskEast += bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * edgeMaskVert * validTileMaskEast;
+
+    float maskQ = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) * validTileMaskNorth * edgeMaskHor   * saturate(exploredMaskNorth + exploredMaskWest);
+    maskQ *= bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_BIT) * edgeMaskHor * validTileMaskWest   * saturate(exploredMaskNorth + exploredMaskWest);
+
+    float maskW = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * validTileMaskNorth * edgeMaskVert   * saturate(exploredMaskNorth + exploredMaskEast);
+    maskW *= bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * edgeMaskVert * validTileMaskEast   * saturate(exploredMaskNorth + exploredMaskEast);
+
+    float maskE =  bitMask(tileDataSouth.edgeFlags, TILE_EDGE_WALL_BIT) * edgeMaskHor * validTileMaskSouth  * saturate(exploredMaskSouth + exploredMaskEast);
+    maskE *= bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) * edgeMaskHor * validTileMaskEast   * saturate(exploredMaskSouth + exploredMaskEast);
+
+    float maskR = bitMask(tileDataSouth.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * edgeMaskVert * validTileMaskSouth * saturate(exploredMaskSouth + exploredMaskWest);
+    maskR *= bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * edgeMaskVert * validTileMaskWest * saturate(exploredMaskSouth + exploredMaskWest);
+    // maskE = 0;
+    // maskR = 0;
+
+    // wallMaskSouth *= edgeMaskHor;
     // wallMaskSouth = ceil(wallMaskSouth);
 
-    float wallMaskEast = bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * validVerticalWallMask;
-    wallMaskEast *= edgeMaskVert;
-    // wallMaskEast = ceil(wallMaskEast);
-
-    float wallMaskWest = bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * validVerticalWallMask;
-    wallMaskWest *= edgeMaskVert;
-    // wallMaskWest = ceil(wallMaskWest);
+    // float wallMaskEast = bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * validVerticalWallMask;
+    // wallMaskEast *= edgeMaskVert;
+    // // wallMaskEast = ceil(wallMaskEast);
+    //
+    // float wallMaskWest = bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * validVerticalWallMask;
+    // wallMaskWest *= edgeMaskVert;
+    // // wallMaskWest = ceil(wallMaskWest);
 
     // float wallMaskCorner = (bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_EAST_BIT));
     // // wallMaskCorner += bitMask(tileData.edgeFlags, TILE_EDGE_WALL_WEST_BIT) + bitMask(tileData.edgeFlags, TILE_EDGE_WALL_BIT);
@@ -291,15 +318,15 @@ void main()
 
 
     // float wallMaskCorner = saturate(bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_EAST_BIT));
-    float wallMaskCorner = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_WEST_BIT) + bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_BIT);
-    wallMaskCorner *= bothEdgesMask;
-    wallMaskCorner *= saturate(validTileMaskNorth + validTileMaskWest);
+    // float wallMaskCorner = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_WEST_BIT) + bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_BIT);
+    // wallMaskCorner *= bothEdgesMask;
+    // wallMaskCorner *= saturate(validTileMaskNorth + validTileMaskWest);
     // wallMaskCorner *= tileExploredMask;
     // wallMaskCorner *= bothEdgesMask * validCornerWallMask;
     // wallMaskCorner *= bothEdgesMask * validCornerWallMask;
     // wallMaskCorner = 0;
 
-    float wallMasks = saturate(wallMaskNorth + wallMaskSouth + wallMaskEast + wallMaskWest + wallMaskCorner);
+    float wallMasks = saturate(maskQ + maskW + maskE + maskR);
     wallMasks *= edgeMask;
     wallMasks *= levelBoundsMask;
 
