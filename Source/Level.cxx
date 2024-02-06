@@ -84,6 +84,10 @@ void STilemap::Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
         {
             auto NeighborDirection = Direction.Inverted();
 
+            /* Clear edges if:
+             * a) Neighbor is of the same type.
+             * b) Both tiles are empty.
+             * c) Both tiles are not empty and are different. */
             if (NeighborTile->CheckFlag(Flag) || (NeighborTile->Flags == 0 && Flag == 0) || (NeighborTile->Flags != 0 && Flag != 0))
             {
                 Tile->ClearEdgeFlags(Direction);
@@ -97,7 +101,15 @@ void STilemap::Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
         }
         else
         {
-            Tile->SetWall(Direction);
+            /* No valid neighbor tile; Clear edges if new type is empty. */
+            if (Flag == 0)
+            {
+                Tile->ClearEdgeFlags(Direction);
+            }
+            else
+            {
+                Tile->SetWall(Direction);
+            }
         }
     }
 }
