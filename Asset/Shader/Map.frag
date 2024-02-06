@@ -87,7 +87,12 @@ float exploredMask(uint flags)
     }
 }
 
-vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, Sprite sprite)
+float nonEmptyMask(uint flags)
+{
+    return step(TILE_FLOOR_BIT, flags);
+}
+
+vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, float tileEdgeSize, Sprite sprite)
 {
     float rotatedMask = 1.0 - mod(direction + 1, 2);
     vec2 spriteSize = vec2(
@@ -95,7 +100,7 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, Spr
             sprite.width * rotatedMask + sprite.height * (1.0 - rotatedMask)
         );
 
-    vec2 spriteOffset = vec2((spriteSize.x - tileSize) / 2, (spriteSize.y - tileSize) / 2);
+    vec2 spriteOffset = vec2((spriteSize.x - tileSize - tileEdgeSize) / 2, (spriteSize.y - tileSize - tileEdgeSize) / 2);
     spriteOffset = floor(spriteOffset);
 
     float edgeA = tileCoords.x * tileSize - spriteOffset.x;
@@ -146,12 +151,16 @@ void main()
     texCoord = floor(texCoord);
 
     float tileSize = 0.0;
+    float tileCellSize = 0.0;
+    float tileEdgeSize = 0.0;
     if (u_mode == MAP_MODE_GAME_NORMAL)
     {
         tileSize = MAP_TILE_SIZE_PIXELS;
+        tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
+        tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
-        float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize);
-        float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize);
+        float centerOffsetX = floor(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize - tileEdgeSize / 2.0);
+        float centerOffsetY = floor(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize - tileEdgeSize / 2.0);
 
         texCoord += vec2(-centerOffsetX, -centerOffsetY);
     }
@@ -172,6 +181,8 @@ void main()
     else if (u_mode == MAP_MODE_EDITOR)
     {
         tileSize = MAP_TILE_SIZE_PIXELS;
+        tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
+        tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
         float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - (povX) * tileSize);
         float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - (povY) * tileSize);
@@ -207,63 +218,86 @@ void main()
     finalColor = overlay(finalColor, holeColor, holeMask);
 
     // Edges
-    float edgeMaskHor = saturate(1.0 - abs(mod(texCoord.y, tileSize)));
-    float edgeMaskVert = saturate(1.0 - abs(mod(texCoord.x, tileSize)));
+    float edgeMaskHor = step(abs(mod(texCoord.y, tileSize)), tileEdgeSize - 1);
+    float edgeMaskVert = step(abs(mod(texCoord.x, tileSize)), tileEdgeSize - 1);
     float edgeMask = 1.0 - step(saturate(edgeMaskHor + edgeMaskVert), 0.0);
     float bothEdgesMask = ceil(edgeMaskHor * edgeMaskVert);
 
-    vec4 tileInfoNorth = pixelToTile(texCoord + vec2(0.0, -1.0), tileSize);
+    vec4 tileInfoNorth = pixelToTile(texCoord + vec2(0.0, -tileEdgeSize), tileSize);
     float validTileMaskNorth = calculateValidTileMask(tileInfoNorth.x, tileInfoNorth.y, levelWidth, levelHeight);
     TileData tileDataNorth = getTileData(tileInfoNorth.x, tileInfoNorth.y, levelWidth, levelHeight);
+    float nonEmptyMaskNorth = nonEmptyMask(tileDataNorth.flags);
     float exploredMaskNorth = exploredMask(tileDataNorth.specialFlags);
     validTileMaskNorth *= exploredMaskNorth;
 
-    vec4 tileInfoSouth = pixelToTile(texCoord + vec2(0.0, 1.0), tileSize);
+    vec4 tileInfoSouth = pixelToTile(texCoord + vec2(0.0, tileEdgeSize), tileSize);
     float validTileMaskSouth = calculateValidTileMask(tileInfoSouth.x, tileInfoSouth.y, levelWidth, levelHeight);
     TileData tileDataSouth = getTileData(tileInfoSouth.x, tileInfoSouth.y, levelWidth, levelHeight);
+    float nonEmptyMaskSouth = nonEmptyMask(tileDataSouth.flags);
     float exploredMaskSouth = exploredMask(tileDataSouth.specialFlags);
     validTileMaskSouth *= exploredMaskSouth;
 
-    vec4 tileInfoEast = pixelToTile(texCoord + vec2(1.0, 0.0), tileSize);
+    vec4 tileInfoEast = pixelToTile(texCoord + vec2(tileEdgeSize, 0.0), tileSize);
     float validTileMaskEast = calculateValidTileMask(tileInfoEast.x, tileInfoEast.y, levelWidth, levelHeight);
     TileData tileDataEast = getTileData(tileInfoEast.x, tileInfoEast.y, levelWidth, levelHeight);
+    float nonEmptyMaskEast = nonEmptyMask(tileDataEast.flags);
     float exploredMaskEast = exploredMask(tileDataEast.specialFlags);
     validTileMaskEast *= exploredMaskEast;
 
-    vec4 tileInfoWest = pixelToTile(texCoord + vec2(-1.0, 0.0), tileSize);
+    vec4 tileInfoWest = pixelToTile(texCoord + vec2(-tileEdgeSize, 0.0), tileSize);
     float validTileMaskWest = calculateValidTileMask(tileInfoWest.x, tileInfoWest.y, levelWidth, levelHeight);
     TileData tileDataWest = getTileData(tileInfoWest.x, tileInfoWest.y, levelWidth, levelHeight);
+    float nonEmptyMaskWest = nonEmptyMask(tileDataWest.flags);
     float exploredMaskWest = exploredMask(tileDataWest.specialFlags);
     validTileMaskWest *= exploredMaskWest;
 
     // Corners hack
-    vec4 tileInfoCorner = pixelToTile(texCoord + vec2(-1.0, -1.0), tileSize);
+    vec4 tileInfoCorner = pixelToTile(texCoord + vec2(-tileEdgeSize, -tileEdgeSize), tileSize);
     float validTileMaskCorner = calculateValidTileMask(tileInfoWest.x, tileInfoCorner.y, levelWidth, levelHeight);
     TileData tileDataCorner = getTileData(tileInfoCorner.x, tileInfoCorner.y, levelWidth, levelHeight);
+    float nonEmptyMaskCorner = nonEmptyMask(tileDataCorner.flags);
     float exploredMaskCorner = exploredMask(tileDataCorner.specialFlags);
     validTileMaskCorner *= exploredMaskCorner;
 
     // Walls
-    float wallMaskNorth = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) * validTileMaskNorth;
+
+    /* Hide walls unless there is at least one non empty tile. */
+    float validHorizontalWallMask = saturate(nonEmptyMaskNorth * validTileMaskNorth + nonEmptyMaskSouth * validTileMaskSouth);
+    float validVerticalWallMask = saturate(nonEmptyMaskEast * validTileMaskEast + nonEmptyMaskWest * validTileMaskWest);
+    float validCornerWallMask = saturate(nonEmptyMaskCorner * validTileMaskCorner);
+
+    float wallMaskNorth = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) * validHorizontalWallMask;
     wallMaskNorth *= edgeMaskHor;
-    wallMaskNorth = ceil(wallMaskNorth);
+    // wallMaskNorth = ceil(wallMaskNorth);
 
-    float wallMaskSouth = bitMask(tileDataSouth.edgeFlags, TILE_EDGE_WALL_BIT) * validTileMaskSouth;
+    float wallMaskSouth = bitMask(tileDataSouth.edgeFlags, TILE_EDGE_WALL_BIT) * validHorizontalWallMask;
     wallMaskSouth *= edgeMaskHor;
-    wallMaskSouth = ceil(wallMaskSouth);
+    // wallMaskSouth = ceil(wallMaskSouth);
 
-    float wallMaskEast = bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * validTileMaskEast;
+    float wallMaskEast = bitMask(tileDataEast.edgeFlags, TILE_EDGE_WALL_WEST_BIT) * validVerticalWallMask;
     wallMaskEast *= edgeMaskVert;
-    wallMaskEast = ceil(wallMaskEast);
+    // wallMaskEast = ceil(wallMaskEast);
 
-    float wallMaskWest = bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * validTileMaskWest;
+    float wallMaskWest = bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_EAST_BIT) * validVerticalWallMask;
     wallMaskWest *= edgeMaskVert;
-    wallMaskWest = ceil(wallMaskWest);
+    // wallMaskWest = ceil(wallMaskWest);
 
-    float wallMaskCorner = (bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_EAST_BIT));
-    wallMaskCorner *= validTileMaskCorner;
+    // float wallMaskCorner = (bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_EAST_BIT));
+    // // wallMaskCorner += bitMask(tileData.edgeFlags, TILE_EDGE_WALL_WEST_BIT) + bitMask(tileData.edgeFlags, TILE_EDGE_WALL_BIT);
+    // // wallMaskCorner *= validCornerWallMask;
+    // wallMaskCorner *= validTileMaskCorner;
+    // wallMaskCorner *= bothEdgesMask;
+    // // wallMaskCorner = ceil(wallMaskCorner);
+
+
+    // float wallMaskCorner = saturate(bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_WALL_EAST_BIT));
+    float wallMaskCorner = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_WALL_WEST_BIT) + bitMask(tileDataWest.edgeFlags, TILE_EDGE_WALL_BIT);
     wallMaskCorner *= bothEdgesMask;
-    wallMaskCorner = ceil(wallMaskCorner);
+    wallMaskCorner *= saturate(validTileMaskNorth + validTileMaskWest);
+    // wallMaskCorner *= tileExploredMask;
+    // wallMaskCorner *= bothEdgesMask * validCornerWallMask;
+    // wallMaskCorner *= bothEdgesMask * validCornerWallMask;
+    // wallMaskCorner = 0;
 
     float wallMasks = saturate(wallMaskNorth + wallMaskSouth + wallMaskEast + wallMaskWest + wallMaskCorner);
     wallMasks *= edgeMask;
@@ -273,31 +307,31 @@ void main()
     finalColor = mix(finalColor, wallColor, wallMasks);
 
     // Doors
-    float validDoorHor = saturate(validTileMaskNorth + validTileMaskSouth);
-    float validDoorVert = saturate(validTileMaskEast + validTileMaskWest);
-
-    float doorMaskNorth = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) * validDoorHor;
-    doorMaskNorth *= edgeMaskHor * round(abs(map1to1(tileInfo.z - tileSizeReciprocal)) + 0.05);
-    doorMaskNorth = ceil(doorMaskNorth);
-    float doorMaskSouth = bitMask(tileDataSouth.edgeFlags, TILE_EDGE_DOOR_BIT) * validDoorHor;
-    doorMaskSouth *= edgeMaskHor * round(abs(map1to1(tileInfo.z)) + 0.05);
-    doorMaskSouth = ceil(doorMaskSouth);
-    float doorMaskEast = bitMask(tileDataEast.edgeFlags, TILE_EDGE_DOOR_WEST_BIT) * validDoorVert;
-    doorMaskEast *= edgeMaskVert * round(abs(map1to1(tileInfo.w - tileSizeReciprocal)) + 0.05);
-    doorMaskEast = ceil(doorMaskEast);
-    float doorMaskWest = bitMask(tileDataWest.edgeFlags, TILE_EDGE_DOOR_EAST_BIT) * validDoorVert;
-    doorMaskWest *= edgeMaskVert * round(abs(map1to1(tileInfo.w)) + 0.05);
-    doorMaskWest = ceil(doorMaskWest);
-    float doorMaskCorner = (bitMask(tileDataCorner.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_DOOR_EAST_BIT));
-    doorMaskCorner *= validTileMaskCorner;
-    doorMaskCorner *= bothEdgesMask;
-    doorMaskCorner = ceil(doorMaskCorner);
-
-    float doorMasks = saturate(doorMaskNorth + doorMaskSouth + doorMaskEast + doorMaskWest + doorMaskCorner);
-    doorMasks *= edgeMask;
-    doorMasks *= levelBoundsMask;
-
-    finalColor = overlay(finalColor, wallColor, doorMasks);
+    // float validDoorHor = saturate(validTileMaskNorth + validTileMaskSouth);
+    // float validDoorVert = saturate(validTileMaskEast + validTileMaskWest);
+    //
+    // float doorMaskNorth = bitMask(tileDataNorth.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) * validDoorHor;
+    // doorMaskNorth *= edgeMaskHor * round(abs(map1to1(tileInfo.z - tileSizeReciprocal)) + 0.05);
+    // doorMaskNorth = ceil(doorMaskNorth);
+    // float doorMaskSouth = bitMask(tileDataSouth.edgeFlags, TILE_EDGE_DOOR_BIT) * validDoorHor;
+    // doorMaskSouth *= edgeMaskHor * round(abs(map1to1(tileInfo.z)) + 0.05);
+    // doorMaskSouth = ceil(doorMaskSouth);
+    // float doorMaskEast = bitMask(tileDataEast.edgeFlags, TILE_EDGE_DOOR_WEST_BIT) * validDoorVert;
+    // doorMaskEast *= edgeMaskVert * round(abs(map1to1(tileInfo.w - tileSizeReciprocal)) + 0.05);
+    // doorMaskEast = ceil(doorMaskEast);
+    // float doorMaskWest = bitMask(tileDataWest.edgeFlags, TILE_EDGE_DOOR_EAST_BIT) * validDoorVert;
+    // doorMaskWest *= edgeMaskVert * round(abs(map1to1(tileInfo.w)) + 0.05);
+    // doorMaskWest = ceil(doorMaskWest);
+    // float doorMaskCorner = (bitMask(tileDataCorner.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_DOOR_EAST_BIT));
+    // doorMaskCorner *= validTileMaskCorner;
+    // doorMaskCorner *= bothEdgesMask;
+    // doorMaskCorner = ceil(doorMaskCorner);
+    //
+    // float doorMasks = saturate(doorMaskNorth + doorMaskSouth + doorMaskEast + doorMaskWest + doorMaskCorner);
+    // doorMasks *= edgeMask;
+    // doorMasks *= levelBoundsMask;
+    //
+    // finalColor = overlay(finalColor, wallColor, doorMasks);
 
     // Grid
     float gridMasks = edgeMask;
@@ -312,12 +346,13 @@ void main()
     // float gridForceMask = (1.0 - step(0.001, mod(texCoordOriginal.x, u_sizeScreenSpace.x - 1))) + (1.0 - step(0.001, mod(texCoordOriginal.y, u_sizeScreenSpace.y - 1)));
     // gridForceMask = saturate(gridForceMask);
     // gridForceMask = 0.0;
-    finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+    // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+    finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks)));
 
     // Current POV
     if (u_mode != MAP_MODE_EDITOR)
     {
-        vec4 playerIcon = putIcon(texCoord, vec2(povX, povY), u_map.povDirection, tileSize, u_common.icons[MAP_ICON_PLAYER]);
+        vec4 playerIcon = putIcon(texCoord, vec2(povX, povY), u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
         finalColor = overlay(finalColor, playerIcon.rgb, playerIcon.a);
 
         // float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;

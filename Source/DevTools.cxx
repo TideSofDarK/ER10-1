@@ -37,6 +37,7 @@ namespace Asset::Common
     EXTERN_ASSET(IBMPlexSansTTF)
 }
 
+static const std::filesystem::path AssetPath = std::filesystem::path{ EQUINOX_REACH_ASSET_PATH };
 static const std::filesystem::path MapExtension = ".erm";
 static std::vector<std::filesystem::path> AvailableMaps(20);
 
@@ -135,7 +136,7 @@ void SLevelEditor::Show(SGame& Game)
     if (bSaveLevel)
     {
         ImGui::OpenPopup("Save Level");
-        SavePathString = (std::filesystem::current_path().parent_path().parent_path() / (std::filesystem::path("Asset\\Map\\NewMap" + MapExtension.string()))).string();
+        SavePathString = (AssetPath / (std::filesystem::path("Map/NewMap" + MapExtension.string()))).make_preferred().string();
         ScanForLevels();
     }
     if (ImGui::BeginPopupModal("Save Level", nullptr,
@@ -475,8 +476,14 @@ void SLevelEditor::ShowLevel(SGame& Game)
     }
 }
 
-void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path) const
+void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path)
 {
+    /* @TODO: Proper level validation. */
+    for (auto& Tile : Level.Tiles)
+    {
+        Tile.SpecialFlags = 0;
+    }
+
     const auto& Tilemap = Level;
 
     std::ofstream TilemapFile;
@@ -499,7 +506,8 @@ void SLevelEditor::ScanForLevels()
 {
     namespace fs = std::filesystem;
     AvailableMaps.clear();
-    auto CWD = fs::current_path().parent_path().parent_path() / "Asset\\Map";
+    auto CWD = fs::current_path().parent_path().parent_path() / "Asset/Map";
+    CWD = CWD.make_preferred();
     for (const auto& File : fs::recursive_directory_iterator(CWD))
     {
         if (!File.is_regular_file())
@@ -714,7 +722,7 @@ void SDevTools::Update(SGame& Game)
     }
     else
     {
-        if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_None))
+        if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             if (ImGui::TreeNode("System Info"))
             {
@@ -773,9 +781,11 @@ void SDevTools::Update(SGame& Game)
                 }
                 ImGui::TreePop();
             }
+            ImGui::SetNextItemOpen(true, ImGuiCond_Once);
             if (ImGui::TreeNode("Adjustments"))
             {
-                ImGui::SliderFloat(" ", &Game.Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
+                ImGui::SliderFloat("##MasterVolume", &Game.Audio.Volume, 0.0f, 1.0f, "Master Volume: %.2f");
+                ImGui::SliderFloat("##InputBufferTime", &Game.Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
                 ImGui::TreePop();
             }
         }

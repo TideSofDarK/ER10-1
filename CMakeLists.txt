@@ -42,6 +42,10 @@ file(GLOB_RECURSE ASSET_FILES
 list(JOIN ASSET_FILES "\;" ASSET_FILES)
 set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSET_FILES})
 
+set(ASSET_PATH "Asset/")
+cmake_path(ABSOLUTE_PATH ASSET_PATH)
+# cmake_path(ABSOLUTE_PATH "Asset/" NORMALIZE ASSET_PATH)
+
 macro(add_equinox_reach_target)
     set(ONE_VALUE_ARGS NAME)
     set(MULTI_VALUE_ARGS DEF SOURCES INCLUDE_DIRS LIBS)
@@ -50,7 +54,7 @@ macro(add_equinox_reach_target)
 
     add_executable(${TARGET_NAME})
 
-    target_compile_definitions(${TARGET_NAME} PRIVATE ${TARGET_DEF})
+    target_compile_definitions(${TARGET_NAME} PRIVATE ${TARGET_DEF} EQUINOX_REACH_ASSET_PATH="${ASSET_PATH}")
 
     target_sources(
             ${TARGET_NAME}

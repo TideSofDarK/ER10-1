@@ -37,7 +37,7 @@ struct SLevelEditor
     void Show(struct SGame& Game);
     void ShowLevel(struct SGame& Game);
 
-    void SaveTilemapToFile(const std::filesystem::path& Path) const;
+    void SaveTilemapToFile(const std::filesystem::path& Path);
     void LoadTilemapFromFile(const std::filesystem::path& Path);
 
     void ScanForLevels();

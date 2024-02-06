@@ -49,7 +49,12 @@ namespace Asset::Map
     EXTERN_ASSET(TestMapERM)
 }
 
-static const URectInt MapRectMin{ SCREEN_WIDTH - 128, 10, 12 * 7 + 1, 12 * 5 + 1 };
+static const URectInt MapRectMin{
+    SCREEN_WIDTH - 128,
+    10,
+    MAP_TILE_SIZE_PIXELS * 7 + MAP_TILE_EDGE_SIZE_PIXELS,
+    MAP_TILE_SIZE_PIXELS * 5 + MAP_TILE_EDGE_SIZE_PIXELS
+};
 static const URectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH + 1, SCENE_HEIGHT + 1 };
 
 SGame::SGame()
@@ -549,8 +554,8 @@ void SGame::OnBlobMoved()
 void SGame::ChangeLevel()
 {
     Level.PostProcess();
-    Renderer.UploadMapData(Level, Blob.UnreliableCoordsAndDirection(), nullptr);
     OnBlobMoved();
+    Renderer.UploadMapData(Level, Blob.UnreliableCoordsAndDirection(), nullptr);
 }
 
 void SGame::ChangeLevel(const SLevel& NewLevel)
