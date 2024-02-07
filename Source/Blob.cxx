@@ -65,7 +65,7 @@ void SBlob::Update(float DeltaTime)
 
 SBlob::SBlob()
 {
-    Coords = { 5, 5 };
+    Coords = { 21, 4 };
     ResetEye();
     ApplyDirection(true);
 }

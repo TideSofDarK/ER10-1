@@ -34,6 +34,7 @@
 - Drill (makes a hole in unstable floor)
 
 ### Mapper
+- Different reveal shapes
 - Increment Explore Radius
 - An ability to see multiple levels at once
 - Scan for Threats
