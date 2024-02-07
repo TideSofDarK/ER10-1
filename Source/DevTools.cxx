@@ -262,7 +262,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
 
     /* @TODO: Update tiles every frame for now. */
     UVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
-    Game.Renderer.UploadMapData(Level, { POVOrigin, SDirection::North() }, &MapUniformBlock);
+    Game.Renderer.UploadMapData(Level, Game.Blob.UnreliableCoordsAndDirection(), &MapUniformBlock);
 
     /* Render level to framebuffer. */
     UVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
