@@ -55,64 +55,64 @@
 #endif
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    #define DEFINE_ASSET(NAME, PATH) \
-        INCBIN(NAME, PATH)           \
-        EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length, __FILE__, PATH);
+    #define DEFINE_ASSET(NAME, PATH)                  \
+        INCBIN(NAME, EQUINOX_REACH_ASSET_PATH PATH) \
+        EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length, PATH);
 #else
-    #define DEFINE_ASSET(NAME, PATH) \
-        INCBIN(NAME, PATH)           \
+    #define DEFINE_ASSET(NAME, PATH)                  \
+        INCBIN(NAME, EQUINOX_REACH_ASSET_PATH PATH ) \
         EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length);
 #endif
 
 namespace Asset::Common
 {
-    DEFINE_ASSET(FramePNG, "../Asset/Texture/Frame.png")
-    DEFINE_ASSET(RefPNG, "../Asset/Texture/Ref.png")
-    DEFINE_ASSET(AngelPNG, "../Asset/Texture/Angel.png")
-    DEFINE_ASSET(NoisePNG, "../Asset/Texture/Noise.png")
-    DEFINE_ASSET(QuadOBJ, "../Asset/Mesh/Quad.obj")
-    DEFINE_ASSET(PillarOBJ, "../Asset/Mesh/Pillar.obj")
-    DEFINE_ASSET(IBMPlexSansTTF, "../Asset/Font/IBMPlexSans.ttf")
-    DEFINE_ASSET(DoorCreekWAV, "../Asset/Sound/DoorCreek.wav")
-    DEFINE_ASSET(Tile_01WAV, "../Asset/Sound/Step/Tile_01.wav")
-    DEFINE_ASSET(TestMusicWAV, "../Asset/Music/TestMusic.wav")
+    DEFINE_ASSET(FramePNG, "Texture/Frame.png")
+    DEFINE_ASSET(RefPNG, "Texture/Ref.png")
+    DEFINE_ASSET(AngelPNG, "Texture/Angel.png")
+    DEFINE_ASSET(NoisePNG, "Texture/Noise.png")
+    DEFINE_ASSET(QuadOBJ, "Mesh/Quad.obj")
+    DEFINE_ASSET(PillarOBJ, "Mesh/Pillar.obj")
+    DEFINE_ASSET(IBMPlexSansTTF, "Font/IBMPlexSans.ttf")
+    DEFINE_ASSET(DoorCreekWAV, "Sound/DoorCreek.wav")
+    DEFINE_ASSET(Tile_01WAV, "Sound/Step/Tile_01.wav")
+    DEFINE_ASSET(TestMusicWAV, "Music/TestMusic.wav")
 }
 
 namespace Asset::HUD
 {
     /* Map Icons */
-    DEFINE_ASSET(MapIconPlayer, "../Asset/HUD/Player.png")
-    DEFINE_ASSET(MapIconA, "../Asset/HUD/IconA.png")
-    DEFINE_ASSET(MapIconB, "../Asset/HUD/IconB.png")
+    DEFINE_ASSET(MapIconPlayer, "HUD/Player.png")
+    DEFINE_ASSET(MapIconA, "HUD/IconA.png")
+    DEFINE_ASSET(MapIconB, "HUD/IconB.png")
 }
 
 namespace Asset::Shader
 {
-    DEFINE_ASSET(SharedGLSL, "../Asset/Shader/Shared.glsl")
-    DEFINE_ASSET(HUDVERT, "../Asset/Shader/HUD.vert")
-    DEFINE_ASSET(HUDFRAG, "../Asset/Shader/HUD.frag")
-    DEFINE_ASSET(MapVERT, "../Asset/Shader/Map.vert")
-    DEFINE_ASSET(MapFRAG, "../Asset/Shader/Map.frag")
-    DEFINE_ASSET(Uber2DVERT, "../Asset/Shader/Uber2D.vert")
-    DEFINE_ASSET(Uber2DFRAG, "../Asset/Shader/Uber2D.frag")
-    DEFINE_ASSET(Uber3DVERT, "../Asset/Shader/Uber3D.vert")
-    DEFINE_ASSET(Uber3DFRAG, "../Asset/Shader/Uber3D.frag")
-    DEFINE_ASSET(PostProcessVERT, "../Asset/Shader/PostProcess.vert")
-    DEFINE_ASSET(PostProcessFRAG, "../Asset/Shader/PostProcess.frag")
+    DEFINE_ASSET(SharedGLSL, "Shader/Shared.glsl")
+    DEFINE_ASSET(HUDVERT, "Shader/HUD.vert")
+    DEFINE_ASSET(HUDFRAG, "Shader/HUD.frag")
+    DEFINE_ASSET(MapVERT, "Shader/Map.vert")
+    DEFINE_ASSET(MapFRAG, "Shader/Map.frag")
+    DEFINE_ASSET(Uber2DVERT, "Shader/Uber2D.vert")
+    DEFINE_ASSET(Uber2DFRAG, "Shader/Uber2D.frag")
+    DEFINE_ASSET(Uber3DVERT, "Shader/Uber3D.vert")
+    DEFINE_ASSET(Uber3DFRAG, "Shader/Uber3D.frag")
+    DEFINE_ASSET(PostProcessVERT, "Shader/PostProcess.vert")
+    DEFINE_ASSET(PostProcessFRAG, "Shader/PostProcess.frag")
 }
 
 namespace Asset::Map
 {
-    DEFINE_ASSET(TestMapERM, "../Asset/Map/TestMap.erm")
+    DEFINE_ASSET(TestMapERM, "Map/TestMap.erm")
 }
 
 namespace Asset::Tileset::Hotel
 {
-    DEFINE_ASSET(FloorOBJ, "../Asset/Tileset/Hotel/Floor.obj")
-    DEFINE_ASSET(HoleOBJ, "../Asset/Tileset/Hotel/Hole.obj")
-    DEFINE_ASSET(WallOBJ, "../Asset/Tileset/Hotel/Wall.obj")
-    DEFINE_ASSET(WallJointOBJ, "../Asset/Tileset/Hotel/WallJoint.obj")
-    DEFINE_ASSET(DoorFrameOBJ, "../Asset/Tileset/Hotel/DoorFrame.obj")
-    DEFINE_ASSET(DoorOBJ, "../Asset/Tileset/Hotel/Door.obj")
-    DEFINE_ASSET(AtlasPNG, "../Asset/Tileset/Hotel/Atlas.png")
+    DEFINE_ASSET(FloorOBJ, "Tileset/Hotel/Floor.obj")
+    DEFINE_ASSET(HoleOBJ, "Tileset/Hotel/Hole.obj")
+    DEFINE_ASSET(WallOBJ, "Tileset/Hotel/Wall.obj")
+    DEFINE_ASSET(WallJointOBJ, "Tileset/Hotel/WallJoint.obj")
+    DEFINE_ASSET(DoorFrameOBJ, "Tileset/Hotel/DoorFrame.obj")
+    DEFINE_ASSET(DoorOBJ, "Tileset/Hotel/Door.obj")
+    DEFINE_ASSET(AtlasPNG, "Tileset/Hotel/Atlas.png")
 }

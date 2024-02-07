@@ -44,7 +44,6 @@ set_source_files_properties(Source/AssetDef.cxx PROPERTIES OBJECT_DEPENDS ${ASSE
 
 set(ASSET_PATH "Asset/")
 cmake_path(ABSOLUTE_PATH ASSET_PATH)
-# cmake_path(ABSOLUTE_PATH "Asset/" NORMALIZE ASSET_PATH)
 
 macro(add_equinox_reach_target)
     set(ONE_VALUE_ARGS NAME)

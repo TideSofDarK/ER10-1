@@ -16,10 +16,9 @@ struct SAsset
     const unsigned char* Data;
     size_t Length;
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    const char* BasePath;
     const char* RelativeAssetPath;
 
-    explicit SAsset(const char* InData, size_t InLength, const char* InBasePath, const char* InRelativeAssetPath);
+    explicit SAsset(const char* InData, size_t InLength, const char* InRelativeAssetPath);
 
     [[nodiscard]] std::filesystem::path Path() const;
 #else

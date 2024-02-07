@@ -24,17 +24,16 @@
 
 /* Keep asset path for development (e.g. reloading) purposes. */
 #ifdef EQUINOX_REACH_DEVELOPMENT
-SAsset::SAsset(const char* InData, size_t InLength, const char* InBasePath, const char* InRelativeAssetPath)
-    : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength), BasePath(InBasePath), RelativeAssetPath(InRelativeAssetPath)
+SAsset::SAsset(const char* InData, size_t InLength, const char* InRelativeAssetPath)
+    : Data(reinterpret_cast<const unsigned char*>(InData)), Length(InLength), RelativeAssetPath(InRelativeAssetPath)
 {
 }
 
 std::filesystem::path SAsset::Path() const
 {
     namespace fs = std::filesystem;
-    auto Path = fs::path(BasePath).remove_filename();
+    auto Path = fs::path(EQUINOX_REACH_ASSET_PATH);
     Path = Path / fs::path(RelativeAssetPath);
-    Path = fs::absolute(Path);
     return Path;
 }
 #else
