@@ -54,6 +54,11 @@ struct SVec2
         return { X * A, Y * A };
     }
 
+    constexpr SVec2<T> operator/(const T A) const
+    {
+        return { X / A, Y / A };
+    }
+
     constexpr bool operator==(const SVec2<T>& Other) const
     {
         return X == Other.X && Y == Other.Y;

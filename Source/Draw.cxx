@@ -85,14 +85,14 @@ unsigned int SProgram::CreateVertexShader(const char* Data, int Length)
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
-        Asset::Shader::SharedGLSL.SignedCharPtr(),
         &SharedConstants[0],
+        Asset::Shader::SharedGLSL.SignedCharPtr(),
         Data
     };
     int const Lengths[4] = {
         (int)GLSLVersion.length(),
-        (int)Asset::Shader::SharedGLSL.Length,
         (int)SharedConstants.length(),
+        (int)Asset::Shader::SharedGLSL.Length,
         Length
     };
     glShaderSource(VertexShaderID, 4, Blocks, &Lengths[0]);
@@ -106,14 +106,14 @@ unsigned int SProgram::CreateFragmentShader(const char* Data, int Length)
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const* Blocks[4] = {
         &GLSLVersion[0],
-        Asset::Shader::SharedGLSL.SignedCharPtr(),
         &SharedConstants[0],
+        Asset::Shader::SharedGLSL.SignedCharPtr(),
         Data
     };
     int const Lengths[4] = {
         (int)GLSLVersion.length(),
-        (int)Asset::Shader::SharedGLSL.Length,
         (int)SharedConstants.length(),
+        (int)Asset::Shader::SharedGLSL.Length,
         Length
     };
     glShaderSource(FragmentShaderID, 4, Blocks, &Lengths[0]);

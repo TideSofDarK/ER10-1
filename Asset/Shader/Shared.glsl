@@ -6,6 +6,8 @@
 #define HALF_PI 1.5707963267948966
 #endif
 
+const vec2 atlasPixelReciprocal = vec2(1.0 / float(ATLAS_SIZE));
+
 struct Sprite
 {
     vec4 uvRect;

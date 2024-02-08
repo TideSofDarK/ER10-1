@@ -101,11 +101,13 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, flo
         );
 
     vec2 spriteOffset = vec2((spriteSize.x - tileSize - tileEdgeSize) / 2.0, (spriteSize.y - tileSize - tileEdgeSize) / 2.0);
-    spriteOffset = floor(spriteOffset);
+    // spriteOffset = floor(spriteOffset);
 
-    float edgeA = tileCoords.x * tileSize - spriteOffset.x;
+    float edgeA = tileCoords.x * tileSize;// - spriteOffset.x;
+    // edgeA = floor(edgeA);
     float edgeB = edgeA + spriteSize.x;
-    float edgeC = tileCoords.y * tileSize - spriteOffset.y;
+    float edgeC = tileCoords.y * tileSize;// - spriteOffset.y;
+    // edgeC = floor(edgeC);
     float edgeD = edgeC + spriteSize.y;
 
     float maskA = step(edgeA, texCoord.x);
@@ -114,14 +116,12 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, flo
     float maskD = 1.0 - step(edgeD, texCoord.y);
     float masks = maskA * maskB * maskC * maskD;
 
-    const vec2 atlasPixelReciprocal = vec2(1.0 / float(ATLAS_SIZE));
     vec2 sizeAtlasSpace = vec2(sprite.uvRect.z - sprite.uvRect.x, sprite.uvRect.w - sprite.uvRect.y);
 
     vec2 spriteUV = vec2(inverseMix(edgeA, edgeB, texCoord.x), inverseMix(edgeC, edgeD, texCoord.y));
     spriteUV = convertUV(spriteUV, sprite.uvRect);
     spriteUV += atlasPixelReciprocal / 2.0;
-    spriteUV = rotateUV(spriteUV, (float(direction) * 0.5 * PI), vec2(sprite.uvRect.x + sizeAtlasSpace.x / 2, sprite.uvRect.y + sizeAtlasSpace.y / 2));
-
+    // spriteUV = rotateUV(spriteUV, (float(direction) * 0.5 * PI), vec2(sprite.uvRect.x + sizeAtlasSpace.x / 2, sprite.uvRect.y + sizeAtlasSpace.y / 2));
     spriteUV *= ATLAS_SIZE;
     vec4 finalColor = texelFetch(u_commonAtlas, ivec2(int(spriteUV.x), int(spriteUV.y)), 0);
     finalColor.a *= masks;
@@ -155,6 +155,7 @@ void main()
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
         vec2 centerOffset = pov * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
+        centerOffset = floor(centerOffset);
 
         texCoord += centerOffset;
     }
@@ -178,13 +179,10 @@ void main()
         tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
-        float centerOffsetX = round(u_sizeScreenSpace.x * 0.5 - float(u_map.width) / 2.0 * tileSize);
-        float centerOffsetY = round(u_sizeScreenSpace.y * 0.5 - float(u_map.height) / 2.0 * tileSize);
+        vec2 centerOffset = round(u_sizeScreenSpace * 0.5 - vec2(u_map.width, u_map.height) / 2.0 * tileSize);
 
-        texCoord += vec2(-centerOffsetX, -centerOffsetY);
+        texCoord += centerOffset;
     }
-
-    texCoord = floor(texCoord);
 
     float tileSizeReciprocal = 1.0 / tileSize;
 

@@ -273,6 +273,9 @@ void SGame::Run()
             MapRect = Math::Mix(MapRectFrom, MapRectTo, MapRectTimeline.Value);
             Renderer.DrawMap(Level, UVec3(MapRect.Min), UVec2Int(MapRect.Max), Blob.UnreliableCoordsAndDirection());
 
+            // UVec2 centerOffset = Blob.UnreliableCoords() * MAP_TILE_SIZE_PIXELS - MapRect.Max * 0.5 + UVec2(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) / 2.0;
+            // Log::Game<ELogLevel::Critical>("%.9f %.9f", centerOffset.X, centerOffset.Y);
+
             switch (SpriteDemoState)
             {
                 case 0:
