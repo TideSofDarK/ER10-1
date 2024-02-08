@@ -7,6 +7,7 @@
 #include "Constants.hxx"
 #include "Level.hxx"
 #include "Log.hxx"
+#include "Math.hxx"
 #include "SharedConstants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
@@ -55,7 +56,7 @@ static const URectInt MapRectMin{
     MAP_TILE_SIZE_PIXELS * 7 + MAP_TILE_EDGE_SIZE_PIXELS,
     MAP_TILE_SIZE_PIXELS * 5 + MAP_TILE_EDGE_SIZE_PIXELS
 };
-static const URectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH + 1, SCENE_HEIGHT + 1 };
+static const URectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH, SCENE_HEIGHT };
 
 SGame::SGame()
     : MapRect(MapRectMin)
@@ -194,7 +195,7 @@ void SGame::Run()
     {
         Window.Last = Window.Now;
         Window.Now = SDL_GetTicks();
-        Window.DeltaTime = (float)(Window.Now - Window.Last) / 1000.0f;
+        Window.DeltaTime = (float)(Window.Now - Window.Last) / 1000.0f * Window.TimeScale;
         Window.Seconds += Window.DeltaTime;
 
         SDL_Event Event;
@@ -248,6 +249,7 @@ void SGame::Run()
             if (InputState.Keys.ZR == EKeyState::Pressed)
             {
                 bMapMaximized = !bMapMaximized;
+                MapRectTimeline.Reset();
             }
 
             if (InputState.Keys.Accept == EKeyState::Pressed)
@@ -265,8 +267,11 @@ void SGame::Run()
             Level.Update(Window.DeltaTime);
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
 
-            MapRect = Math::Mix(MapRect, URect(bMapMaximized ? MapRectMax : MapRectMin), Window.DeltaTime * 10.0f);
-            Renderer.DrawMap(Level, UVec3(MapRect.Min), UVec2Int((int)std::round(MapRect.Max.X), (int)std::round(MapRect.Max.Y)), Blob.UnreliableCoordsAndDirection());
+            MapRectTimeline.Advance(Window.DeltaTime);
+            auto MapRectFrom = URect(bMapMaximized ? MapRectMin : MapRectMax);
+            auto MapRectTo = URect(bMapMaximized ? MapRectMax : MapRectMin);
+            MapRect = Math::Mix(MapRectFrom, MapRectTo, MapRectTimeline.Value);
+            Renderer.DrawMap(Level, UVec3(MapRect.Min), UVec2Int(MapRect.Max), Blob.UnreliableCoordsAndDirection());
 
             switch (SpriteDemoState)
             {

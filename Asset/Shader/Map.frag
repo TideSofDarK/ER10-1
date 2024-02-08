@@ -100,17 +100,13 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, flo
             sprite.width * rotatedMask + sprite.height * (1.0 - rotatedMask)
         );
 
-    vec2 spriteOffset = vec2((spriteSize.x - tileSize - tileEdgeSize) / 2, (spriteSize.y - tileSize - tileEdgeSize) / 2);
+    vec2 spriteOffset = vec2((spriteSize.x - tileSize - tileEdgeSize) / 2.0, (spriteSize.y - tileSize - tileEdgeSize) / 2.0);
     spriteOffset = floor(spriteOffset);
 
     float edgeA = tileCoords.x * tileSize - spriteOffset.x;
-    edgeA = floor(edgeA);
     float edgeB = edgeA + spriteSize.x;
-    edgeB = floor(edgeB);
     float edgeC = tileCoords.y * tileSize - spriteOffset.y;
-    edgeC = floor(edgeC);
     float edgeD = edgeC + spriteSize.y;
-    edgeD = floor(edgeD);
 
     float maskA = step(edgeA, texCoord.x);
     float maskB = 1.0 - step(edgeB, texCoord.x);
@@ -118,17 +114,16 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, flo
     float maskD = 1.0 - step(edgeD, texCoord.y);
     float masks = maskA * maskB * maskC * maskD;
 
+    const vec2 atlasPixelReciprocal = vec2(1.0 / float(ATLAS_SIZE));
     vec2 sizeAtlasSpace = vec2(sprite.uvRect.z - sprite.uvRect.x, sprite.uvRect.w - sprite.uvRect.y);
-    vec2 pixelSize = sizeAtlasSpace / spriteSize;
 
-    float u = inverseMix(edgeA, edgeB, texCoord.x);
-    float v = inverseMix(edgeC, edgeD, texCoord.y);
-
-    vec2 spriteUV = vec2(u, v);
-    spriteUV += pixelSize / 2.0;
-    spriteUV = rotateUV(spriteUV, degToRad(float(direction) * 90.0));
+    vec2 spriteUV = vec2(inverseMix(edgeA, edgeB, texCoord.x), inverseMix(edgeC, edgeD, texCoord.y));
     spriteUV = convertUV(spriteUV, sprite.uvRect);
-    vec4 finalColor = texture2D(u_commonAtlas, spriteUV);
+    spriteUV += atlasPixelReciprocal / 2.0;
+    spriteUV = rotateUV(spriteUV, (float(direction) * 0.5 * PI), vec2(sprite.uvRect.x + sizeAtlasSpace.x / 2, sprite.uvRect.y + sizeAtlasSpace.y / 2));
+
+    spriteUV *= ATLAS_SIZE;
+    vec4 finalColor = texelFetch(u_commonAtlas, ivec2(int(spriteUV.x), int(spriteUV.y)), 0);
     finalColor.a *= masks;
     return finalColor;
 }
@@ -159,10 +154,9 @@ void main()
         tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
-        float centerOffsetX = floor(u_sizeScreenSpace.x * 0.5 - (povX + 0.5) * tileSize - tileEdgeSize / 2.0);
-        float centerOffsetY = floor(u_sizeScreenSpace.y * 0.5 - (povY + 0.5) * tileSize - tileEdgeSize / 2.0);
+        vec2 centerOffset = pov * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
 
-        texCoord += vec2(-centerOffsetX, -centerOffsetY);
+        texCoord += centerOffset;
     }
     else if (u_mode == MAP_MODE_GAME_ISO)
     {
@@ -189,6 +183,8 @@ void main()
 
         texCoord += vec2(-centerOffsetX, -centerOffsetY);
     }
+
+    texCoord = floor(texCoord);
 
     float tileSizeReciprocal = 1.0 / tileSize;
 
@@ -324,7 +320,7 @@ void main()
     finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks)));
 
     // Current POV
-    vec4 playerIcon = putIcon(texCoord, vec2(povX, povY), u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
+    vec4 playerIcon = putIcon(texCoord, pov, u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
     finalColor = overlay(finalColor, playerIcon.rgb, playerIcon.a);
 
     // float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;

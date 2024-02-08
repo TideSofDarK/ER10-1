@@ -203,10 +203,8 @@ void SProgram::Reload()
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
-    Use();
     SProgram::InitUniforms();
     InitUniforms();
-    glUseProgram(0);
 
     Log::Draw<ELogLevel::Debug>("Reloading SProgram");
 }
@@ -216,7 +214,7 @@ void SProgramPostProcess::InitUniforms()
 {
     UniformColorTextureID = glGetUniformLocation(ID, "u_colorTexture");
 
-    glUniform1i(UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
+    glProgramUniform1i(ID, UniformColorTextureID, TEXTURE_UNIT_MAIN_FRAMEBUFFER);
 }
 
 void SProgram3D::InitUniforms()
@@ -226,8 +224,8 @@ void SProgram3D::InitUniforms()
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
 
-    glUniform1i(UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
-    glUniform1i(UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
+    glProgramUniform1i(ID, UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glProgramUniform1i(ID, UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY3D);
 }
 
 void SProgram2D::InitUniforms()
@@ -237,7 +235,7 @@ void SProgram2D::InitUniforms()
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
 
-    glUniform1i(UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
+    glProgramUniform1i(ID, UniformCommonAtlasID, TEXTURE_UNIT_ATLAS_COMMON);
 }
 
 void SProgramUber2D::InitUniforms()
@@ -246,7 +244,7 @@ void SProgramUber2D::InitUniforms()
     UniformUVRectID = glGetUniformLocation(ID, "u_uvRect");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
 
-    glUniform1i(UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
+    glProgramUniform1i(ID, UniformPrimaryAtlasID, TEXTURE_UNIT_ATLAS_PRIMARY2D);
 }
 
 void SProgramHUD::InitUniforms()
@@ -557,7 +555,7 @@ void SUniformBlock::Init(int Size)
 {
     glGenBuffers(1, &UBO);
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    glBufferData(GL_UNIFORM_BUFFER, Size, nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, Size, nullptr, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 

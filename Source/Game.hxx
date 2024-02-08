@@ -38,6 +38,7 @@ public:
     // SGeometry TestGeometry;
     STileset Tileset;
 
+    STimeline MapRectTimeline{3.0f};
     URect MapRect;
     bool bMapMaximized{};
 

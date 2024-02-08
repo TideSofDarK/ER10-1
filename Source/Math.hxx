@@ -421,4 +421,32 @@ namespace Math
     {
         return Edge < Value ? 0.0 : 1.0;
     }
+
+    // template <typename T>
+    // constexpr T InterpToConstant(T from, T to, T deltaSpeed)
+    // {
+    //     if (to - from > 0)
+    //     {
+    //         return std::min(to, from + deltaSpeed);
+    //     }
+    //     else
+    //     {
+    //         return std::max(to, from - deltaSpeed);
+    //     }
+    // }
+    template <typename T>
+    constexpr auto InterpToConstant(T Current, T Target, float DeltaTime, float InterpSpeed)
+    {
+        if (InterpSpeed <= 0.0f)
+        {
+            return static_cast<T>(Target);
+        }
+        const auto Dist = std::abs(Target - Current);
+        if (Dist * Dist < 0.00001f)
+        {
+            return static_cast<T>(Target);
+        }
+        const auto Step = DeltaTime * InterpSpeed;
+        return Current + std::clamp((Target - Current), -Step, Step);
+    }
 }

@@ -784,6 +784,7 @@ void SDevTools::Update(SGame& Game)
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);
             if (ImGui::TreeNode("Adjustments"))
             {
+                ImGui::SliderFloat("##TimeScale", &Game.Window.TimeScale, 0.0f, 4.0f, "Time Scale: %.2f");
                 ImGui::SliderFloat("##MasterVolume", &Game.Audio.Volume, 0.0f, 1.0f, "Master Volume: %.2f");
                 ImGui::SliderFloat("##InputBufferTime", &Game.Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
                 ImGui::TreePop();

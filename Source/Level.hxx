@@ -10,7 +10,7 @@ struct SDrawDoorInfo
 {
     UVec2Int TileCoords{};
     SDirection Direction{};
-    STimeline Timeline{ 0.0f, 2.0f };
+    STimeline Timeline{ 2.0f };
 
     SDrawDoorInfo()
     {

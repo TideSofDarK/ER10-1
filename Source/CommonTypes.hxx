@@ -14,6 +14,7 @@ struct SWindowData
     int BlitY{};
     unsigned long long Last{};
     unsigned long long Now{};
+    float TimeScale = 1.0f;
     float Seconds{};
     float DeltaTime{};
     bool bQuit{};
@@ -198,8 +199,8 @@ struct SInputState
 
 struct STimeline
 {
-    float Value = 1.0f;
     float Speed = 1.0f;
+    float Value = 1.0f;
 
     void Advance(float DeltaTime)
     {
