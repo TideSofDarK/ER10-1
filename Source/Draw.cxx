@@ -153,11 +153,9 @@ void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentS
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
-    Use();
     SProgram::InitUniforms();
     InitUniforms();
     InitUniformBlocks();
-    glUseProgram(0);
 }
 
 void SProgram::Cleanup() const
