@@ -12,10 +12,14 @@ struct STileMasks
     float explored;
     float visited;
     float nonEmpty;
-    float wallNorth;
     float wallSouth;
+    float wallNorth;
     float wallEast;
     float wallWest;
+    float doorSouth;
+    float doorNorth;
+    float doorEast;
+    float doorWest;
 };
 
 layout(std140) uniform ub_common
@@ -116,6 +120,10 @@ STileMasks getTileMasks(float tileX, float tileY)
     tileMasks.wallSouth = bitMask(tile.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT);
     tileMasks.wallEast = bitMask(tile.edgeFlags, TILE_EDGE_WALL_EAST_BIT);
     tileMasks.wallWest = bitMask(tile.edgeFlags, TILE_EDGE_WALL_WEST_BIT);
+    tileMasks.doorNorth = bitMask(tile.edgeFlags, TILE_EDGE_DOOR_BIT);
+    tileMasks.doorSouth = bitMask(tile.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT);
+    tileMasks.doorEast = bitMask(tile.edgeFlags, TILE_EDGE_DOOR_EAST_BIT);
+    tileMasks.doorWest = bitMask(tile.edgeFlags, TILE_EDGE_DOOR_WEST_BIT);
     return tileMasks;
 }
 
@@ -259,15 +267,15 @@ void main()
 
     // Walls
     float wallMaskHor = 0.0;
-    wallMaskHor += tileMasks.wallNorth * tileMasks.valid;
-    wallMaskHor += tileMasksNorth.wallSouth * tileMasksNorth.valid;
-    wallMaskHor *= tileMasks.explored * tileMasks.nonEmpty + tileMasksNorth.explored * tileMasksNorth.nonEmpty;
+    wallMaskHor += tileMasks.wallNorth;
+    wallMaskHor += tileMasksNorth.wallSouth;
+    wallMaskHor *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksNorth.explored * tileMasksNorth.nonEmpty * tileMasksNorth.valid;
     wallMaskHor *= edgeMaskHor;
 
     float wallMaskVert = 0.0;
-    wallMaskVert += tileMasks.wallWest * tileMasks.valid;
-    wallMaskVert += tileMasksWest.wallEast * tileMasksWest.valid;
-    wallMaskVert *= tileMasks.explored * tileMasks.nonEmpty + tileMasksWest.explored * tileMasksWest.nonEmpty;
+    wallMaskVert += tileMasks.wallWest;
+    wallMaskVert += tileMasksWest.wallEast;
+    wallMaskVert *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksWest.explored * tileMasksWest.nonEmpty * tileMasksWest.valid;
     wallMaskVert *= edgeMaskVert;
 
     float wallMaskCorner = 0;
@@ -284,28 +292,25 @@ void main()
     finalColor = mix(finalColor, wallColor, wallMasks);
 
     // Doors
-    // float doorMaskNorth = bitMask(tileDataNorthWest.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) * validDoorHor;
-    // doorMaskNorth *= edgeMaskHor * round(abs(map1to1(tileInfo.z - tileSizeReciprocal)) + 0.05);
-    // doorMaskNorth = ceil(doorMaskNorth);
-    // float doorMaskSouth = bitMask(tileDataSouth.edgeFlags, TILE_EDGE_DOOR_BIT) * validDoorHor;
-    // doorMaskSouth *= edgeMaskHor * round(abs(map1to1(tileInfo.z)) + 0.05);
-    // doorMaskSouth = ceil(doorMaskSouth);
-    // float doorMaskEast = bitMask(tileDataEast.edgeFlags, TILE_EDGE_DOOR_WEST_BIT) * validDoorVert;
-    // doorMaskEast *= edgeMaskVert * round(abs(map1to1(tileInfo.w - tileSizeReciprocal)) + 0.05);
-    // doorMaskEast = ceil(doorMaskEast);
-    // float doorMaskWest = bitMask(tileDataWest.edgeFlags, TILE_EDGE_DOOR_EAST_BIT) * validDoorVert;
-    // doorMaskWest *= edgeMaskVert * round(abs(map1to1(tileInfo.w)) + 0.05);
-    // doorMaskWest = ceil(doorMaskWest);
-    // float doorMaskCorner = (bitMask(tileDataCorner.edgeFlags, TILE_EDGE_DOOR_SOUTH_BIT) + bitMask(tileDataCorner.edgeFlags, TILE_EDGE_DOOR_EAST_BIT));
-    // doorMaskCorner *= validTileMaskCorner;
-    // doorMaskCorner *= bothEdgesMask;
-    // doorMaskCorner = ceil(doorMaskCorner);
-    //
-    // float doorMasks = saturate(doorMaskNorth + doorMaskSouth + doorMaskEast + doorMaskWest + doorMaskCorner);
-    // doorMasks *= edgeMask;
-    // doorMasks *= levelBoundsMask;
+    float doorMaskHor = 0.0;
+    doorMaskHor += tileMasks.doorNorth;
+    doorMaskHor += tileMasksNorth.doorSouth;
+    doorMaskHor *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksNorth.explored * tileMasksNorth.nonEmpty * tileMasksNorth.valid;
+    doorMaskHor *= edgeMaskHor;
+    doorMaskHor *= 1.0 - step((abs(tileInfo.z * 2.0 - 1.0) * (tileSize - tileEdgeSize)) + tileEdgeSize, tileSize / 3.0);
 
-    // finalColor = overlay(finalColor, wallColor, doorMasks);
+    float doorMaskVert = 0.0;
+    doorMaskVert += tileMasks.doorWest;
+    doorMaskVert += tileMasksWest.doorEast;
+    doorMaskVert *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksWest.explored * tileMasksWest.nonEmpty * tileMasksWest.valid;
+    doorMaskVert *= edgeMaskVert;
+    doorMaskVert *= abs(round(tileInfo.w * 2.0 - 1.0));
+
+    float doorMasks = saturate(doorMaskHor + doorMaskVert);
+    doorMasks *= edgeMask;
+    doorMasks *= levelBoundsMask;
+
+    finalColor = overlay(finalColor, wallColor, doorMasks);
 
     // Grid
     float gridMasks = edgeMask;
@@ -322,7 +327,7 @@ void main()
     // gridForceMask = saturate(gridForceMask);
     // gridForceMask = 0.0;
     // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
-    finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks)));
+    finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
 
     // Current POV
     vec4 playerIcon = putIcon(texCoord, pov, u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
