@@ -291,23 +291,39 @@ void main()
     vec3 wallColor = vec3(1.0, 1.0, 1.0);
     finalColor = mix(finalColor, wallColor, wallMasks);
 
+    vec2 normalizedEdgeUV = vec2(inverseMix(tileSizeReciprocal * round(tileEdgeSize/2.0), 1.0, tileInfo.z), inverseMix(tileSizeReciprocal * round(tileEdgeSize/2.0), 1.0, tileInfo.w));
+
     // Doors
+    float doorSize = floor(tileCellSize * 0.55);
+    float doorBlockMaskNorth = step(normalizedEdgeUV.y * tileSize, floor(tileEdgeSize * 1.5));
+    float doorBlockMaskSouth = 1.0 - step(normalizedEdgeUV.y * tileSize, tileSize - round(tileEdgeSize * 1.5));
+    float doorBlockMaskWest = step(normalizedEdgeUV.x * tileSize, floor(tileEdgeSize * 1.5));
+    float doorBlockMaskEast = 1.0 - step(normalizedEdgeUV.x * tileSize, tileSize - round(tileEdgeSize * 1.5));
+    float doorBlockSizeMaskHor = step(abs(normalizedEdgeUV.x * 2.0 - 1.0) * tileSize, tileSize - doorSize);
+    float doorBlockSizeMaskVert = step(abs(normalizedEdgeUV.y * 2.0 - 1.0) * tileSize, tileSize - doorSize);
+    float doorSizeMaskHor = step(tileSize - doorSize - tileEdgeSize * 1.5, abs(normalizedEdgeUV.x * 2.0 - 1.0) * tileSize);
+    float doorSizeMaskVert = step(tileSize - doorSize - tileEdgeSize * 1.5, abs(normalizedEdgeUV.y * 2.0 - 1.0) * tileSize);
+
     float doorMaskHor = 0.0;
     doorMaskHor += tileMasks.doorNorth;
     doorMaskHor += tileMasksNorth.doorSouth;
-    doorMaskHor *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksNorth.explored * tileMasksNorth.nonEmpty * tileMasksNorth.valid;
     doorMaskHor *= edgeMaskHor;
-    doorMaskHor *= 1.0 - step((abs(tileInfo.z * 2.0 - 1.0) * (tileSize - tileEdgeSize)) + tileEdgeSize, tileSize / 3.0);
+    doorMaskHor *= doorSizeMaskHor;
+    doorMaskHor += tileMasks.doorNorth * doorBlockMaskNorth * doorBlockSizeMaskHor * (1.0 - edgeMaskHor);
+    doorMaskHor += tileMasks.doorSouth * doorBlockMaskSouth * doorBlockSizeMaskHor * (1.0 - edgeMaskHor);
+    doorMaskHor *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksNorth.explored * tileMasksNorth.nonEmpty * tileMasksNorth.valid;
 
     float doorMaskVert = 0.0;
     doorMaskVert += tileMasks.doorWest;
     doorMaskVert += tileMasksWest.doorEast;
-    doorMaskVert *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksWest.explored * tileMasksWest.nonEmpty * tileMasksWest.valid;
     doorMaskVert *= edgeMaskVert;
-    doorMaskVert *= abs(round(tileInfo.w * 2.0 - 1.0));
+    doorMaskVert *= doorSizeMaskVert;
+    doorMaskHor += tileMasks.doorWest * doorBlockMaskWest * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
+    doorMaskHor += tileMasksWest.doorEast * doorBlockMaskEast * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
+    doorMaskVert *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksWest.explored * tileMasksWest.nonEmpty * tileMasksWest.valid;
 
     float doorMasks = saturate(doorMaskHor + doorMaskVert);
-    doorMasks *= edgeMask;
+    // doorMasks *= edgeMask;
     doorMasks *= levelBoundsMask;
 
     finalColor = overlay(finalColor, wallColor, doorMasks);
