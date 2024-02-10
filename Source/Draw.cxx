@@ -922,6 +922,7 @@ void SRenderer::DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const SCoo
     Entry.SizePixels = Size;
 
     Entry.Mode = SEntryMode{ MAP_MODE_GAME_NORMAL };
+    // Entry.Mode = SEntryMode{ MAP_MODE_GAME_ISO };
 
     Queue2D.Enqueue(Entry);
 }

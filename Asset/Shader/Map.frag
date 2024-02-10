@@ -12,6 +12,8 @@ struct STileMasks
     float explored;
     float visited;
     float nonEmpty;
+    float floor;
+    float hole;
     float wallSouth;
     float wallNorth;
     float wallEast;
@@ -113,9 +115,11 @@ STileMasks getTileMasks(float tileX, float tileY)
     STile tile = getTileData(tileX, tileY, float(u_map.width), float(u_map.height));
     STileMasks tileMasks;
     tileMasks.valid = calculateValidTileMask(tileX, tileY, float(u_map.width), float(u_map.height));
+    tileMasks.nonEmpty = nonEmptyMask(tile.flags);
+    tileMasks.floor = bitMask(tile.flags, TILE_FLOOR_BIT);
+    tileMasks.hole = bitMask(tile.flags, TILE_HOLE_BIT);
     tileMasks.visited = bitMask(tile.specialFlags, TILE_SPECIAL_VISITED_BIT);
     tileMasks.explored = exploredMask(tile.specialFlags);
-    tileMasks.nonEmpty = nonEmptyMask(tile.flags);
     tileMasks.wallNorth = bitMask(tile.edgeFlags, TILE_EDGE_WALL_BIT);
     tileMasks.wallSouth = bitMask(tile.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT);
     tileMasks.wallEast = bitMask(tile.edgeFlags, TILE_EDGE_WALL_EAST_BIT);
@@ -125,6 +129,15 @@ STileMasks getTileMasks(float tileX, float tileY)
     tileMasks.doorEast = bitMask(tile.edgeFlags, TILE_EDGE_DOOR_EAST_BIT);
     tileMasks.doorWest = bitMask(tile.edgeFlags, TILE_EDGE_DOOR_WEST_BIT);
     return tileMasks;
+}
+
+vec4 putIconEx(float mask, vec2 uv, Sprite sprite)
+{
+    vec2 spriteUV = convertUV(uv, sprite.uvRect);
+    spriteUV *= ATLAS_SIZE;
+    vec4 color = texelFetch(u_commonAtlas, ivec2(int(spriteUV.x), int(spriteUV.y)), 0);
+    color.a *= mask;
+    return color;
 }
 
 vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, float tileEdgeSize, Sprite sprite)
@@ -171,20 +184,19 @@ void main()
     float levelHeight = float(u_map.height);
     float levelTileCount = levelWidth * levelHeight;
 
-    float povX = u_map.povX;
-    float povY = u_map.povY;
-    vec2 pov = vec2(povX, povY);
+    vec2 pov = vec2(u_map.povX, u_map.povY);
 
     vec2 texCoord = f_texCoord;
     vec2 texCoordOriginal = texCoord;
     texCoord *= u_sizeScreenSpace;
-    texCoord = floor(texCoord);
 
     float tileSize = 0.0;
     float tileCellSize = 0.0;
     float tileEdgeSize = 0.0;
     if (u_mode == MAP_MODE_GAME_NORMAL)
     {
+        texCoord = floor(texCoord);
+
         tileSize = MAP_TILE_SIZE_PIXELS;
         tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
@@ -193,23 +205,30 @@ void main()
         centerOffset = floor(centerOffset);
 
         texCoord += centerOffset;
+
+        // pov = floor(pov) + floor(fract(pov) * (tileSize / 2.0)) / (tileSize / 2.0);
     }
     else if (u_mode == MAP_MODE_GAME_ISO)
     {
         tileSize = MAP_ISO_TILE_SIZE_PIXELS;
+        tileCellSize = MAP_ISO_TILE_CELL_SIZE_PIXELS;
+        tileEdgeSize = MAP_ISO_TILE_EDGE_SIZE_PIXELS;
 
         texCoord = cartesianToIsometric(texCoord);
         texCoordOriginal = cartesianToIsometric(texCoordOriginal);
 
-        vec2 sizeIso = round(cartesianToIsometric(u_sizeScreenSpace / 2.0));
+        vec2 sizeIso = (cartesianToIsometric(u_sizeScreenSpace / 2.0));
 
-        float centerOffsetX = round(sizeIso.x - (povX + 0.5) * tileSize);
-        float centerOffsetY = round(sizeIso.y - (povY + 0.5) * tileSize);
+        vec2 centerOffset = sizeIso - (pov + vec2(0.5)) * tileSize;
 
-        texCoord -= vec2(centerOffsetX, centerOffsetY);
+        texCoord -= centerOffset;
+
+        texCoord = floor(texCoord);
     }
     else if (u_mode == MAP_MODE_EDITOR)
     {
+        texCoord = floor(texCoord);
+
         tileSize = MAP_TILE_SIZE_PIXELS;
         tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
@@ -237,20 +256,16 @@ void main()
     float tileNonEmptyMask = nonEmptyMask(tileData.flags);
 
     // Floor
-    float holeMask = bitMask(tileData.flags, TILE_HOLE_BIT) * validTileMask;
-    float floorTileMask = (bitMask(tileData.flags, TILE_FLOOR_BIT) + holeMask) * validTileMask;
+    float floorTileMask = (tileMasks.hole + tileMasks.floor) * validTileMask;
 
     // float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
 
     vec3 floorTile = vec3(0.0, 0.0, 1.0 - ((1.0 - tileVisitedMask) * 0.6));
     finalColor = overlay(finalColor, floorTile, floorTileMask);
 
-    holeMask *= step(abs(map1to1(tileInfo.z - tileSizeReciprocal / 2.0)), 0.55);
-    holeMask *= step(abs(map1to1(tileInfo.w - tileSizeReciprocal / 2.0)), 0.55);
-    vec3 holeColor = vec3(0.0, 0.0, 0.1);
-    finalColor = overlay(finalColor, holeColor, holeMask);
-
     // Edges
+    vec2 normalizedEdgeUV = vec2(inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.z), inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.w));
+
     float edgeMaskHor = step(abs(mod(texCoord.y, tileSize)), tileEdgeSize - 1);
     float edgeMaskVert = step(abs(mod(texCoord.x, tileSize)), tileEdgeSize - 1);
     float edgeMask = 1.0 - step(saturate(edgeMaskHor + edgeMaskVert), 0.0);
@@ -291,18 +306,16 @@ void main()
     vec3 wallColor = vec3(1.0, 1.0, 1.0);
     finalColor = mix(finalColor, wallColor, wallMasks);
 
-    vec2 normalizedEdgeUV = vec2(inverseMix(tileSizeReciprocal * round(tileEdgeSize/2.0), 1.0, tileInfo.z), inverseMix(tileSizeReciprocal * round(tileEdgeSize/2.0), 1.0, tileInfo.w));
-
     // Doors
     float doorSize = floor(tileCellSize * 0.55);
-    float doorBlockMaskNorth = step(normalizedEdgeUV.y * tileSize, floor(tileEdgeSize * 1.5));
-    float doorBlockMaskSouth = 1.0 - step(normalizedEdgeUV.y * tileSize, tileSize - round(tileEdgeSize * 1.5));
-    float doorBlockMaskWest = step(normalizedEdgeUV.x * tileSize, floor(tileEdgeSize * 1.5));
-    float doorBlockMaskEast = 1.0 - step(normalizedEdgeUV.x * tileSize, tileSize - round(tileEdgeSize * 1.5));
-    float doorBlockSizeMaskHor = step(abs(normalizedEdgeUV.x * 2.0 - 1.0) * tileSize, tileSize - doorSize);
-    float doorBlockSizeMaskVert = step(abs(normalizedEdgeUV.y * 2.0 - 1.0) * tileSize, tileSize - doorSize);
-    float doorSizeMaskHor = step(tileSize - doorSize - tileEdgeSize * 1.5, abs(normalizedEdgeUV.x * 2.0 - 1.0) * tileSize);
-    float doorSizeMaskVert = step(tileSize - doorSize - tileEdgeSize * 1.5, abs(normalizedEdgeUV.y * 2.0 - 1.0) * tileSize);
+    float doorBlockMaskNorth = step(normalizedEdgeUV.y * tileCellSize, tileEdgeSize);
+    float doorBlockMaskSouth = step(tileCellSize - tileEdgeSize, normalizedEdgeUV.y * tileCellSize);
+    float doorBlockMaskWest = step(normalizedEdgeUV.x * tileCellSize, tileEdgeSize);
+    float doorBlockMaskEast = step(tileCellSize - tileEdgeSize, normalizedEdgeUV.x * tileCellSize);
+    float doorBlockSizeMaskHor = step(abs(normalizedEdgeUV.x * 2.0 - 1.0) * tileCellSize, tileCellSize - doorSize);
+    float doorBlockSizeMaskVert = step(abs(normalizedEdgeUV.y * 2.0 - 1.0) * tileCellSize, tileCellSize - doorSize);
+    float doorSizeMaskHor = step(tileCellSize - doorSize, abs(normalizedEdgeUV.x * 2.0 - 1.0) * tileCellSize + tileEdgeSize * 2.0);
+    float doorSizeMaskVert = step(tileCellSize - doorSize, abs(normalizedEdgeUV.y * 2.0 - 1.0) * tileCellSize + tileEdgeSize * 2.0);
 
     float doorMaskHor = 0.0;
     doorMaskHor += tileMasks.doorNorth;
@@ -349,10 +362,15 @@ void main()
     vec4 playerIcon = putIcon(texCoord, pov, u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
     finalColor = overlay(finalColor, playerIcon.rgb, playerIcon.a);
 
+    vec4 holeColor = putIconEx(tileMasks.hole, normalizedEdgeUV, u_common.icons[MAP_ICON_HOLE]);
+    finalColor = mix(finalColor, holeColor.rgb, holeColor.a * (1.0 - edgeMask));
+
     // float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;
     // float povMask = saturate((povTileMask * (1.0 - distance(vec2(map1to1(tileInfo.z - tileSizeReciprocal / 2.0), map1to1(tileInfo.w - tileSizeReciprocal / 2.0)) * 2.0, vec2(0.0, 0.0))))) * povAnim;
     // vec3 povColor = vec3(1.0, 1.0, 1.0);
     // finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
+
+    // putIconEx(texCoord, u_common.icons[MAP_ICON_HOLE], tileSize, TILE_HOLE_BIT);
 
     color = vec4(finalColor, 1.0);
 }
