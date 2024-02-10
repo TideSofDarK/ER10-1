@@ -32,6 +32,7 @@ namespace Asset::HUD
     EXTERN_ASSET(MapIconPlayer)
     EXTERN_ASSET(MapIconA)
     EXTERN_ASSET(MapIconB)
+    EXTERN_ASSET(MapIconHole)
 }
 
 namespace Asset::Tileset::Hotel
@@ -75,6 +76,7 @@ SGame::SGame()
     MapIcons[MAP_ICON_PLAYER] = CommonAtlas.AddSprite(Asset::HUD::MapIconPlayer);
     MapIcons[MAP_ICON_A] = CommonAtlas.AddSprite(Asset::HUD::MapIconA);
     MapIcons[MAP_ICON_B] = CommonAtlas.AddSprite(Asset::HUD::MapIconB);
+    MapIcons[MAP_ICON_HOLE] = CommonAtlas.AddSprite(Asset::HUD::MapIconHole);
     CommonAtlas.Build();
 
     Renderer.SetMapIcons(MapIcons);

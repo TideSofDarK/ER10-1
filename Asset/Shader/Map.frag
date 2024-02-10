@@ -318,8 +318,8 @@ void main()
     doorMaskVert += tileMasksWest.doorEast;
     doorMaskVert *= edgeMaskVert;
     doorMaskVert *= doorSizeMaskVert;
-    doorMaskHor += tileMasks.doorWest * doorBlockMaskWest * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
-    doorMaskHor += tileMasksWest.doorEast * doorBlockMaskEast * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
+    doorMaskVert += tileMasks.doorWest * doorBlockMaskWest * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
+    doorMaskVert += tileMasksWest.doorEast * doorBlockMaskEast * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
     doorMaskVert *= tileMasks.explored * tileMasks.nonEmpty * tileMasks.valid + tileMasksWest.explored * tileMasksWest.nonEmpty * tileMasksWest.valid;
 
     float doorMasks = saturate(doorMaskHor + doorMaskVert);

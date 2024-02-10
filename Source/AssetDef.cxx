@@ -84,6 +84,7 @@ namespace Asset::HUD
     DEFINE_ASSET(MapIconPlayer, "HUD/Player.png")
     DEFINE_ASSET(MapIconA, "HUD/IconA.png")
     DEFINE_ASSET(MapIconB, "HUD/IconB.png")
+    DEFINE_ASSET(MapIconHole, "HUD/Hole.png")
 }
 
 namespace Asset::Shader
