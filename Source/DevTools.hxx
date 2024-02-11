@@ -5,8 +5,26 @@
 #include <imgui/imgui.h>
 #include "Level.hxx"
 #include "Draw.hxx"
+#include "World.hxx"
 
-struct SParty;
+enum class EDevToolsMode
+{
+    Game,
+    LevelEditor,
+    WorldEditor
+};
+
+struct SWorldEditor
+{
+    SWorld World;
+    SFramebuffer MapFramebuffer;
+
+    void Init();
+    void Cleanup();
+
+    void SetActive(struct SGame& Game, bool bActive);
+    void Show(struct SGame& Game);
+};
 
 enum class ELevelEditorMode
 {
@@ -23,7 +41,6 @@ struct SValidationResult
 
 struct SLevelEditor
 {
-    bool bLevelEditorActive{};
     ELevelEditorMode LevelEditorMode{};
     uint32_t ToggleEdgeType{};
     UVec2Int NewLevelSize{};
@@ -41,6 +58,7 @@ struct SLevelEditor
     void Init();
     void Cleanup();
 
+    void SetActive(struct SGame& Game, bool bActive);
     void Show(struct SGame& Game);
     void ShowLevel(struct SGame& Game);
 
@@ -57,7 +75,9 @@ struct SLevelEditor
 
 struct SDevTools
 {
+    EDevToolsMode Mode{};
     SLevelEditor LevelEditor;
+    SWorldEditor WorldEditor;
 
     void Init(struct SDL_Window* Window, void* Context);
 
@@ -67,7 +87,9 @@ struct SDevTools
 
     void Update(struct SGame& Game);
 
-    static void DrawParty(SParty& Party, float Scale, bool bReversed);
+    void DebugTools(struct SGame& Game) const;
+
+    static void DrawParty(struct SParty& Party, float Scale, bool bReversed);
 
     void Draw() const;
 

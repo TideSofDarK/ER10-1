@@ -9,6 +9,7 @@
 #include "Level.hxx"
 #include "GameSystem.hxx"
 #include "Player.hxx"
+#include "World.hxx"
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
     #include "DevTools.hxx"
@@ -32,6 +33,7 @@ public:
     SRenderer Renderer;
     SInputState OldInputState{}, BufferedInputState{}, InputState{};
     SCamera Camera;
+    SWorld World;
     SPlayer Player;
     SParty PlayerParty;
     SBlob Blob;

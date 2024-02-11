@@ -41,9 +41,44 @@ static const std::filesystem::path AssetPath = std::filesystem::path{ EQUINOX_RE
 static const std::filesystem::path MapExtension = ".erm";
 static std::vector<std::filesystem::path> AvailableMaps(20);
 
+void SWorldEditor::Init()
+{
+    // MapFramebuffer.Init(
+    //     TEXTURE_UNIT_MAP_FRAMEBUFFER,
+    //     Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
+    //     Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS),
+    //     SVec3{ 1.0f, 0.0f, 0.0f });
+}
+
+void SWorldEditor::Cleanup()
+{
+    // MapFramebuffer.Cleanup();
+}
+
+void SWorldEditor::SetActive(struct SGame& Game, bool bActive)
+{
+    if (bActive)
+    {
+        static bool bFirstTime = true;
+        if (bFirstTime)
+        {
+            bFirstTime = false;
+        }
+
+        // Game.Renderer.BindMapUniformBlock(&MapUniformBlock);
+    }
+    else
+    {
+        // Game.Renderer.BindMapUniformBlock(nullptr);
+    }
+}
+
+void SWorldEditor::Show(SGame& Game)
+{
+}
+
 void SLevelEditor::Init()
 {
-    bLevelEditorActive = false;
     LevelEditorMode = ELevelEditorMode::Normal;
     NewLevelSize = UVec2Int{ 8, 8 };
     MapScale = 1.0f;
@@ -66,6 +101,25 @@ void SLevelEditor::Cleanup()
     MapFramebuffer.Cleanup();
 }
 
+void SLevelEditor::SetActive(SGame& Game, bool bActive)
+{
+    if (bActive)
+    {
+        static bool bFirstTime = true;
+        if (bFirstTime)
+        {
+            FitTilemapToWindow();
+            bFirstTime = false;
+        }
+
+        Game.Renderer.BindMapUniformBlock(&MapUniformBlock);
+    }
+    else
+    {
+        Game.Renderer.BindMapUniformBlock(nullptr);
+    }
+}
+
 void SLevelEditor::Show(SGame& Game)
 {
     bool bNewLevel = false;
@@ -80,16 +134,14 @@ void SLevelEditor::Show(SGame& Game)
     {
         if (ImGui::BeginMenu("Level"))
         {
-            ImGui::MenuItem("New Level", "Ctrl+N", &bNewLevel);
-            ImGui::MenuItem("Load Level", "Ctrl+L", &bLoadLevel);
-            ImGui::MenuItem("Save Level", "Ctrl+S", &bSaveLevel);
+            ImGui::MenuItem("New", "Ctrl+N", &bNewLevel);
+            ImGui::MenuItem("Load", "Ctrl+L", &bLoadLevel);
+            ImGui::MenuItem("Save", "Ctrl+S", &bSaveLevel);
             ImGui::Separator();
-            ImGui::MenuItem("Level Properties", "F5", &bLevelProperties);
+            ImGui::MenuItem("Properties", "F5", &bLevelProperties);
             if (ImGui::MenuItem("Validate", "F6"))
             {
                 SValidationResult Result = Validate();
-                Log::DevTools<ELogLevel::Critical>("Level validation successful!");
-                Log::DevTools<ELogLevel::Critical>("Wall: %d, Door: %d", Result.Wall, Result.Door);
             }
             ImGui::EndMenu();
         }
@@ -264,6 +316,11 @@ void SLevelEditor::Show(SGame& Game)
 
 void SLevelEditor::ShowLevel(SGame& Game)
 {
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
+    {
+        FitTilemapToWindow();
+    }
+
     auto OriginalMapSize = CalculateMapSize();
 
     /* @TODO: Update tiles every frame for now. */
@@ -288,6 +345,12 @@ void SLevelEditor::ShowLevel(SGame& Game)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::SetNextWindowSize(ImVec2{ ScaledMapSize.X, ScaledMapSize.Y });
+    if (bResetGridPosition)
+    {
+        ImGui::SetNextWindowPos(ImVec2(IO.DisplaySize.x * 0.5f - ScaledMapSize.X * 0.5f,
+            IO.DisplaySize.y * 0.5f - ScaledMapSize.Y * 0.5f));
+        bResetGridPosition = false;
+    }
     if (ImGui::Begin("Grid", nullptr,
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
     {
@@ -469,32 +532,14 @@ void SLevelEditor::ShowLevel(SGame& Game)
         //     }
         // }
 
-        if (bResetGridPosition)
-        {
-            ImGui::SetWindowPos(
-                ImVec2(
-                    IO.DisplaySize.x * 0.5f - ScaledMapSize.X * 0.5f,
-                    IO.DisplaySize.y * 0.5f - ScaledMapSize.Y * 0.5f));
-            bResetGridPosition = false;
-        }
-
         ImGui::End();
     }
     ImGui::PopStyleVar(2);
-
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
-    {
-        FitTilemapToWindow();
-    }
 }
 
 void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path)
 {
-    /* @TODO: Proper level validation. */
-    for (auto& Tile : Level.Tiles)
-    {
-        Tile.SpecialFlags = 0;
-    }
+    Validate();
 
     const auto& Tilemap = Level;
 
@@ -576,6 +621,9 @@ SValidationResult SLevelEditor::Validate()
         {
             auto CurrentTile = Level.GetTileAtMutable(Coords);
 
+            CurrentTile->ClearSpecialFlag(TILE_SPECIAL_VISITED_BIT);
+            CurrentTile->ClearSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
+
             for (auto& Direction : SDirection::All())
             {
                 auto NeighborTile = Level.GetTileAtMutable(Coords + Direction.GetVector<int>());
@@ -588,6 +636,10 @@ SValidationResult SLevelEditor::Validate()
             }
         }
     }
+
+    Log::DevTools<ELogLevel::Critical>("[Validate] Successful!");
+    Log::DevTools<ELogLevel::Critical>("[Validate] Corrections: Walls = %d, Doors = %d", Result.Wall, Result.Door);
+
     return Result;
 }
 
@@ -713,9 +765,9 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
 
     LevelEditor.Init();
+    WorldEditor.Init();
 
     float WindowScale = SDL_GetWindowDisplayScale(Window);
-
     ImGui::GetStyle().ScaleAllSizes(WindowScale);
 
     /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
@@ -727,6 +779,7 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
 void SDevTools::Cleanup()
 {
     LevelEditor.Cleanup();
+    WorldEditor.Cleanup();
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
@@ -747,102 +800,103 @@ void SDevTools::Update(SGame& Game)
         // Game.Renderer.ProgramUber3D.Reload();
     }
 
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F8)))
+    {
+        Mode = Mode == EDevToolsMode::WorldEditor ? EDevToolsMode::Game : EDevToolsMode::WorldEditor;
+        WorldEditor.SetActive(Game, Mode == EDevToolsMode::WorldEditor);
+    }
+
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))
     {
-        LevelEditor.bLevelEditorActive = !LevelEditor.bLevelEditorActive;
-        if (LevelEditor.bLevelEditorActive)
-        {
-            static bool bFirstTime = true;
-            if (bFirstTime)
-            {
-                LevelEditor.FitTilemapToWindow();
-                bFirstTime = false;
-            }
-
-            Game.Renderer.BindMapUniformBlock(&LevelEditor.MapUniformBlock);
-        }
-        else
-        {
-            Game.Renderer.BindMapUniformBlock(nullptr);
-        }
+        Mode = Mode == EDevToolsMode::LevelEditor ? EDevToolsMode::Game : EDevToolsMode::LevelEditor;
+        LevelEditor.SetActive(Game, Mode == EDevToolsMode::LevelEditor);
     }
 
-    if (LevelEditor.bLevelEditorActive)
+    switch (Mode)
     {
-        LevelEditor.Show(Game);
+        case EDevToolsMode::LevelEditor:
+            LevelEditor.Show(Game);
+            break;
+        case EDevToolsMode::WorldEditor:
+            WorldEditor.Show(Game);
+            break;
+        default:
+            DebugTools(Game);
+            break;
     }
-    else
+}
+
+void SDevTools::DebugTools(SGame& Game) const
+{
+    if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::TreeNode("System Info"))
         {
-            if (ImGui::TreeNode("System Info"))
-            {
-                ImGui::Text("Frames Per Second: %.f", 1000.0f / Game.Window.DeltaTime / 1000.0f);
-                ImGui::Text("Number Of Blocks: %zu", Memory::NumberOfBlocks());
-                ImGui::TreePop();
-            }
-            if (ImGui::TreeNode("Player Info"))
-            {
-                ImGui::Text("Direction: %s (%u)", SDirection::Names[Game.Blob.Direction.Index], Game.Blob.Direction.Index);
-                ImGui::Text("Coords: X=%d, Y=%d", Game.Blob.Coords.X, Game.Blob.Coords.Y);
-                ImGui::Text("Unreliable Coords: X=%.2f, Y=%.2f", Game.Blob.UnreliableCoords().X, Game.Blob.UnreliableCoords().Y);
-                DrawParty(Game.PlayerParty, ImGui::GetFontSize() * 0.01f, true);
-                DrawParty(Game.PlayerParty, ImGui::GetFontSize() * 0.01f, false);
-                ImGui::TreePop();
-            }
-            ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-            if (ImGui::TreeNode("Level Tools"))
-            {
-                if (ImGui::Button("Explore Level"))
-                {
-                    for (auto X = 0; X < Game.Level.Width; X++)
-                    {
-                        for (auto Y = 0; Y < Game.Level.Height; Y++)
-                        {
-                            auto Tile = Game.Level.GetTileAtMutable({ X, Y });
-                            if (Tile != nullptr)
-                            {
-                                Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
-                            }
-                        }
-                    }
-                    Game.Level.DirtyFlags = ELevelDirtyFlags::All;
-                    Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
-                }
-                if (ImGui::Button("Visit Level"))
-                {
-                    for (auto X = 0; X < Game.Level.Width; X++)
-                    {
-                        for (auto Y = 0; Y < Game.Level.Height; Y++)
-                        {
-                            auto Tile = Game.Level.GetTileAtMutable({ X, Y });
-                            if (Tile != nullptr)
-                            {
-                                Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
-                                Tile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
-                            }
-                        }
-                    }
-                    Game.Level.DirtyFlags = ELevelDirtyFlags::All;
-                    Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
-                }
-                if (ImGui::Button("Import Level From Editor"))
-                {
-                    Game.ChangeLevel(LevelEditor.Level);
-                }
-                ImGui::TreePop();
-            }
-            ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-            if (ImGui::TreeNode("Adjustments"))
-            {
-                ImGui::SliderFloat("##TimeScale", &Game.Window.TimeScale, 0.0f, 4.0f, "Time Scale: %.2f");
-                ImGui::SliderFloat("##MasterVolume", &Game.Audio.Volume, 0.0f, 1.0f, "Master Volume: %.2f");
-                ImGui::SliderFloat("##InputBufferTime", &Game.Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
-                ImGui::TreePop();
-            }
+            ImGui::Text("Frames Per Second: %.f", 1000.0f / Game.Window.DeltaTime / 1000.0f);
+            ImGui::Text("Number Of Blocks: %zu", Memory::NumberOfBlocks());
+            ImGui::TreePop();
         }
-        ImGui::End();
+        if (ImGui::TreeNode("Player Info"))
+        {
+            ImGui::Text("Direction: %s (%u)", SDirection::Names[Game.Blob.Direction.Index], Game.Blob.Direction.Index);
+            ImGui::Text("Coords: X=%d, Y=%d", Game.Blob.Coords.X, Game.Blob.Coords.Y);
+            ImGui::Text("Unreliable Coords: X=%.2f, Y=%.2f", Game.Blob.UnreliableCoords().X, Game.Blob.UnreliableCoords().Y);
+            DrawParty(Game.PlayerParty, ImGui::GetFontSize() * 0.01f, true);
+            DrawParty(Game.PlayerParty, ImGui::GetFontSize() * 0.01f, false);
+            ImGui::TreePop();
+        }
+        ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+        if (ImGui::TreeNode("Level Tools"))
+        {
+            if (ImGui::Button("Explore Level"))
+            {
+                for (auto X = 0; X < Game.Level.Width; X++)
+                {
+                    for (auto Y = 0; Y < Game.Level.Height; Y++)
+                    {
+                        auto Tile = Game.Level.GetTileAtMutable({ X, Y });
+                        if (Tile != nullptr)
+                        {
+                            Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
+                        }
+                    }
+                }
+                Game.Level.DirtyFlags = ELevelDirtyFlags::All;
+                Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
+            }
+            if (ImGui::Button("Visit Level"))
+            {
+                for (auto X = 0; X < Game.Level.Width; X++)
+                {
+                    for (auto Y = 0; Y < Game.Level.Height; Y++)
+                    {
+                        auto Tile = Game.Level.GetTileAtMutable({ X, Y });
+                        if (Tile != nullptr)
+                        {
+                            Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
+                            Tile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
+                        }
+                    }
+                }
+                Game.Level.DirtyFlags = ELevelDirtyFlags::All;
+                Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
+            }
+            if (ImGui::Button("Import Level From Editor"))
+            {
+                Game.ChangeLevel(LevelEditor.Level);
+            }
+            ImGui::TreePop();
+        }
+        ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+        if (ImGui::TreeNode("Adjustments"))
+        {
+            ImGui::SliderFloat("##TimeScale", &Game.Window.TimeScale, 0.0f, 4.0f, "Time Scale: %.2f");
+            ImGui::SliderFloat("##MasterVolume", &Game.Audio.Volume, 0.0f, 1.0f, "Master Volume: %.2f");
+            ImGui::SliderFloat("##InputBufferTime", &Game.Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
+            ImGui::TreePop();
+        }
     }
+    ImGui::End();
 }
 
 void SDevTools::Draw() const
@@ -850,7 +904,7 @@ void SDevTools::Draw() const
     ImGui::Render();
     ImGuiIO& io = ImGui::GetIO();
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-    if (LevelEditor.bLevelEditorActive)
+    if (Mode != EDevToolsMode::Game)
     {
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

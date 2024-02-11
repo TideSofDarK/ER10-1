@@ -104,12 +104,12 @@ macro(add_equinox_reach_target)
     endif ()
 endmacro()
 
-add_equinox_reach_target(
-        NAME
-        EquinoxReach
-        DEF
-        EQUINOX_REACH_GAME
-)
+# add_equinox_reach_target(
+#         NAME
+#         EquinoxReach
+#         DEF
+#         EQUINOX_REACH_GAME
+# )
 
 add_equinox_reach_target(
         NAME

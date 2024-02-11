@@ -631,7 +631,7 @@ void SGame::ChangeLevel(const SAsset& LevelAsset)
 bool SGame::IsGameRunning() const
 {
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    return !DevTools.LevelEditor.bLevelEditorActive;
+    return DevTools.Mode == EDevToolsMode::Game;
 #else
     return true;
 #endif
