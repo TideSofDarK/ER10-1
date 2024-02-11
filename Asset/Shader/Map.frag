@@ -344,13 +344,17 @@ void main()
     doorMaskVert *= doorSizeMaskVert;
     doorMaskVert += tileMasks.doorWest * doorBlockMaskWest * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
     doorMaskVert += tileMasksWest.doorEast * doorBlockMaskEast * doorBlockSizeMaskVert * (1.0 - edgeMaskVert);
-    // doorMaskVert *= (tileMasks.explored + tileMasksWest.explored + tileMasksEast.explored) * (tileMasks.nonEmpty * tileMasks.valid + tileMasksWest.nonEmpty * tileMasksWest.valid);
     doorMaskVert *= tileMasks.explored * tileMasks.valid * tileMasks.nonEmpty +
             tileMasksWest.explored * tileMasksWest.valid * tileMasksWest.nonEmpty +
             tileMasksEast.explored * tileMasksEast.valid * tileMasksEast.nonEmpty;
 
-    float doorMasks = saturate(doorMaskHor + doorMaskVert);
-    // doorMasks *= edgeMask;
+    float doorMaskCorner = 0;
+    doorMaskCorner += (tileMasksNorthWest.doorSouth + tileMasksNorthWest.doorEast) * tileMasksNorthWest.valid * tileMasksNorthWest.explored * tileMasksNorthWest.nonEmpty;
+    doorMaskCorner += tileMasksWest.doorNorth * tileMasksWest.explored * tileMasksWest.valid * tileMasksWest.nonEmpty;
+    doorMaskCorner += tileMasksNorth.doorWest * tileMasksNorth.explored * tileMasksNorth.valid * tileMasksNorth.nonEmpty;
+    doorMaskCorner *= bothEdgesMask;
+
+    float doorMasks = saturate(doorMaskHor + doorMaskVert + doorMaskCorner);
     doorMasks *= levelBoundsMask;
 
     finalColor = overlay(finalColor, wallColor, doorMasks);
@@ -372,22 +376,21 @@ void main()
     // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
     finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
 
-    // Current POV
+    /* Map Icons */
+    vec4 holeColor = putIconEx(tileMasks.hole, normelizedCellUV, u_common.icons[MAP_ICON_HOLE]);
+    finalColor = mix(finalColor, holeColor.rgb, holeColor.a * (1.0 - edgeMask));
+
+    /* Current POV */
     if (u_mode != MAP_MODE_GAME_ISO)
     {
         vec4 playerIcon = putIcon(texCoord, pov, u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
         finalColor = overlay(finalColor, playerIcon.rgb, playerIcon.a);
     }
 
-    vec4 holeColor = putIconEx(tileMasks.hole, normelizedCellUV, u_common.icons[MAP_ICON_HOLE]);
-    finalColor = mix(finalColor, holeColor.rgb, holeColor.a * (1.0 - edgeMask));
-
     // float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;
     // float povMask = saturate((povTileMask * (1.0 - distance(vec2(map1to1(tileInfo.z - tileSizeReciprocal / 2.0), map1to1(tileInfo.w - tileSizeReciprocal / 2.0)) * 2.0, vec2(0.0, 0.0))))) * povAnim;
     // vec3 povColor = vec3(1.0, 1.0, 1.0);
     // finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
-
-    // putIconEx(texCoord, u_common.icons[MAP_ICON_HOLE], tileSize, TILE_HOLE_BIT);
 
     color = vec4(finalColor, 1.0);
 }

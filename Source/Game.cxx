@@ -8,6 +8,7 @@
 #include "Level.hxx"
 #include "Log.hxx"
 #include "Math.hxx"
+#include "Player.hxx"
 #include "SharedConstants.hxx"
 #include "AssetTools.hxx"
 #include "Audio.hxx"
@@ -536,19 +537,65 @@ void SGame::OnBlobMoved()
         DirtyRange.Y = DirtyRange.X;
     }
 
-    for (auto Y = Blob.Coords.Y - SBlob::ExploreRadius(); Y <= Blob.Coords.Y + SBlob::ExploreRadius(); ++Y)
-    {
-        for (auto X = Blob.Coords.X - SBlob::ExploreRadius(); X <= Blob.Coords.X + SBlob::ExploreRadius(); ++X)
+    auto RevealTile = [&](UVec2Int Coords, SDirection Direction) {
+        auto Tile = Level.GetTileAtMutable(Coords);
+        if (Tile != nullptr)
         {
-            auto Tile = Level.GetTileAtMutable({ X, Y });
-            if (Tile != nullptr && !Tile->CheckSpecialFlag(TILE_SPECIAL_EXPLORED_BIT))
+            if (!Tile->CheckSpecialFlag(TILE_SPECIAL_EXPLORED_BIT))
             {
                 Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
-                std::size_t Index = Level.CoordsToIndex(X, Y);
+                std::size_t Index = Level.CoordsToIndex(Coords);
                 DirtyRange.X = std::min(DirtyRange.X, Index);
                 DirtyRange.Y = std::max(DirtyRange.Y, Index);
             }
+
+            if (Tile->IsEdgeEmpty(Direction))
+            {
+                return true;
+            }
         }
+        return false;
+    };
+
+    auto RevealTileDiagonal = [&](UVec2Int Coords, SDirection DirectionA, SDirection DirectionB) {
+        auto TileA = Level.GetTileAt(Coords + DirectionA.GetVector<int>());
+        auto TileB = Level.GetTileAt(Coords + DirectionB.GetVector<int>());
+        if (TileA != nullptr && TileB != nullptr)
+        {
+            if (CurrentTile->IsEdgeEmpty(DirectionA) && CurrentTile->IsEdgeEmpty(DirectionB))
+            {
+                RevealTile(Blob.Coords + DirectionA.GetVector<int>() + DirectionB.GetVector<int>(), SDirection::North());
+            }
+        }
+    };
+
+    if (Player.Upgrades & EPlayerUpgrades::RevealShapeBlock)
+    {
+        for (auto Y = Blob.Coords.Y - Player.ExploreRadius(); Y <= Blob.Coords.Y + Player.ExploreRadius(); ++Y)
+        {
+            for (auto X = Blob.Coords.X - Player.ExploreRadius(); X <= Blob.Coords.X + Player.ExploreRadius(); ++X)
+            {
+                RevealTile({ X, Y }, SDirection());
+            }
+        }
+    }
+    else
+    {
+        for (auto& Direction : SDirection::All())
+        {
+            for (auto Index = 0; Index < 3; Index++)
+            {
+                if (!RevealTile(Blob.Coords + Direction.GetVector<int>() * Index, Direction))
+                {
+                    break;
+                }
+            }
+        }
+
+        RevealTileDiagonal(Blob.Coords, SDirection::North(), SDirection::East());
+        RevealTileDiagonal(Blob.Coords, SDirection::South(), SDirection::East());
+        RevealTileDiagonal(Blob.Coords, SDirection::North(), SDirection::West());
+        RevealTileDiagonal(Blob.Coords, SDirection::South(), SDirection::West());
     }
 
     if (DirtyRange.X != SIZE_MAX)

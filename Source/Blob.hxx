@@ -89,7 +89,6 @@ public:
         };
     }
     [[nodiscard]] UVec2 UnreliableCoords() const { return UVec2{ EyePositionCurrent.X, EyePositionCurrent.Z }; }
-    [[nodiscard]] static int ExploreRadius() { return 3; }
     [[nodiscard]] bool IsMoving() const { return AnimationType != EBlobAnimationType::Idle; }
     [[nodiscard]] bool IsReadyForBuffering() const { return Timeline.Value > InputBufferTime && Timeline.Value < 1.0f; }
     [[nodiscard]] bool ShouldHandleAnimationEnd() const { return !bAnimationEndHandled && Timeline.IsFinishedPlaying(); }

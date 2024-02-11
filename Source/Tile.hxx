@@ -87,6 +87,12 @@ struct STile
         return CheckEdgeFlag(TILE_EDGE_WALL_BIT, Direction) || CheckEdgeFlag(TILE_EDGE_DOOR_BIT, Direction);
     }
 
+    // [[nodiscard]] constexpr static UFlagType TraversableEdges() const
+    // {
+    //
+    //     return !(EdgeFlags & DirectionBit(TILE_EDGE_WALL_BIT, Direction));
+    // }
+
     static STile Floor()
     {
         STile Tile;
