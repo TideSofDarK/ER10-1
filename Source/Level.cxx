@@ -87,13 +87,15 @@ void STilemap::Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
             /* Clear edges if:
              * a) Neighbor is of the same type.
              * b) Both tiles are empty.
-             * c) Both tiles are not empty and are different. */
-            if (NeighborTile->CheckFlag(Flag) || (NeighborTile->Flags == 0 && Flag == 0) || (NeighborTile->Flags != 0 && Flag != 0))
+             * c) Both tiles are not empty and are different.
+             * Otherwise set walls if:
+             * a) Both tiles are not floor-based (walkable) */
+            if (NeighborTile->CheckFlag(Flag) || (NeighborTile->Flags == 0 && Flag == 0))
             {
                 Tile->ClearEdgeFlags(Direction);
                 NeighborTile->ClearEdgeFlags(NeighborDirection);
             }
-            else
+            else if (!(Tile->IsWalkable() && NeighborTile->IsWalkable()))
             {
                 Tile->SetWall(Direction);
                 NeighborTile->SetWall(NeighborDirection);
@@ -128,6 +130,10 @@ void STilemap::EditBlock(const URectInt& Rect, ETileFlag Flag)
             Edit({ X, Y }, Flag);
         }
     }
+}
+
+void STilemap::Validate()
+{
 }
 
 void STilemap::Serialize(std::ofstream& Stream) const

@@ -12,13 +12,14 @@ enum class ELevelEditorMode
 {
     Normal,
     Block,
-    ToggleDoor
+    ToggleEdge,
 };
 
 struct SLevelEditor
 {
     bool bLevelEditorActive{};
     ELevelEditorMode LevelEditorMode{};
+    uint32_t ToggleEdgeType{};
     UVec2Int NewLevelSize{};
     float MapScale{};
     bool bDrawWallJoints{};

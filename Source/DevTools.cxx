@@ -371,7 +371,13 @@ void SLevelEditor::ShowLevel(SGame& Game)
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D)))
                     {
-                        LevelEditorMode = ELevelEditorMode::ToggleDoor;
+                        LevelEditorMode = ELevelEditorMode::ToggleEdge;
+                        ToggleEdgeType = TILE_EDGE_DOOR_BIT;
+                    }
+                    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)))
+                    {
+                        LevelEditorMode = ELevelEditorMode::ToggleEdge;
+                        ToggleEdgeType = TILE_EDGE_WALL_BIT;
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_V)))
                     {
@@ -379,27 +385,27 @@ void SLevelEditor::ShowLevel(SGame& Game)
                         BlockModeTileCoords.emplace(*SelectedTileCoords);
                     }
                 }
-                else if (LevelEditorMode == ELevelEditorMode::ToggleDoor)
+                else if (LevelEditorMode == ELevelEditorMode::ToggleEdge)
                 {
-                    auto ToggleDoor = [this](SDirection Direction) {
-                        Level.ToggleEdge(*SelectedTileCoords, Direction, TILE_EDGE_DOOR_BIT);
+                    auto ToggleEdge = [this](SDirection Direction) {
+                        Level.ToggleEdge(*SelectedTileCoords, Direction, ToggleEdgeType);
                         LevelEditorMode = ELevelEditorMode::Normal;
                     };
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
                     {
-                        ToggleDoor(SDirection::North());
+                        ToggleEdge(SDirection::North());
                     }
                     else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
                     {
-                        ToggleDoor(SDirection::West());
+                        ToggleEdge(SDirection::West());
                     }
                     else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
                     {
-                        ToggleDoor(SDirection::South());
+                        ToggleEdge(SDirection::South());
                     }
                     else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
                     {
-                        ToggleDoor(SDirection::East());
+                        ToggleEdge(SDirection::East());
                     }
                 }
 

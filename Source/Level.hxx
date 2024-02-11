@@ -146,6 +146,8 @@ struct STilemap
 
     void EditBlock(const URectInt& Rect, ETileFlag Flag);
 
+    void Validate();
+
     void Serialize(std::ofstream& Stream) const;
 
     void Deserialize(std::istream& Stream);
