@@ -78,13 +78,19 @@ void SLevelEditor::Show(SGame& Game)
 
     if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("File"))
+        if (ImGui::BeginMenu("Level"))
         {
             ImGui::MenuItem("New Level", "Ctrl+N", &bNewLevel);
             ImGui::MenuItem("Load Level", "Ctrl+L", &bLoadLevel);
             ImGui::MenuItem("Save Level", "Ctrl+S", &bSaveLevel);
             ImGui::Separator();
             ImGui::MenuItem("Level Properties", "F5", &bLevelProperties);
+            if (ImGui::MenuItem("Validate", "F6"))
+            {
+                SValidationResult Result = Validate();
+                Log::DevTools<ELogLevel::Critical>("Level validation successful!");
+                Log::DevTools<ELogLevel::Critical>("Wall: %d, Door: %d", Result.Wall, Result.Door);
+            }
             ImGui::EndMenu();
         }
 
@@ -544,6 +550,45 @@ void SLevelEditor::FitTilemapToWindow()
     MapScale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y);
     MapScale = std::max(1.0f, (std::floor(MapScale) - 1.0f));
     bResetGridPosition = true;
+}
+
+SValidationResult SLevelEditor::Validate()
+{
+    SValidationResult Result;
+    UVec2Int Coords{};
+
+    auto ValidateEdge = [&](STile* CurrentTile, STile* NeighborTile, SDirection Direction, SDirection NeighborDirection, UFlagType EdgeBit, int* Corrections) {
+        if (CurrentTile->CheckEdgeFlag(EdgeBit, Direction))
+        {
+            UFlagType Temp = NeighborTile->EdgeFlags;
+            NeighborTile->ClearEdgeFlags(NeighborDirection);
+            NeighborTile->SetEdgeFlag(EdgeBit, NeighborDirection);
+            if (Temp != NeighborTile->EdgeFlags)
+            {
+                *Corrections = *Corrections + 1;
+            }
+        }
+    };
+
+    for (; Coords.X < Level.Width; ++Coords.X)
+    {
+        for (Coords.Y = 0; Coords.Y < Level.Height; ++Coords.Y)
+        {
+            auto CurrentTile = Level.GetTileAtMutable(Coords);
+
+            for (auto& Direction : SDirection::All())
+            {
+                auto NeighborTile = Level.GetTileAtMutable(Coords + Direction.GetVector<int>());
+                if (NeighborTile != nullptr)
+                {
+                    auto NeighborDirection = Direction.Inverted();
+                    ValidateEdge(CurrentTile, NeighborTile, Direction, NeighborDirection, TILE_EDGE_WALL_BIT, &Result.Wall);
+                    ValidateEdge(CurrentTile, NeighborTile, Direction, NeighborDirection, TILE_EDGE_DOOR_BIT, &Result.Door);
+                }
+            }
+        }
+    }
+    return Result;
 }
 
 void SDevTools::DrawParty(SParty& Party, float Scale, [[maybe_unused]] bool bReversed)

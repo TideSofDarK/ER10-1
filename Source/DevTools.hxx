@@ -15,6 +15,12 @@ enum class ELevelEditorMode
     ToggleEdge,
 };
 
+struct SValidationResult
+{
+    int Wall{};
+    int Door{};
+};
+
 struct SLevelEditor
 {
     bool bLevelEditorActive{};
@@ -45,6 +51,8 @@ struct SLevelEditor
 
     UVec2Int CalculateMapSize();
     void FitTilemapToWindow();
+
+    SValidationResult Validate();
 };
 
 struct SDevTools

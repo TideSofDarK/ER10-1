@@ -132,10 +132,6 @@ void STilemap::EditBlock(const URectInt& Rect, ETileFlag Flag)
     }
 }
 
-void STilemap::Validate()
-{
-}
-
 void STilemap::Serialize(std::ofstream& Stream) const
 {
     Serialization::Write32(Stream, Width);
