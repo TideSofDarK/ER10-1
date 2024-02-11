@@ -70,7 +70,7 @@ struct SLevelEditor
     UVec2Int CalculateMapSize();
     void FitTilemapToWindow();
 
-    SValidationResult Validate();
+    SValidationResult Validate(bool bFix);
 };
 
 struct SDevTools

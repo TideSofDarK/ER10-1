@@ -5,6 +5,7 @@
 #include <fstream>
 #include <glad/gl.h>
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <imgui/imgui_stdlib.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl3.h>
@@ -37,7 +38,6 @@ namespace Asset::Common
     EXTERN_ASSET(IBMPlexSansTTF)
 }
 
-static const std::filesystem::path AssetPath = std::filesystem::path{ EQUINOX_REACH_ASSET_PATH };
 static const std::filesystem::path MapExtension = ".erm";
 static std::vector<std::filesystem::path> AvailableMaps(20);
 
@@ -122,26 +122,49 @@ void SLevelEditor::SetActive(SGame& Game, bool bActive)
 
 void SLevelEditor::Show(SGame& Game)
 {
-    bool bNewLevel = false;
-    bool bLoadLevel = false;
-    bool bSaveLevel = false;
-    bool bLevelProperties = false;
-    bool bFitToScreen = false;
+    ImGuiID PopupID = ImHashStr("MainMenuPopup");
 
     // TestWindow(Game);
+
+    static SValidationResult ValidationResult;
+    static std::string SavePathString{};
 
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("Level"))
         {
-            ImGui::MenuItem("New", "Ctrl+N", &bNewLevel);
-            ImGui::MenuItem("Load", "Ctrl+L", &bLoadLevel);
-            ImGui::MenuItem("Save", "Ctrl+S", &bSaveLevel);
+            if (ImGui::MenuItem("New", "Ctrl+N"))
+            {
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("New Level");
+                ImGui::PopID();
+            }
+            if (ImGui::MenuItem("Load", "Ctrl+L"))
+            {
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("Load Level");
+                ImGui::PopID();
+
+                ScanForLevels();
+            }
+            if (ImGui::MenuItem("Save", "Ctrl+S"))
+            {
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("Save Level");
+                ImGui::PopID();
+
+                SavePathString = (std::filesystem::path(EQUINOX_REACH_ASSET_PATH "Map/NewMap" + MapExtension.string())).make_preferred().string();
+                ScanForLevels();
+            }
             ImGui::Separator();
-            ImGui::MenuItem("Properties", "F5", &bLevelProperties);
+            ImGui::MenuItem("Properties", "F5");
             if (ImGui::MenuItem("Validate", "F6"))
             {
-                SValidationResult Result = Validate();
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("Validation Result");
+                ImGui::PopID();
+
+                ValidationResult = Validate(false);
             }
             ImGui::EndMenu();
         }
@@ -152,7 +175,10 @@ void SLevelEditor::Show(SGame& Game)
             ImGui::MenuItem("Show Wall Joints", nullptr, &bDrawWallJoints);
             ImGui::MenuItem("Show Grid Lines", nullptr, &bDrawGridLines);
             ImGui::Separator();
-            ImGui::MenuItem("Fit to Screen", "Home", &bFitToScreen);
+            if (ImGui::MenuItem("Fit to Screen", "Home"))
+            {
+                FitTilemapToWindow();
+            }
             ImGui::EndMenu();
         }
 
@@ -164,16 +190,8 @@ void SLevelEditor::Show(SGame& Game)
         ImGui::EndMainMenuBar();
     }
 
-    if (bFitToScreen)
-    {
-        FitTilemapToWindow();
-    }
-
-    if (bNewLevel)
-    {
-        ImGui::OpenPopup("New Level...");
-    }
-    if (ImGui::BeginPopupModal("New Level...", nullptr,
+    ImGui::PushOverrideID(PopupID);
+    if (ImGui::BeginPopupModal("New Level", nullptr,
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
     {
         ImGui::SliderInt("Width", &NewLevelSize.X, 8, MAX_LEVEL_WIDTH);
@@ -186,17 +204,12 @@ void SLevelEditor::Show(SGame& Game)
         }
         ImGui::EndPopup();
     }
+    ImGui::PopID();
 
     const float ModalWidth = ImGui::GetFontSize() * 30;
     const float ModalHeight = ImGui::GetFontSize() * 15;
 
-    static std::string SavePathString{};
-    if (bSaveLevel)
-    {
-        ImGui::OpenPopup("Save Level");
-        SavePathString = (AssetPath / (std::filesystem::path("Map/NewMap" + MapExtension.string()))).make_preferred().string();
-        ScanForLevels();
-    }
+    ImGui::PushOverrideID(PopupID);
     if (ImGui::BeginPopupModal("Save Level", nullptr,
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
     {
@@ -234,12 +247,9 @@ void SLevelEditor::Show(SGame& Game)
 
         ImGui::EndPopup();
     }
+    ImGui::PopID();
 
-    if (bLoadLevel)
-    {
-        ImGui::OpenPopup("Load Level");
-        ScanForLevels();
-    }
+    ImGui::PushOverrideID(PopupID);
     if (ImGui::BeginPopupModal("Load Level", nullptr,
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
     {
@@ -272,6 +282,30 @@ void SLevelEditor::Show(SGame& Game)
 
         ImGui::EndPopup();
     }
+    ImGui::PopID();
+
+    ImGui::PushOverrideID(PopupID);
+    if (ImGui::BeginPopupModal("Validation Result", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Found Issues:");
+        ImGui::Text("Wall: %d", ValidationResult.Wall);
+        ImGui::Text("Door: %d", ValidationResult.Door);
+        ImGui::Separator();
+
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            Validate(true);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopID();
 
     /* Validate selected tile. */
     if (SelectedTileCoords.has_value())
@@ -539,7 +573,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
 
 void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path)
 {
-    Validate();
+    Validate(true);
 
     const auto& Tilemap = Level;
 
@@ -563,9 +597,8 @@ void SLevelEditor::ScanForLevels()
 {
     namespace fs = std::filesystem;
     AvailableMaps.clear();
-    auto CWD = fs::current_path().parent_path().parent_path() / "Asset/Map";
-    CWD = CWD.make_preferred();
-    for (const auto& File : fs::recursive_directory_iterator(CWD))
+    auto MapsFolder = fs::path(EQUINOX_REACH_ASSET_PATH "Map").make_preferred();
+    for (const auto& File : fs::recursive_directory_iterator(MapsFolder))
     {
         if (!File.is_regular_file())
         {
@@ -597,8 +630,19 @@ void SLevelEditor::FitTilemapToWindow()
     bResetGridPosition = true;
 }
 
-SValidationResult SLevelEditor::Validate()
+SValidationResult SLevelEditor::Validate(bool bFix)
 {
+    static SLevel TempLevel;
+    SLevel* TargetLevel;
+    if (bFix)
+    {
+        TargetLevel = &Level;
+    }
+    else
+    {
+        TempLevel = Level;
+        TargetLevel = &TempLevel;
+    }
     SValidationResult Result;
     UVec2Int Coords{};
 
@@ -615,18 +659,19 @@ SValidationResult SLevelEditor::Validate()
         }
     };
 
-    for (; Coords.X < Level.Width; ++Coords.X)
+    for (; Coords.X < TargetLevel->Width; ++Coords.X)
     {
-        for (Coords.Y = 0; Coords.Y < Level.Height; ++Coords.Y)
+        for (Coords.Y = 0; Coords.Y < TargetLevel->Height; ++Coords.Y)
         {
-            auto CurrentTile = Level.GetTileAtMutable(Coords);
+            auto CurrentTile = TargetLevel->GetTileAtMutable(Coords);
 
+            /* @TODO: Should validate these? */
             CurrentTile->ClearSpecialFlag(TILE_SPECIAL_VISITED_BIT);
             CurrentTile->ClearSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
 
             for (auto& Direction : SDirection::All())
             {
-                auto NeighborTile = Level.GetTileAtMutable(Coords + Direction.GetVector<int>());
+                auto NeighborTile = TargetLevel->GetTileAtMutable(Coords + Direction.GetVector<int>());
                 if (NeighborTile != nullptr)
                 {
                     auto NeighborDirection = Direction.Inverted();
