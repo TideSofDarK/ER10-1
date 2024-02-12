@@ -8,7 +8,7 @@
 
 struct SDrawDoorInfo
 {
-    UVec2Int TileCoords{};
+    SVec2Int TileCoords{};
     SDirection Direction{};
     STimeline Timeline{ 2.0f };
 
@@ -17,7 +17,7 @@ struct SDrawDoorInfo
         Invalidate();
     }
 
-    void Set(UVec2Int NewTileCoords, SDirection NewDirection)
+    void Set(SVec2Int NewTileCoords, SDirection NewDirection)
     {
         TileCoords = NewTileCoords;
         Direction = NewDirection;
@@ -52,7 +52,7 @@ struct STilemap
 
     [[nodiscard]] uint32_t TileCount() const { return Width * Height; }
 
-    [[nodiscard]] STile* GetTileAtMutable(const UVec2Int& Coords)
+    [[nodiscard]] STile* GetTileAtMutable(const SVec2Int& Coords)
     {
         if (IsValidTile(Coords))
         {
@@ -62,13 +62,13 @@ struct STilemap
         return nullptr;
     }
 
-    [[nodiscard]] STile* GetNeighborTileAtMutable(const UVec2Int& Coords, SDirection Direction)
+    [[nodiscard]] STile* GetNeighborTileAtMutable(const SVec2Int& Coords, SDirection Direction)
     {
-        UVec2Int NeighborCoords = Direction.GetVector<int>() + Coords;
+        SVec2Int NeighborCoords = Direction.GetVector<int>() + Coords;
         return GetTileAtMutable(NeighborCoords);
     }
 
-    void SetWallJoint(const UVec2Int& Coords, bool bValue = true)
+    void SetWallJoint(const SVec2Int& Coords, bool bValue = true)
     {
         if (IsValidWallJoint(Coords))
         {
@@ -77,7 +77,7 @@ struct STilemap
         }
     }
 
-    [[nodiscard]] STile const* GetTileAt(const UVec2Int& Coords) const
+    [[nodiscard]] STile const* GetTileAt(const SVec2Int& Coords) const
     {
         if (IsValidTile(Coords))
         {
@@ -96,7 +96,7 @@ struct STilemap
         return nullptr;
     }
 
-    [[nodiscard]] bool IsValidTile(const UVec2Int& Coords) const
+    [[nodiscard]] bool IsValidTile(const SVec2Int& Coords) const
     {
         return IsValidTileX(Coords.X) && IsValidTileY(Coords.Y);
     }
@@ -113,15 +113,15 @@ struct STilemap
 
     [[nodiscard]] inline std::size_t CoordsToIndex(int X, int Y) const { return (Y * Width) + X; }
 
-    [[nodiscard]] inline std::size_t CoordsToIndex(const UVec2Int& Coords) const { return CoordsToIndex(Coords.X, Coords.Y); }
+    [[nodiscard]] inline std::size_t CoordsToIndex(const SVec2Int& Coords) const { return CoordsToIndex(Coords.X, Coords.Y); }
 
-    [[nodiscard]] bool IsWallJointAt(UVec2Int Coords) const
+    [[nodiscard]] bool IsWallJointAt(SVec2Int Coords) const
     {
         auto Index = WallJointCoordsToIndex(Coords.X, Coords.Y);
         return WallJoints.test(Index);
     }
 
-    [[nodiscard]] bool IsValidWallJoint(UVec2Int Coords) const
+    [[nodiscard]] bool IsValidWallJoint(SVec2Int Coords) const
     {
         return IsValidWallJointX(Coords.X) && IsValidWallJointY(Coords.Y);
     }
@@ -140,11 +140,11 @@ struct STilemap
 
     void PostProcess();
 
-    void ToggleEdge(const UVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit);
+    void ToggleEdge(const SVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit);
 
-    void Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges = true);
+    void Edit(const SVec2Int& Coords, ETileFlag Flag, bool bHandleEdges = true);
 
-    void EditBlock(const URectInt& Rect, ETileFlag Flag);
+    void EditBlock(const SRectInt& Rect, ETileFlag Flag);
 
     void Serialize(std::ofstream& Stream) const;
 
@@ -158,7 +158,7 @@ struct SLevel : STilemap
     /* Draw State */
     SDrawDoorInfo DoorInfo{};
     uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
-    SVec2<std::size_t> DirtyRange{};
+    TVec2<std::size_t> DirtyRange{};
 
     void Update(float DeltaTime);
 };

@@ -41,9 +41,9 @@ struct SAsset
 class CRawMesh
 {
 public:
-    std::pmr::vector<UVec3> Positions;
-    std::pmr::vector<UVec2> TexCoords;
-    std::pmr::vector<UVec3> Normals;
+    std::pmr::vector<SVec3> Positions;
+    std::pmr::vector<SVec2> TexCoords;
+    std::pmr::vector<SVec3> Normals;
     std::pmr::vector<unsigned short> Indices;
 
     [[nodiscard]] int GetVertexCount() const { return (int)Positions.size(); }

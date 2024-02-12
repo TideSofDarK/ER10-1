@@ -46,7 +46,7 @@ private:
 
 public:
     SDirection Direction{};
-    UVec2Int Coords{};
+    SVec2Int Coords{};
 
     SBlobMoveSeq MoveSeq;
 
@@ -54,12 +54,12 @@ public:
 
     float EyeHeight = 0.22f;
 
-    UVec3 EyeForwardFrom{};
-    UVec3 EyeForwardCurrent{};
-    UVec3 EyeForwardTarget{};
-    UVec3 EyePositionFrom{};
-    UVec3 EyePositionCurrent{};
-    UVec3 EyePositionTarget{};
+    SVec3 EyeForwardFrom{};
+    SVec3 EyeForwardCurrent{};
+    SVec3 EyeForwardTarget{};
+    SVec3 EyePositionFrom{};
+    SVec3 EyePositionCurrent{};
+    SVec3 EyePositionTarget{};
 
     SBlob();
 
@@ -69,7 +69,7 @@ public:
 
     void ApplyDirection(bool bImmediate);
 
-    void Step(UVec2Int DirectionVector, EBlobAnimationType InAnimationType = EBlobAnimationType::Walk);
+    void Step(SVec2Int DirectionVector, EBlobAnimationType InAnimationType = EBlobAnimationType::Walk);
 
     void BumpIntoWall();
 
@@ -88,7 +88,7 @@ public:
             Direction
         };
     }
-    [[nodiscard]] UVec2 UnreliableCoords() const { return UVec2{ EyePositionCurrent.X, EyePositionCurrent.Z }; }
+    [[nodiscard]] SVec2 UnreliableCoords() const { return SVec2{ EyePositionCurrent.X, EyePositionCurrent.Z }; }
     [[nodiscard]] bool IsMoving() const { return AnimationType != EBlobAnimationType::Idle; }
     [[nodiscard]] bool IsReadyForBuffering() const { return Timeline.Value > InputBufferTime && Timeline.Value < 1.0f; }
     [[nodiscard]] bool ShouldHandleAnimationEnd() const { return !bAnimationEndHandled && Timeline.IsFinishedPlaying(); }

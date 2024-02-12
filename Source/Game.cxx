@@ -52,13 +52,13 @@ namespace Asset::Map
     EXTERN_ASSET(TestMapERM)
 }
 
-static const URectInt MapRectMin{
+static const SRectInt MapRectMin{
     SCREEN_WIDTH - 128,
     10,
     MAP_TILE_SIZE_PIXELS * 7 + MAP_TILE_EDGE_SIZE_PIXELS,
     MAP_TILE_SIZE_PIXELS * 5 + MAP_TILE_EDGE_SIZE_PIXELS
 };
-static const URectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH, SCENE_HEIGHT };
+static const SRectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH, SCENE_HEIGHT };
 
 SGame::SGame()
     : MapRect(MapRectMin)
@@ -271,10 +271,10 @@ void SGame::Run()
             Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
 
             MapRectTimeline.Advance(Window.DeltaTime);
-            auto MapRectFrom = URect(bMapMaximized ? MapRectMin : MapRectMax);
-            auto MapRectTo = URect(bMapMaximized ? MapRectMax : MapRectMin);
+            auto MapRectFrom = SRect(bMapMaximized ? MapRectMin : MapRectMax);
+            auto MapRectTo = SRect(bMapMaximized ? MapRectMax : MapRectMin);
             MapRect = Math::Mix(MapRectFrom, MapRectTo, MapRectTimeline.Value);
-            Renderer.DrawMap(Level, UVec3(MapRect.Min), UVec2Int(MapRect.Max), Blob.UnreliableCoordsAndDirection());
+            Renderer.DrawMap(Level, SVec3(MapRect.Min), SVec2Int(MapRect.Max), Blob.UnreliableCoordsAndDirection());
 
             // UVec2 centerOffset = Blob.UnreliableCoords() * MAP_TILE_SIZE_PIXELS - MapRect.Max * 0.5 + UVec2(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) / 2.0;
             // Log::Game<ELogLevel::Critical>("%.9f %.9f", centerOffset.X, centerOffset.Y);
@@ -527,7 +527,7 @@ void SGame::OnBlobMoved()
         return;
     }
 
-    UVec2Size DirtyRange{ SIZE_MAX, SIZE_MAX };
+    SVec2Size DirtyRange{ SIZE_MAX, SIZE_MAX };
 
     if (!CurrentTile->CheckSpecialFlag(TILE_SPECIAL_VISITED_BIT))
     {
@@ -537,7 +537,7 @@ void SGame::OnBlobMoved()
         DirtyRange.Y = DirtyRange.X;
     }
 
-    auto RevealTile = [&](UVec2Int Coords, SDirection Direction) {
+    auto RevealTile = [&](SVec2Int Coords, SDirection Direction) {
         auto Tile = Level.GetTileAtMutable(Coords);
         if (Tile != nullptr)
         {
@@ -557,7 +557,7 @@ void SGame::OnBlobMoved()
         return false;
     };
 
-    auto RevealTileDiagonal = [&](UVec2Int Coords, SDirection DirectionA, SDirection DirectionB) {
+    auto RevealTileDiagonal = [&](SVec2Int Coords, SDirection DirectionA, SDirection DirectionB) {
         auto TileA = Level.GetTileAt(Coords + DirectionA.GetVector<int>());
         auto TileB = Level.GetTileAt(Coords + DirectionB.GetVector<int>());
         if (TileA != nullptr && TileB != nullptr)

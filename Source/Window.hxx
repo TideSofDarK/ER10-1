@@ -18,7 +18,7 @@ struct SWindow : SWindowData
 
     void ToggleBorderlessFullscreen() const;
 
-    [[nodiscard]] static UVec2Int CalculateOptimalWindowedResolution(unsigned DisplayID);
+    [[nodiscard]] static SVec2Int CalculateOptimalWindowedResolution(unsigned DisplayID);
 
     void SetOptimalWindowedResolution() const;
 };

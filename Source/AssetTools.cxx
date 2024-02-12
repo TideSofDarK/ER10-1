@@ -42,12 +42,12 @@ SAsset::SAsset(const char* InData, size_t InLength)
 #endif
 
 CRawMesh::CRawMesh(const SAsset& Resource)
-    : Positions(Memory::GetVector<UVec3>()), TexCoords(Memory::GetVector<UVec2>()), Normals(Memory::GetVector<UVec3>()), Indices(Memory::GetVector<unsigned short>())
+    : Positions(Memory::GetVector<SVec3>()), TexCoords(Memory::GetVector<SVec2>()), Normals(Memory::GetVector<SVec3>()), Indices(Memory::GetVector<unsigned short>())
 {
-    auto ScratchPositions = Memory::GetVector<UVec3>();
-    auto ScratchTexCoords = Memory::GetVector<UVec2>();
-    auto ScratchNormals = Memory::GetVector<UVec3>();
-    auto ScratchOBJIndices = Memory::GetVector<UVec3Size>();
+    auto ScratchPositions = Memory::GetVector<SVec3>();
+    auto ScratchTexCoords = Memory::GetVector<SVec2>();
+    auto ScratchNormals = Memory::GetVector<SVec3>();
+    auto ScratchOBJIndices = Memory::GetVector<SVec3Size>();
 
     Positions.clear();
     Normals.clear();
@@ -68,19 +68,19 @@ CRawMesh::CRawMesh(const SAsset& Resource)
         CurrentIndex = DataEndIndex;
         if (Token == "v")
         {
-            UVec3 Position{};
+            SVec3 Position{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Position.X, 3);
             ScratchPositions.emplace_back(Position);
         }
         else if (Token == "vn")
         {
-            UVec3 Normal{};
+            SVec3 Normal{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &Normal.X, 3);
             ScratchNormals.emplace_back(Normal);
         }
         else if (Token == "vt")
         {
-            UVec2 TexCoord{};
+            SVec2 TexCoord{};
             Utility::ParseFloats(Data.data(), Data.data() + Data.size(), &TexCoord.X, 2);
             ScratchTexCoords.emplace_back(TexCoord);
         }
@@ -90,7 +90,7 @@ CRawMesh::CRawMesh(const SAsset& Resource)
             Utility::ParseInts(Data.data(), Data.data() + Data.size(), &OBJIndices[0], OBJIndices.size());
             for (size_t Index = 0; Index < OBJIndices.size(); Index += 3)
             {
-                UVec3Size OBJIndex{};
+                SVec3Size OBJIndex{};
                 OBJIndex.X = OBJIndices[Index] - 1;
                 OBJIndex.Y = OBJIndices[Index + 1] - 1;
                 OBJIndex.Z = OBJIndices[Index + 2] - 1;

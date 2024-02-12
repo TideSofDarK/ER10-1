@@ -31,7 +31,7 @@ SWindow::SWindow()
 
     int DisplayCount{};
     SDL_DisplayID* Displays = SDL_GetDisplays(&DisplayCount);
-    UVec2Int Resolution = CalculateOptimalWindowedResolution(Displays[0]);
+    SVec2Int Resolution = CalculateOptimalWindowedResolution(Displays[0]);
 
     Window = SDL_CreateWindow(GAME_NAME,
         Resolution.X, Resolution.Y,
@@ -84,7 +84,7 @@ void SWindow::ToggleBorderlessFullscreen() const
     SDL_SetWindowFullscreen(Window, !IsAnyFullscreen());
 }
 
-UVec2Int SWindow::CalculateOptimalWindowedResolution(unsigned DisplayID)
+SVec2Int SWindow::CalculateOptimalWindowedResolution(unsigned DisplayID)
 {
     SDL_Rect UsableBounds;
 

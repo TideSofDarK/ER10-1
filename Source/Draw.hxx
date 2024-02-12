@@ -16,6 +16,7 @@
 #define TEXTURE_UNIT_ATLAS_PRIMARY3D 3
 #define TEXTURE_UNIT_MAIN_FRAMEBUFFER 7
 #define TEXTURE_UNIT_MAP_FRAMEBUFFER 8
+#define TEXTURE_UNIT_WORLD_FRAMEBUFFER 9
 
 #define ATLAS_COUNT 4
 #define ATLAS_MAX_SPRITE_COUNT 16
@@ -39,14 +40,14 @@ struct SShaderMapData
 
 struct SShaderGlobals
 {
-    UVec2 ScreenSize;
+    SVec2 ScreenSize;
     float Time{};
     float Random{};
 };
 
 struct SShaderSprite
 {
-    UVec4 UVRect{};
+    SVec4 UVRect{};
     int SizeX{};
     int SizeY{};
     int : 32;
@@ -64,9 +65,9 @@ struct SUniformBlock
 
     void Bind(int BindingPoint) const;
 
-    void SetMatrix(int Position, const UMat4x4& Value) const;
+    void SetMatrix(int Position, const SMat4x4& Value) const;
 
-    void SetVector2(int Position, const UVec2& Value) const;
+    void SetVector2(int Position, const SVec2& Value) const;
 
     void SetFloat(int Position, float Value) const;
 };
@@ -175,6 +176,27 @@ public:
     int UniformPrimaryAtlasID{};
 };
 
+struct SWorldFramebuffer
+{
+    int Width{};
+    int Height{};
+    unsigned FBO{};
+    unsigned ColorID{};
+    SVec3 ClearColor{};
+
+    void Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering = false);
+
+    void Cleanup();
+
+    void ResetViewport() const;
+
+    void BindForDrawing() const;
+
+    void BindForReading() const;
+
+    static void Unbind();
+};
+
 struct SFramebuffer
 {
     int Width{};
@@ -182,9 +204,9 @@ struct SFramebuffer
     unsigned FBO{};
     unsigned ColorID{};
     unsigned DepthID{};
-    UVec3 ClearColor{};
+    SVec3 ClearColor{};
 
-    void Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InClearColor, bool bLinearFiltering = false);
+    void Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering = false);
 
     void Cleanup();
 
@@ -261,10 +283,10 @@ struct STileset : SGeometry
 
 struct SCamera
 {
-    UMat4x4 View{};
-    UMat4x4 Projection{};
-    UVec3 Position{};
-    UVec3 Target{};
+    SMat4x4 View{};
+    SMat4x4 Projection{};
+    SVec3 Position{};
+    SVec3 Target{};
 
     float Aspect = 2.4f;
     float FieldOfViewY = 77.7f;
@@ -301,8 +323,8 @@ enum class EProgram2DType
 struct SEntryMode
 {
     int ID{};
-    UVec4 ControlA{};
-    UVec4 ControlB{};
+    SVec4 ControlA{};
+    SVec4 ControlB{};
 };
 
 struct SEntry
@@ -313,23 +335,23 @@ struct SEntry
 struct SEntry2D : SEntry
 {
     EProgram2DType Program2DType{};
-    UVec3 Position{};
-    UVec2Int SizePixels{};
-    UVec4 UVRect{};
+    SVec3 Position{};
+    SVec2Int SizePixels{};
+    SVec4 UVRect{};
 };
 
 struct SInstancedDrawCall
 {
     const SSubGeometry* SubGeometry{};
-    std::array<UMat4x4, UBER3D_MODEL_COUNT> Transform{};
+    std::array<SMat4x4, UBER3D_MODEL_COUNT> Transform{};
     int Count{};
     int DynamicCount{};
-    void Push(const UMat4x4& NewTransform)
+    void Push(const SMat4x4& NewTransform)
     {
         Transform[Count % UBER3D_MODEL_COUNT] = NewTransform;
         Count++;
     }
-    void PushDynamic(const UMat4x4& NewTransform)
+    void PushDynamic(const SMat4x4& NewTransform)
     {
         Transform[(Count + DynamicCount) % UBER3D_MODEL_COUNT] = NewTransform;
         DynamicCount++;
@@ -353,7 +375,7 @@ struct SInstancedDrawData
 
 struct SEntry3D : SEntry
 {
-    UMat4x4 Model{};
+    SMat4x4 Model{};
     const SGeometry* Geometry{};
     SInstancedDrawCall* InstancedDrawCall{};
     int InstancedDrawCallCount{};
@@ -390,8 +412,8 @@ struct SSpriteHandle
 
 struct SSprite
 {
-    UVec4 UVRect{};
-    UVec2Int SizePixels{};
+    SVec4 UVRect{};
+    SVec2Int SizePixels{};
     const SAsset* Resource{};
 };
 
@@ -427,7 +449,8 @@ struct SRenderer
     SProgram3D ProgramUber3D;
     SProgramPostProcess ProgramPostProcess;
 
-    SFramebuffer MainFrameBuffer;
+    SFramebuffer MainFramebuffer;
+    SWorldFramebuffer WorldFramebuffer;
     SGeometry Quad2D;
     SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;
 
@@ -448,38 +471,38 @@ struct SRenderer
 
 #pragma region Queue_2D_API
 
-    void DrawHUD(UVec3 Position, UVec2Int Size, int Mode);
+    void DrawHUD(SVec3 Position, SVec2Int Size, int Mode);
 
-    void DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const SCoordsAndDirection& POV);
+    void DrawMap(SLevel& Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV);
 
-    void DrawMapImmediate(const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time);
+    void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize, float Time);
 
-    void Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle);
+    void Draw2D(SVec3 Position, const SSpriteHandle& SpriteHandle);
 
-    void Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, UVec4 ModeControlA);
+    void Draw2DEx(SVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, SVec4 ModeControlA);
 
-    void Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, UVec4 ModeControlA,
-        UVec4 ModeControlB);
+    void Draw2DEx(SVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, SVec4 ModeControlA,
+        SVec4 ModeControlB);
 
     void
-    Draw2DHaze(UVec3 Position, const SSpriteHandle& SpriteHandle, float XIntensity, float YIntensity, float Speed);
+    Draw2DHaze(SVec3 Position, const SSpriteHandle& SpriteHandle, float XIntensity, float YIntensity, float Speed);
 
-    void Draw2DBackBlur(UVec3 Position, const SSpriteHandle& SpriteHandle, float Count, float Speed, float Step);
+    void Draw2DBackBlur(SVec3 Position, const SSpriteHandle& SpriteHandle, float Count, float Speed, float Step);
 
-    void Draw2DGlow(UVec3 Position, const SSpriteHandle& SpriteHandle, UVec3 Color, float Intensity);
+    void Draw2DGlow(SVec3 Position, const SSpriteHandle& SpriteHandle, SVec3 Color, float Intensity);
 
-    void Draw2DDisintegrate(UVec3 Position, const SSpriteHandle& SpriteHandle, const SSpriteHandle& NoiseHandle,
+    void Draw2DDisintegrate(SVec3 Position, const SSpriteHandle& SpriteHandle, const SSpriteHandle& NoiseHandle,
         float Progress);
 
 #pragma endregion
 
 #pragma region Queue_3D_API
 
-    void Draw3D(UVec3 Position, SGeometry* Geometry);
+    void Draw3D(SVec3 Position, SGeometry* Geometry);
 
-    void Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection);
+    void Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDirection& POVDirection);
 
-    void Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha = 0.0f) const;
+    void Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const SVec2Int& TileCoords, SDirection Direction, float AnimationAlpha = 0.0f) const;
 
 #pragma endregion
 };

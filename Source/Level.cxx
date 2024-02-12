@@ -12,7 +12,7 @@ void STilemap::PostProcess()
     {
         return;
     }
-    UVec2Int Coords{};
+    SVec2Int Coords{};
     for (; Coords.X < (int)Width; ++Coords.X)
     {
         for (Coords.Y = 0; Coords.Y < (int)Height; ++Coords.Y)
@@ -42,7 +42,7 @@ void STilemap::PostProcess()
     }
 }
 
-void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit)
+void STilemap::ToggleEdge(const SVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit)
 {
     auto Tile = GetTileAtMutable(Coords);
     if (Tile == nullptr)
@@ -63,7 +63,7 @@ void STilemap::ToggleEdge(const UVec2Int& Coords, SDirection Direction, UFlagTyp
     NeighborEdgeFlags = NeighborEdgeFlags ^ STile::DirectionBit(NorthEdgeBit, Direction.Inverted());
 }
 
-void STilemap::Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
+void STilemap::Edit(const SVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
 {
     if (!IsValidTile(Coords))
     {
@@ -116,7 +116,7 @@ void STilemap::Edit(const UVec2Int& Coords, ETileFlag Flag, bool bHandleEdges)
     }
 }
 
-void STilemap::EditBlock(const URectInt& Rect, ETileFlag Flag)
+void STilemap::EditBlock(const SRectInt& Rect, ETileFlag Flag)
 {
     if (Rect.Min == Rect.Max)
     {

@@ -111,7 +111,7 @@ struct SDirection
     }
 
     template <typename T>
-    constexpr SVec2<T> GetVector() const
+    constexpr TVec2<T> GetVector() const
     {
         switch (Index)
         {
@@ -151,7 +151,7 @@ struct SDirection
 
 struct SCoordsAndDirection
 {
-    UVec2 Coords;
+    SVec2 Coords;
     SDirection Direction{};
 };
 

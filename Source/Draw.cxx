@@ -323,7 +323,7 @@ void SGeometry::Cleanup()
 
 void STileset::InitPlaceholder()
 {
-    std::array<UVec3, 8> TempVertices{};
+    std::array<SVec3, 8> TempVertices{};
     std::array<unsigned short, 12> Indices{};
 
     /** Floor Quad */
@@ -363,7 +363,7 @@ void STileset::InitPlaceholder()
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, TempVertices.size() * (GLsizeiptr)sizeof(UVec3), &TempVertices[0],
+    glBufferData(GL_ARRAY_BUFFER, TempVertices.size() * (GLsizeiptr)sizeof(SVec3), &TempVertices[0],
         GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -386,8 +386,8 @@ void STileset::InitBasic(
     const SAsset& DoorFrame,
     const SAsset& Door)
 {
-    auto Positions = Memory::GetVector<UVec3>();
-    auto TexCoords = Memory::GetVector<UVec2>();
+    auto Positions = Memory::GetVector<SVec3>();
+    auto TexCoords = Memory::GetVector<SVec2>();
     auto Indices = Memory::GetVector<unsigned short>();
 
     int LastElementOffset = 0;
@@ -428,7 +428,7 @@ void STileset::InitBasic(
     glEnableVertexAttribArray(0);
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)Positions.size() * (GLsizeiptr)sizeof(UVec3), &Positions[0],
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)Positions.size() * (GLsizeiptr)sizeof(SVec3), &Positions[0],
         GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
@@ -460,7 +460,7 @@ void SCamera::RegenerateProjection()
     float const FOVRadians = Math::Radians(FieldOfViewY);
     float const TanHalfFovY = std::tan(FOVRadians / 2.0f);
 
-    Projection = UMat4x4();
+    Projection = SMat4x4();
     Projection.X.X = 1.0f / (Aspect * TanHalfFovY);
     Projection.Y.Y = 1.0f / (TanHalfFovY);
     Projection.Z.Z = -(ZFar + ZNear) / (ZFar - ZNear);
@@ -470,10 +470,75 @@ void SCamera::RegenerateProjection()
 
 void SCamera::Update()
 {
-    View = UMat4x4::LookAtRH(Position, Target, UVec3{ 0.0f, 1.0f, 0.0f });
+    View = SMat4x4::LookAtRH(Position, Target, SVec3{ 0.0f, 1.0f, 0.0f });
 }
 
-void SFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, UVec3 InClearColor, bool bLinearFiltering)
+void SWorldFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering)
+{
+    Width = InWidth;
+    Height = InHeight;
+    ClearColor = InClearColor;
+
+    glActiveTexture(GL_TEXTURE0 + TextureUnitID);
+    glGenTextures(1, &ColorID);
+    glBindTexture(GL_TEXTURE_3D, ColorID);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, InWidth, InHeight, WORLD_MAX_LAYERS, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    if (bLinearFiltering)
+    {
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+    else
+    {
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_3D, 0);
+
+    glGenFramebuffers(1, &FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, ColorID, 0, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void SWorldFramebuffer::Cleanup()
+{
+    glDeleteFramebuffers(1, &FBO);
+    glDeleteTextures(1, &ColorID);
+
+    Log::Draw<ELogLevel::Debug>("Deleting SWorldFramebuffer");
+}
+
+void SWorldFramebuffer::ResetViewport() const
+{
+    glViewport(0, 0, Width, Height);
+}
+
+void SWorldFramebuffer::BindForDrawing() const
+{
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
+    glClearColor(ClearColor.X, ClearColor.Y, ClearColor.Z, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void SWorldFramebuffer::BindForReading() const
+{
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
+}
+
+void SWorldFramebuffer::Unbind()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void SFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering)
 {
     Width = InWidth;
     Height = InHeight;
@@ -522,7 +587,7 @@ void SFramebuffer::Cleanup()
     glDeleteTextures(1, &ColorID);
     glDeleteTextures(1, &DepthID);
 
-    Log::Draw<ELogLevel::Debug>("Deleting SFrameBuffer");
+    Log::Draw<ELogLevel::Debug>("Deleting SFramebuffer");
 }
 
 void SFramebuffer::ResetViewport() const
@@ -568,14 +633,14 @@ void SUniformBlock::Bind(int BindingPoint) const
     glBindBufferBase(GL_UNIFORM_BUFFER, BindingPoint, UBO);
 }
 
-void SUniformBlock::SetMatrix(int Position, const UMat4x4& Value) const
+void SUniformBlock::SetMatrix(int Position, const SMat4x4& Value) const
 {
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, Position, sizeof(Value), &Value.X);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void SUniformBlock::SetVector2(int Position, const UVec2& Value) const
+void SUniformBlock::SetVector2(int Position, const SVec2& Value) const
 {
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, Position, sizeof(Value), &Value.X);
@@ -654,11 +719,12 @@ void SRenderer::Init(int Width, int Height)
     Queue2D.CommonUniformBlock.Init(32);
     Queue2D.CommonUniformBlock.Bind(EUniformBlockBinding::Common2D);
 
-    Queue3D.CommonUniformBlock.Init(sizeof(UMat4x4) * 2);
+    Queue3D.CommonUniformBlock.Init(sizeof(SMat4x4) * 2);
     Queue3D.CommonUniformBlock.Bind(EUniformBlockBinding::Common3D);
 
     /* Initialize framebuffers. */
-    MainFrameBuffer.Init(TEXTURE_UNIT_MAIN_FRAMEBUFFER, Width, Height, WINDOW_CLEAR_COLOR);
+    WorldFramebuffer.Init(TEXTURE_UNIT_WORLD_FRAMEBUFFER, MAP_MAX_WIDTH_PIXELS, MAP_MAX_HEIGHT_PIXELS, WINDOW_CLEAR_COLOR);
+    MainFramebuffer.Init(TEXTURE_UNIT_MAIN_FRAMEBUFFER, Width, Height, WINDOW_CLEAR_COLOR);
 
     /* Initialize atlases. */
     Atlases[ATLAS_COMMON].Init(TEXTURE_UNIT_ATLAS_COMMON);
@@ -675,7 +741,8 @@ void SRenderer::Init(int Width, int Height)
 
 void SRenderer::Cleanup()
 {
-    MainFrameBuffer.Cleanup();
+    WorldFramebuffer.Cleanup();
+    MainFramebuffer.Cleanup();
     for (auto& Atlas : Atlases)
     {
         Atlas.Cleanup();
@@ -752,7 +819,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), WindowData.Seconds);
 
     /* Begin Draw */
-    MainFrameBuffer.BindForDrawing();
+    MainFramebuffer.BindForDrawing();
 
     /* Draw 3D */
     glEnable(GL_DEPTH_TEST);
@@ -858,7 +925,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     /* Display everything */
     glDisable(GL_BLEND);
 
-    MainFrameBuffer.BindForReading();
+    MainFramebuffer.BindForReading();
 
     glViewport(0, 0, WindowData.Width, WindowData.Height);
     glClearColor(0.0f, 0.125f, 0.125f, 1.0f);
@@ -877,10 +944,10 @@ void SRenderer::UploadProjectionAndViewFromCamera(const SCamera& Camera) const
 {
     Queue3D.CommonUniformBlock.SetMatrix(0, Camera.Projection);
     /* @TODO: Proper struct offsets? */
-    Queue3D.CommonUniformBlock.SetMatrix(sizeof(UMat4x4), Camera.View);
+    Queue3D.CommonUniformBlock.SetMatrix(sizeof(SMat4x4), Camera.View);
 }
 
-void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
+void SRenderer::DrawHUD(SVec3 Position, SVec2Int Size, int Mode)
 {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::HUD;
@@ -892,7 +959,7 @@ void SRenderer::DrawHUD(UVec3 Position, UVec2Int Size, int Mode)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const SCoordsAndDirection& POV)
+void SRenderer::DrawMap(SLevel& Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlock.UBO);
     if (Level.DirtyFlags & ELevelDirtyFlags::POVChanged)
@@ -927,7 +994,7 @@ void SRenderer::DrawMap(SLevel& Level, UVec3 Position, UVec2Int Size, const SCoo
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMapImmediate(const UVec2& Position, const UVec2Int& Size, const UVec2& ScreenSize, float Time)
+void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize, float Time)
 {
     GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScreenSize);
     GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
@@ -945,7 +1012,7 @@ void SRenderer::DrawMapImmediate(const UVec2& Position, const UVec2Int& Size, co
     glBindVertexArray(0);
 }
 
-void SRenderer::Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle)
+void SRenderer::Draw2D(SVec3 Position, const SSpriteHandle& SpriteHandle)
 {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
@@ -956,7 +1023,7 @@ void SRenderer::Draw2D(UVec3 Position, const SSpriteHandle& SpriteHandle)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, UVec4 ModeControlA)
+void SRenderer::Draw2DEx(SVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, SVec4 ModeControlA)
 {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
@@ -969,8 +1036,8 @@ void SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int 
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, UVec4 ModeControlA,
-    UVec4 ModeControlB)
+void SRenderer::Draw2DEx(SVec3 Position, const SSpriteHandle& SpriteHandle, int Mode, SVec4 ModeControlA,
+    SVec4 ModeControlB)
 {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
@@ -983,7 +1050,7 @@ void SRenderer::Draw2DEx(UVec3 Position, const SSpriteHandle& SpriteHandle, int 
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DHaze(UVec3 Position, const SSpriteHandle& SpriteHandle, float XIntensity, float YIntensity,
+void SRenderer::Draw2DHaze(SVec3 Position, const SSpriteHandle& SpriteHandle, float XIntensity, float YIntensity,
     float Speed)
 {
 
@@ -998,7 +1065,7 @@ void SRenderer::Draw2DHaze(UVec3 Position, const SSpriteHandle& SpriteHandle, fl
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DBackBlur(UVec3 Position, const SSpriteHandle& SpriteHandle, float Count, float Speed, float Step)
+void SRenderer::Draw2DBackBlur(SVec3 Position, const SSpriteHandle& SpriteHandle, float Count, float Speed, float Step)
 {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
@@ -1011,7 +1078,7 @@ void SRenderer::Draw2DBackBlur(UVec3 Position, const SSpriteHandle& SpriteHandle
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DGlow(UVec3 Position, const SSpriteHandle& SpriteHandle, UVec3 Color, float Intensity)
+void SRenderer::Draw2DGlow(SVec3 Position, const SSpriteHandle& SpriteHandle, SVec3 Color, float Intensity)
 {
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Uber2D;
@@ -1024,7 +1091,7 @@ void SRenderer::Draw2DGlow(UVec3 Position, const SSpriteHandle& SpriteHandle, UV
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw2DDisintegrate(UVec3 Position, const SSpriteHandle& SpriteHandle, const SSpriteHandle& NoiseHandle,
+void SRenderer::Draw2DDisintegrate(SVec3 Position, const SSpriteHandle& SpriteHandle, const SSpriteHandle& NoiseHandle,
     float Progress)
 {
     SEntry2D Entry;
@@ -1042,12 +1109,12 @@ void SRenderer::Draw2DDisintegrate(UVec3 Position, const SSpriteHandle& SpriteHa
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3D(UVec3 Position, SGeometry* Geometry)
+void SRenderer::Draw3D(SVec3 Position, SGeometry* Geometry)
 {
     SEntry3D Entry;
 
     Entry.Geometry = Geometry;
-    Entry.Model = UMat4x4::Identity();
+    Entry.Model = SMat4x4::Identity();
     Entry.Model.Translate(Position);
 
     Entry.Mode = SEntryMode{
@@ -1057,7 +1124,7 @@ void SRenderer::Draw3D(UVec3 Position, SGeometry* Geometry)
     Queue3D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDirection& POVDirection)
+void SRenderer::Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDirection& POVDirection)
 {
     auto constexpr DrawDistanceForward = 4;
     auto constexpr DrawDistanceSide = 2;
@@ -1088,7 +1155,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
 
         auto POVDirectionInverted = POVDirection.Inverted();
         auto POVDirectionVectorForward = POVDirection.GetVector<int>();
-        auto POVDirectionVectorSide = UVec2Int{ POVDirectionVectorForward.Y, -POVDirectionVectorForward.X };
+        auto POVDirectionVectorSide = SVec2Int{ POVDirectionVectorForward.Y, -POVDirectionVectorForward.X };
 
         for (int SideCounter = -DrawDistanceSide; SideCounter <= DrawDistanceSide; ++SideCounter)
         {
@@ -1103,10 +1170,10 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
                 auto XOffset = (float)X;
                 auto YOffset = (float)Y;
 
-                auto TileCoords = UVec2Int{ X, Y };
+                auto TileCoords = SVec2Int{ X, Y };
 
-                auto TileTransform = UMat4x4::Identity();
-                TileTransform.Translate(UVec3{ XOffset, 0.0f, YOffset });
+                auto TileTransform = SMat4x4::Identity();
+                TileTransform.Translate(SVec3{ XOffset, 0.0f, YOffset });
 
                 /* @TODO: Draw joints in separate loop. */
                 /* @TODO: Maybe don't store them at all? */
@@ -1203,7 +1270,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
     SEntry3D Entry;
 
     Entry.Geometry = LevelDrawData.TileSet;
-    Entry.Model = UMat4x4::Identity();
+    Entry.Model = SMat4x4::Identity();
     Entry.InstancedDrawCall = &LevelDrawData.DrawCalls[0];
     Entry.InstancedDrawCallCount = ETileGeometryType::Count;
 
@@ -1214,7 +1281,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const UVec2Int& POVOrigin, const SDir
     Queue3D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int& TileCoords, SDirection Direction, float AnimationAlpha) const
+void SRenderer::Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const SVec2Int& TileCoords, SDirection Direction, float AnimationAlpha) const
 {
     if (TileCoords.X + TileCoords.Y < 0)
     {
@@ -1222,13 +1289,13 @@ void SRenderer::Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const UVec2Int
     }
 
     auto Temp = SDirection{ Direction }.GetVector<float>();
-    UVec3 DirectionalOffset{};
+    SVec3 DirectionalOffset{};
     DirectionalOffset.X = Temp.X;
     DirectionalOffset.Z = Temp.Y;
 
-    auto TileCoordsOffset = UVec3{ (float)TileCoords.X, 0.0f, (float)TileCoords.Y };
+    auto TileCoordsOffset = SVec3{ (float)TileCoords.X, 0.0f, (float)TileCoords.Y };
 
-    UMat4x4 Transform = UMat4x4::Identity();
+    SMat4x4 Transform = SMat4x4::Identity();
     Transform.Translate((DirectionalOffset * 0.5f) + TileCoordsOffset);
 
     switch (LevelDrawData.TileSet->DoorAnimationType)

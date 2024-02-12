@@ -43,14 +43,14 @@ struct SLevelEditor
 {
     ELevelEditorMode LevelEditorMode{};
     uint32_t ToggleEdgeType{};
-    UVec2Int NewLevelSize{};
+    SVec2Int NewLevelSize{};
     float MapScale{};
     bool bDrawWallJoints{};
     bool bDrawEdges{};
     bool bDrawGridLines{};
     bool bResetGridPosition = true;
-    std::optional<UVec2Int> SelectedTileCoords{};
-    std::optional<UVec2Int> BlockModeTileCoords{};
+    std::optional<SVec2Int> SelectedTileCoords{};
+    std::optional<SVec2Int> BlockModeTileCoords{};
     SLevel Level{};
     SFramebuffer MapFramebuffer;
     SUniformBlock MapUniformBlock;
@@ -67,7 +67,7 @@ struct SLevelEditor
 
     void ScanForLevels();
 
-    UVec2Int CalculateMapSize();
+    SVec2Int CalculateMapSize();
     void FitTilemapToWindow();
 
     SValidationResult Validate(bool bFix);

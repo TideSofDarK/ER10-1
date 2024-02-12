@@ -43,7 +43,7 @@ public:
     STileset Tileset;
 
     STimeline MapRectTimeline{3.0f};
-    URect MapRect;
+    SRect MapRect;
     bool bMapMaximized{};
 
     SSoundClip DoorCreek{};

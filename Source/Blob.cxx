@@ -28,17 +28,17 @@ void SBlob::Update(float DeltaTime)
     switch (AnimationType)
     {
         case EBlobAnimationType::Turn:
-            EyeForwardCurrent = UVec3::Mix(EyeForwardFrom, EyeForwardTarget, Timeline.Value);
+            EyeForwardCurrent = SVec3::Mix(EyeForwardFrom, EyeForwardTarget, Timeline.Value);
             break;
         case EBlobAnimationType::Walk:
-            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, Timeline.Value);
+            EyePositionCurrent = SVec3::Mix(EyePositionFrom, EyePositionTarget, Timeline.Value);
             break;
         case EBlobAnimationType::Bump:
-            EyePositionCurrent = UVec3::Mix(EyePositionTarget, EyePositionFrom,
+            EyePositionCurrent = SVec3::Mix(EyePositionTarget, EyePositionFrom,
                 std::sin(Timeline.Value * Math::PI) * 0.25f);
             break;
         case EBlobAnimationType::Enter:
-            EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, Math::EaseInBack(Timeline.Value));
+            EyePositionCurrent = SVec3::Mix(EyePositionFrom, EyePositionTarget, Math::EaseInBack(Timeline.Value));
             break;
         case EBlobAnimationType::Fall:
         {
@@ -46,11 +46,11 @@ void SBlob::Update(float DeltaTime)
             constexpr float InitialJump = 0.5f;
             if (Timeline.Value < InitialStep)
             {
-                EyePositionCurrent = UVec3::Mix(EyePositionFrom, UVec3::Mix(EyePositionFrom, EyePositionTarget, InitialStep), Math::EaseInBack(Timeline.Value / InitialStep));
+                EyePositionCurrent = SVec3::Mix(EyePositionFrom, SVec3::Mix(EyePositionFrom, EyePositionTarget, InitialStep), Math::EaseInBack(Timeline.Value / InitialStep));
             }
             else
             {
-                EyePositionCurrent = UVec3::Mix(EyePositionFrom, EyePositionTarget, Timeline.Value);
+                EyePositionCurrent = SVec3::Mix(EyePositionFrom, EyePositionTarget, Timeline.Value);
                 float Alpha = (Timeline.Value - InitialStep) / InitialJump;
                 Alpha = Alpha * 3.0f - 1.0f;
                 EyePositionCurrent.Y = EyePositionFrom.Y + (1 + (-Alpha * Alpha)) * 0.25f;
@@ -108,7 +108,7 @@ void SBlob::ApplyDirection(bool bImmediate)
     }
 }
 
-void SBlob::Step(UVec2Int DirectionVector, EBlobAnimationType InAnimationType)
+void SBlob::Step(SVec2Int DirectionVector, EBlobAnimationType InAnimationType)
 {
     if (AnimationType != EBlobAnimationType::Idle)
     {
@@ -116,7 +116,7 @@ void SBlob::Step(UVec2Int DirectionVector, EBlobAnimationType InAnimationType)
     }
     PlayAnimation(InAnimationType);
     EyePositionFrom = EyePositionCurrent;
-    EyePositionTarget += UVec3{ (float)DirectionVector.X, 0.0f, (float)DirectionVector.Y };
+    EyePositionTarget += SVec3{ (float)DirectionVector.X, 0.0f, (float)DirectionVector.Y };
     Coords += DirectionVector;
 }
 

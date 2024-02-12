@@ -80,7 +80,7 @@ void SWorldEditor::Show(SGame& Game)
 void SLevelEditor::Init()
 {
     LevelEditorMode = ELevelEditorMode::Normal;
-    NewLevelSize = UVec2Int{ 8, 8 };
+    NewLevelSize = SVec2Int{ 8, 8 };
     MapScale = 1.0f;
     bDrawWallJoints = false;
     bDrawEdges = true;
@@ -91,7 +91,7 @@ void SLevelEditor::Init()
         TEXTURE_UNIT_MAP_FRAMEBUFFER,
         Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
         Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS),
-        SVec3{ 1.0f, 0.0f, 0.0f });
+        TVec3{ 1.0f, 0.0f, 0.0f });
 
     MapUniformBlock.Init(sizeof(SShaderMapData));
 }
@@ -358,19 +358,19 @@ void SLevelEditor::ShowLevel(SGame& Game)
     auto OriginalMapSize = CalculateMapSize();
 
     /* @TODO: Update tiles every frame for now. */
-    UVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
+    SVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
     Game.Renderer.UploadMapData(Level, Game.Blob.UnreliableCoordsAndDirection(), &MapUniformBlock);
 
     /* Render level to framebuffer. */
-    UVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
+    SVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
     MapFramebuffer.BindForDrawing();
     MapFramebuffer.ResetViewport();
-    Game.Renderer.DrawMapImmediate(SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());
+    Game.Renderer.DrawMapImmediate(TVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());
     SFramebuffer::Unbind();
 
     float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * MapScale;
     float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * MapScale;
-    auto ScaledMapSize = UVec2{
+    auto ScaledMapSize = SVec2{
         (float)OriginalMapSize.X * MapScale,
         (float)OriginalMapSize.Y * MapScale
     };
@@ -408,7 +408,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
             {
                 auto MousePos = ImGui::GetMousePos();
                 MousePos = ImVec2(MousePos.x - CursorPos.x, MousePos.y - CursorPos.y);
-                SelectedTileCoords = UVec2Int{ (int)(MousePos.x / ScaledTileSize),
+                SelectedTileCoords = SVec2Int{ (int)(MousePos.x / ScaledTileSize),
                     (int)(MousePos.y / ScaledTileSize) };
             }
         }
@@ -444,17 +444,17 @@ void SLevelEditor::ShowLevel(SGame& Game)
                 {
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
                     {
-                        Level.EditBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_FLOOR_BIT);
+                        Level.EditBlock(SRectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_FLOOR_BIT);
                         LevelEditorMode = ELevelEditorMode::Normal;
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
                     {
-                        Level.EditBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), 0);
+                        Level.EditBlock(SRectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), 0);
                         LevelEditorMode = ELevelEditorMode::Normal;
                     }
                     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
                     {
-                        Level.EditBlock(URectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_HOLE_BIT);
+                        Level.EditBlock(SRectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_HOLE_BIT);
                         LevelEditorMode = ELevelEditorMode::Normal;
                     }
                 }
@@ -612,7 +612,7 @@ void SLevelEditor::ScanForLevels()
     }
 }
 
-UVec2Int SLevelEditor::CalculateMapSize()
+SVec2Int SLevelEditor::CalculateMapSize()
 {
     return {
         MAP_TILE_SIZE_PIXELS * Level.Width + MAP_TILE_EDGE_SIZE_PIXELS,
@@ -644,7 +644,7 @@ SValidationResult SLevelEditor::Validate(bool bFix)
         TargetLevel = &TempLevel;
     }
     SValidationResult Result;
-    UVec2Int Coords{};
+    SVec2Int Coords{};
 
     auto ValidateEdge = [&](STile* CurrentTile, STile* NeighborTile, SDirection Direction, SDirection NeighborDirection, UFlagType EdgeBit, int* Corrections) {
         if (CurrentTile->CheckEdgeFlag(EdgeBit, Direction))
