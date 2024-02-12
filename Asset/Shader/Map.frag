@@ -44,8 +44,9 @@ uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
 uniform vec2 u_sizeScreenSpace;
+uniform float u_revealed;
 uniform sampler2D u_commonAtlas;
-uniform sampler3D u_world;
+uniform sampler2DArray u_world;
 
 in vec2 f_texCoord;
 
@@ -84,26 +85,12 @@ vec4 pixelToTile(vec2 texCoord, float tileSize)
 
 float visitedMask(uint flags)
 {
-    if (u_mode == MAP_MODE_EDITOR)
-    {
-        return 1.0;
-    }
-    else
-    {
-        return bitMask(flags, TILE_SPECIAL_VISITED_BIT);
-    }
+    return bitMask(flags, TILE_SPECIAL_VISITED_BIT) + u_revealed;
 }
 
 float exploredMask(uint flags)
 {
-    if (u_mode == MAP_MODE_EDITOR)
-    {
-        return 1.0;
-    }
-    else
-    {
-        return bitMask(flags, TILE_SPECIAL_EXPLORED_BIT);
-    }
+    return bitMask(flags, TILE_SPECIAL_EXPLORED_BIT) + u_revealed;
 }
 
 float nonEmptyMask(uint flags)
@@ -179,7 +166,8 @@ vec4 putIcon(vec2 texCoord, vec2 tileCoords, uint direction, float tileSize, flo
 
 void main()
 {
-    vec3 finalColor = mix(vec3(0.0, 0.0, 0.0), vec3(0.03, 0.03, 0.08), 1.0 - f_texCoord.y);
+    // vec3 finalColor = mix(vec3(0.0, 0.0, 0.0), vec3(0.03, 0.03, 0.08), 1.0 - f_texCoord.y);
+    vec3 finalColor = vec3(0.0f);
 
     float levelWidth = float(u_map.width);
     float levelHeight = float(u_map.height);
@@ -194,22 +182,8 @@ void main()
     float tileSize = 0.0;
     float tileCellSize = 0.0;
     float tileEdgeSize = 0.0;
-    if (u_mode == MAP_MODE_GAME_NORMAL)
-    {
-        texCoord = floor(texCoord);
 
-        tileSize = MAP_TILE_SIZE_PIXELS;
-        tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
-        tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
-
-        vec2 centerOffset = pov * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
-        centerOffset = floor(centerOffset);
-
-        texCoord += centerOffset;
-
-        // pov = floor(pov) + floor(fract(pov) * (tileSize / 2.0)) / (tileSize / 2.0);
-    }
-    else if (u_mode == MAP_MODE_GAME_ISO)
+    if (u_mode == MAP_MODE_WORLD)
     {
         pov = round(pov);
 
@@ -227,18 +201,29 @@ void main()
         texCoord -= centerOffset;
 
         texCoord = floor(texCoord);
-    }
-    else if (u_mode == MAP_MODE_EDITOR)
-    {
+    } else {
         texCoord = floor(texCoord);
 
         tileSize = MAP_TILE_SIZE_PIXELS;
         tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
-        vec2 centerOffset = round(u_sizeScreenSpace * 0.5 - vec2(u_map.width, u_map.height) / 2.0 * tileSize);
+        vec2 centerOffset = pov * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
+        centerOffset = floor(centerOffset);
 
         texCoord += centerOffset;
+
+        // pov = floor(pov) + floor(fract(pov) * (tileSize / 2.0)) / (tileSize / 2.0);
+
+        // texCoord = floor(texCoord);
+        //
+        // tileSize = MAP_TILE_SIZE_PIXELS;
+        // tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
+        // tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
+        //
+        // vec2 centerOffset = round(u_sizeScreenSpace * 0.5 - vec2(u_map.width, u_map.height) / 2.0 * tileSize);
+        //
+        // texCoord += centerOffset;
     }
 
     float tileSizeReciprocal = 1.0 / tileSize;
@@ -361,28 +346,31 @@ void main()
     finalColor = overlay(finalColor, wallColor, doorMasks);
 
     // Grid
-    float gridMasks = edgeMask;
-    float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_globals.time * 0.25)) * 2.0) - 1.0));
-    gridPulseX = pow(gridPulseX, 4);
-    float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_globals.time * 0.15)) * 2.0) - 1.0));
-    gridPulseY = pow(gridPulseY, 4);
-    float gridPulse = (max(gridPulseX, gridPulseY) * 0.5) + 0.5;
-    float tileGrid = floorTileMask; // + wallMasks;
-    vec3 grid = mix(vec3(0.05, 0.15, 0.6) * gridPulse, vec3(0.15, 0.25, 0.5) * 1.2, tileGrid * 0.7f);
-    // texCoordOriginal *= u_sizeScreenSpace;
-    // texCoordOriginal = floor(texCoordOriginal);
-    // float gridForceMask = (1.0 - step(0.001, mod(texCoordOriginal.x, u_sizeScreenSpace.x - 1))) + (1.0 - step(0.001, mod(texCoordOriginal.y, u_sizeScreenSpace.y - 1)));
-    // gridForceMask = saturate(gridForceMask);
-    // gridForceMask = 0.0;
-    // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
-    finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+    if (u_mode != MAP_MODE_WORLD_LAYER)
+    {
+        float gridMasks = edgeMask;
+        float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_globals.time * 0.25)) * 2.0) - 1.0));
+        gridPulseX = pow(gridPulseX, 4);
+        float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_globals.time * 0.15)) * 2.0) - 1.0));
+        gridPulseY = pow(gridPulseY, 4);
+        float gridPulse = (max(gridPulseX, gridPulseY) * 0.5) + 0.5;
+        float tileGrid = floorTileMask; // + wallMasks;
+        vec3 grid = mix(vec3(0.05, 0.15, 0.6) * gridPulse, vec3(0.15, 0.25, 0.5) * 1.2, tileGrid * 0.7f);
+        // texCoordOriginal *= u_sizeScreenSpace;
+        // texCoordOriginal = floor(texCoordOriginal);
+        // float gridForceMask = (1.0 - step(0.001, mod(texCoordOriginal.x, u_sizeScreenSpace.x - 1))) + (1.0 - step(0.001, mod(texCoordOriginal.y, u_sizeScreenSpace.y - 1)));
+        // gridForceMask = saturate(gridForceMask);
+        // gridForceMask = 0.0;
+        // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+        finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+    }
 
     /* Map Icons */
     vec4 holeColor = putIconEx(tileMasks.hole, normalizedCellUV, u_common.icons[MAP_ICON_HOLE]);
     finalColor = mix(finalColor, holeColor.rgb, holeColor.a * (1.0 - edgeMask));
 
     /* Current POV */
-    if (u_mode != MAP_MODE_GAME_ISO)
+    if (u_mode == MAP_MODE_NORMAL)
     {
         vec4 playerIcon = putIcon(texCoord, pov, u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
         finalColor = overlay(finalColor, playerIcon.rgb, playerIcon.a);
@@ -392,6 +380,21 @@ void main()
     // float povMask = saturate((povTileMask * (1.0 - distance(vec2(map1to1(tileInfo.z - tileSizeReciprocal / 2.0), map1to1(tileInfo.w - tileSizeReciprocal / 2.0)) * 2.0, vec2(0.0, 0.0))))) * povAnim;
     // vec3 povColor = vec3(1.0, 1.0, 1.0);
     // finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
+
+    if (u_mode == MAP_MODE_WORLD)
+    {
+        finalColor = vec3(0.0);
+        vec2 test = f_texCoord * u_sizeScreenSpace;
+        for (int i = 0; i < WORLD_MAX_LAYERS; ++i)
+        {
+            finalColor += texture(u_world, vec3(f_texCoord, 0)).rgb;
+        }
+    }
+
+    if (u_mode == MAP_MODE_WORLD_LAYER)
+    {
+        finalColor = vec3(1.0);
+    }
 
     color = vec4(finalColor, 1.0);
 }

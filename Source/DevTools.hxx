@@ -18,7 +18,6 @@ enum class EDevToolsMode
 struct SWorldEditor
 {
     SWorld World;
-    SFramebuffer MapFramebuffer;
 
     void Init();
     void Cleanup();
@@ -26,6 +25,7 @@ struct SWorldEditor
     void SetActive(SGame& Game, bool bActive);
     void Show(SGame& Game);
     void ShowWorld(SGame& Game);
+    void RenderLayers(SGame& Game);
 };
 
 enum class ELevelEditorMode
@@ -54,7 +54,6 @@ struct SLevelEditor
     std::optional<SVec2Int> SelectedTileCoords{};
     std::optional<SVec2Int> BlockModeTileCoords{};
     SWorldLevel Level{};
-    SFramebuffer MapFramebuffer;
 
     void Init();
     void Cleanup();

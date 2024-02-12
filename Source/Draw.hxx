@@ -11,19 +11,25 @@
 #define RENDERER_QUEUE2D_SIZE 16
 #define RENDERER_QUEUE3D_SIZE 8
 
-#define TEXTURE_UNIT_TRANSIENT 0
-#define TEXTURE_UNIT_ATLAS_COMMON 1
-#define TEXTURE_UNIT_ATLAS_PRIMARY2D 2
-#define TEXTURE_UNIT_ATLAS_PRIMARY3D 3
-#define TEXTURE_UNIT_MAIN_FRAMEBUFFER 7
-#define TEXTURE_UNIT_MAP_FRAMEBUFFER 8
-#define TEXTURE_UNIT_WORLD_FRAMEBUFFER 9
-
 #define ATLAS_COUNT 4
 #define ATLAS_MAX_SPRITE_COUNT 16
 #define ATLAS_COMMON 0
 #define ATLAS_PRIMARY2D 1
 #define ATLAS_PRIMARY3D 2
+
+namespace ETextureUnits
+{
+    enum
+    {
+        Transient,
+        AtlasCommon,
+        AtlasPrimary2D,
+        AtlasPrimary3D,
+        MainFramebuffer,
+        MapFramebuffer,
+        WorldLayers
+    };
+}
 
 inline constexpr SVec2 MapWorldLayerSize{
     Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
@@ -170,6 +176,9 @@ public:
     int UniformCommonAtlasID{};
     int UniformWorldLayers{};
     int UniformMap{};
+    int UniformRevealed{};
+
+    void SetRevealed(bool bRevealed);
 };
 
 struct SProgram3D : SProgram
@@ -197,11 +206,7 @@ struct SWorldFramebuffer
 
     void ResetViewport() const;
 
-    void BindForDrawing(int32_t LayerIndex) const;
-
-    void BindForReading() const;
-
-    static void Unbind();
+    void SetLayer(int LayerIndex) const;
 };
 
 struct SFramebuffer
@@ -218,12 +223,6 @@ struct SFramebuffer
     void Cleanup();
 
     void ResetViewport() const;
-
-    void BindForDrawing() const;
-
-    void BindForReading() const;
-
-    static void Unbind();
 };
 
 struct SGeometry
@@ -457,6 +456,7 @@ struct SRenderer
     SProgramPostProcess ProgramPostProcess;
 
     SFramebuffer MainFramebuffer;
+    SFramebuffer MapFramebuffer;
     SWorldFramebuffer WorldFramebuffer;
     SGeometry Quad2D;
     SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;
@@ -483,7 +483,9 @@ struct SRenderer
 
     void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize, float Time);
 
-    void DrawWorldLayerImmediate(const SWorldLevel* Level, int32_t LayerIndex);
+    void DrawWorldMap(const SVec2& Position, const SVec2& Size, const SVec2& ScreenSize);
+
+    void DrawWorldLayers(const struct SWorld* World, SVec2Int Range);
 
     void Draw2D(SVec3 Position, const SSpriteHandle& SpriteHandle);
 

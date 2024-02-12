@@ -63,21 +63,235 @@ void SWorldEditor::SetActive(struct SGame& Game, bool bActive)
         if (bFirstTime)
         {
             bFirstTime = false;
-        }
 
-        // Game.Renderer.BindMapUniformBlock(&MapUniformBlock);
+            Game.Renderer.DrawWorldLayers(&Game.World, { 0, 4 });
+        }
     }
     else
     {
-        // Game.Renderer.BindMapUniformBlock(nullptr);
     }
 }
 
 void SWorldEditor::Show(SGame& Game)
 {
+    ImGuiID PopupID = ImHashStr("MainMenuPopup");
+
+    static std::string SavePathString{};
+
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("World"))
+        {
+            if (ImGui::MenuItem("New", "Ctrl+N"))
+            {
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("New World");
+                ImGui::PopID();
+            }
+            if (ImGui::MenuItem("Load", "Ctrl+L"))
+            {
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("Load World");
+                ImGui::PopID();
+
+                // ScanForLevels();
+            }
+            if (ImGui::MenuItem("Save", "Ctrl+S"))
+            {
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("Save World");
+                ImGui::PopID();
+
+                // SavePathString = (std::filesystem::path(EQUINOX_REACH_ASSET_PATH "Map/NewMap" + MapExtension.string())).make_preferred().string();
+                // ScanForLevels();
+            }
+            ImGui::Separator();
+            ImGui::MenuItem("Properties", "F5");
+            if (ImGui::MenuItem("Validate", "F6"))
+            {
+                ImGui::PushOverrideID(PopupID);
+                ImGui::OpenPopup("Validation Result");
+                ImGui::PopID();
+
+                // ValidationResult = Validate(false);
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+            // ImGui::MenuItem("Show Edges", nullptr, &bDrawEdges);
+            // ImGui::MenuItem("Show Wall Joints", nullptr, &bDrawWallJoints);
+            // ImGui::MenuItem("Show Grid Lines", nullptr, &bDrawGridLines);
+            // ImGui::Separator();
+            // if (ImGui::MenuItem("Fit to Screen", "Home"))
+            // {
+            //     FitTilemapToWindow();
+            // }
+            ImGui::EndMenu();
+        }
+
+        ImGui::Separator();
+
+        // const char* EditorModes[] = { "Normal", "Block Selection", "Toggle Door" };
+        // ImGui::Text("Current Mode: %s", EditorModes[(int)LevelEditorMode]);
+
+        ImGui::EndMainMenuBar();
+    }
+
+    // ImGui::PushOverrideID(PopupID);
+    // if (ImGui::BeginPopupModal("New Level", nullptr,
+    //         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
+    // {
+    //     ImGui::SliderInt("Width", &NewLevelSize.X, 8, MAX_LEVEL_WIDTH);
+    //     ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
+    //     if (ImGui::Button("Accept"))
+    //     {
+    //         Level = SWorldLevel{ { NewLevelSize.X, NewLevelSize.Y } };
+    //         FitTilemapToWindow();
+    //         ImGui::CloseCurrentPopup();
+    //     }
+    //     ImGui::EndPopup();
+    // }
+    // ImGui::PopID();
+    //
+    // const float ModalWidth = ImGui::GetFontSize() * 30;
+    // const float ModalHeight = ImGui::GetFontSize() * 15;
+    //
+    // ImGui::PushOverrideID(PopupID);
+    // if (ImGui::BeginPopupModal("Save Level", nullptr,
+    //         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
+    // {
+    //     ImGui::BeginChild("Available Levels", ImVec2(ModalWidth, ModalHeight), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+    //
+    //     for (auto& LevelPath : AvailableMaps)
+    //     {
+    //         if (ImGui::Selectable(LevelPath.string().c_str(), LevelPath.string() == SavePathString))
+    //         {
+    //             SavePathString = LevelPath.string();
+    //         }
+    //     }
+    //     ImGui::EndChild();
+    //
+    //     ImGui::PushItemWidth(ModalWidth);
+    //     ImGui::InputText("##SaveAs", &SavePathString);
+    //     ImGui::PopItemWidth();
+    //
+    //     ImGui::BeginGroup();
+    //     if (ImGui::Button("Accept"))
+    //     {
+    //         auto SavePath = std::filesystem::path(SavePathString);
+    //         if (SavePath.extension() == MapExtension)
+    //         {
+    //             SaveTilemapToFile(SavePath);
+    //             ImGui::CloseCurrentPopup();
+    //         }
+    //     }
+    //     ImGui::SameLine();
+    //     if (ImGui::Button("Cancel"))
+    //     {
+    //         ImGui::CloseCurrentPopup();
+    //     }
+    //     ImGui::EndGroup();
+    //
+    //     ImGui::EndPopup();
+    // }
+    // ImGui::PopID();
+    //
+    // ImGui::PushOverrideID(PopupID);
+    // if (ImGui::BeginPopupModal("Load Level", nullptr,
+    //         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
+    // {
+    //     ImGui::BeginChild("Available Levels", ImVec2(ModalWidth, ModalHeight), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+    //     static std::filesystem::path* LoadPath = nullptr;
+    //     for (auto& LevelPath : AvailableMaps)
+    //     {
+    //         if (ImGui::Selectable(LevelPath.string().c_str(), &LevelPath == LoadPath))
+    //         {
+    //             LoadPath = &LevelPath;
+    //         }
+    //     }
+    //     ImGui::EndChild();
+    //
+    //     ImGui::BeginGroup();
+    //     if (ImGui::Button("Accept"))
+    //     {
+    //         if (LoadPath != nullptr)
+    //         {
+    //             LoadTilemapFromFile(*LoadPath);
+    //             ImGui::CloseCurrentPopup();
+    //         }
+    //     }
+    //     ImGui::SameLine();
+    //     if (ImGui::Button("Cancel"))
+    //     {
+    //         ImGui::CloseCurrentPopup();
+    //     }
+    //     ImGui::EndGroup();
+    //
+    //     ImGui::EndPopup();
+    // }
+    // ImGui::PopID();
+    //
+    // ImGui::PushOverrideID(PopupID);
+    // if (ImGui::BeginPopupModal("Validation Result", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    // {
+    //     ImGui::Text("Found Issues:");
+    //     ImGui::Text("Wall: %d", ValidationResult.Wall);
+    //     ImGui::Text("Door: %d", ValidationResult.Door);
+    //     ImGui::Separator();
+    //
+    //     if (ImGui::Button("OK", ImVec2(120, 0)))
+    //     {
+    //         Validate(true);
+    //         ImGui::CloseCurrentPopup();
+    //     }
+    //     ImGui::SetItemDefaultFocus();
+    //     ImGui::SameLine();
+    //     if (ImGui::Button("Cancel", ImVec2(120, 0)))
+    //     {
+    //         ImGui::CloseCurrentPopup();
+    //     }
+    //     ImGui::EndPopup();
+    // }
+    // ImGui::PopID();
+
+    ShowWorld(Game);
 }
 
 void SWorldEditor::ShowWorld(SGame& Game)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    Game.Renderer.MapFramebuffer.ResetViewport();
+    SVec2 WindowSize = { 500, 500 };
+
+    Game.Renderer.DrawWorldMap({ 0.0f, 0.0f }, WindowSize, WindowSize);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    ImGui::SetNextWindowSize(ImVec2{ WindowSize.X, WindowSize.Y });
+    if (ImGui::Begin("Overworld", nullptr,
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
+    {
+        auto* DrawList = ImGui::GetWindowDrawList();
+        ImVec2 CursorPos = ImGui::GetCursorScreenPos();
+
+        DrawList->AddImage(
+            (void*)Game.Renderer.MapFramebuffer.ColorID,
+            CursorPos,
+            ImVec2(CursorPos.x + WindowSize.X,
+                CursorPos.y + WindowSize.Y),
+            ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+
+        ImGui::End();
+    }
+    ImGui::PopStyleVar(2);
+}
+
+void SWorldEditor::RenderLayers(SGame& Game)
 {
 }
 
@@ -90,17 +304,10 @@ void SLevelEditor::Init()
     bDrawEdges = true;
     bDrawGridLines = false;
     Level = SWorldLevel{ { 8, 8 } };
-
-    MapFramebuffer.Init(
-        TEXTURE_UNIT_MAP_FRAMEBUFFER,
-        int(MapWorldLayerSize.X),
-        int(MapWorldLayerSize.Y),
-        TVec3{ 1.0f, 0.0f, 0.0f });
 }
 
 void SLevelEditor::Cleanup()
 {
-    MapFramebuffer.Cleanup();
 }
 
 void SLevelEditor::SetActive(SGame& Game, bool bActive)
@@ -116,15 +323,12 @@ void SLevelEditor::SetActive(SGame& Game, bool bActive)
     }
     else
     {
-        Game.Renderer.UploadMapData(Game.World.GetLevel(), Game.Blob.UnreliableCoordsAndDirection());
     }
 }
 
 void SLevelEditor::Show(SGame& Game)
 {
     ImGuiID PopupID = ImHashStr("MainMenuPopup");
-
-    // TestWindow(Game);
 
     static SValidationResult ValidationResult;
     static std::string SavePathString{};
@@ -358,15 +562,17 @@ void SLevelEditor::ShowLevel(SGame& Game)
     auto OriginalMapSize = Level.CalculateMapSize();
 
     /* @TODO: Update tiles every frame for now. */
-    SVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
-    Game.Renderer.UploadMapData(&Level, Game.Blob.UnreliableCoordsAndDirection());
+    SVec2 POVOrigin{ (float)Level.Width / 2.0f - 0.5f, (float)Level.Height / 2.0f - 0.5f };
+    // Game.Renderer.UploadMapData(&Level, Game.Blob.UnreliableCoordsAndDirection());
+    Game.Renderer.UploadMapData(&Level, SCoordsAndDirection{ POVOrigin, SDirection::North() });
 
     /* Render level to framebuffer. */
-    SVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
-    MapFramebuffer.BindForDrawing();
-    MapFramebuffer.ResetViewport();
+    SVec2 MapFramebufferSize{ (float)Game.Renderer.MapFramebuffer.Width, (float)Game.Renderer.MapFramebuffer.Height };
+    glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    Game.Renderer.MapFramebuffer.ResetViewport();
     Game.Renderer.DrawMapImmediate(SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());
-    SFramebuffer::Unbind();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * MapScale;
     float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * MapScale;
@@ -394,7 +600,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
 
         ImGui::GetWindowDrawList()->AddImage(
-            (void*)MapFramebuffer.ColorID,
+            (void*)Game.Renderer.MapFramebuffer.ColorID,
             CursorPos,
             ImVec2(CursorPos.x + ScaledMapSize.X,
                 CursorPos.y + ScaledMapSize.Y),
@@ -837,6 +1043,10 @@ void SDevTools::Update(SGame& Game)
         // Game.Renderer.ProgramUber3D.Reload();
     }
 
+    bool bEditorOpened{};
+    bool bReturnedToGame{};
+    EDevToolsMode OldMode = Mode;
+
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F8)))
     {
         Mode = Mode == EDevToolsMode::WorldEditor ? EDevToolsMode::Game : EDevToolsMode::WorldEditor;
@@ -847,6 +1057,29 @@ void SDevTools::Update(SGame& Game)
     {
         Mode = Mode == EDevToolsMode::LevelEditor ? EDevToolsMode::Game : EDevToolsMode::LevelEditor;
         LevelEditor.SetActive(Game, Mode == EDevToolsMode::LevelEditor);
+    }
+
+    if (Mode != OldMode)
+    {
+        if (OldMode == EDevToolsMode::Game)
+        {
+            bEditorOpened = true;
+        }
+        else if (Mode == EDevToolsMode::Game)
+        {
+            bReturnedToGame = true;
+        }
+    }
+
+    if (bEditorOpened)
+    {
+        Game.Renderer.ProgramMap.SetRevealed(true);
+    }
+
+    if (bReturnedToGame)
+    {
+        Game.Renderer.ProgramMap.SetRevealed(false);
+        Game.Renderer.UploadMapData(Game.World.GetLevel(), Game.Blob.UnreliableCoordsAndDirection());
     }
 
     switch (Mode)
