@@ -266,8 +266,8 @@ void main()
     finalColor = overlay(finalColor, floorTile, floorTileMask);
 
     // Edges
-    vec2 normelizedCellUV = vec2(inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.z), inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.w));
-    vec2 mappedCellUV = normelizedCellUV * 2.0 - vec2(1.0);
+    vec2 normalizedCellUV = vec2(inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.z), inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.w));
+    vec2 mappedCellUV = normalizedCellUV * 2.0 - vec2(1.0);
 
     float edgeMaskHor = step(abs(mod(texCoord.y, tileSize)), tileEdgeSize - 1);
     float edgeMaskVert = step(abs(mod(texCoord.x, tileSize)), tileEdgeSize - 1);
@@ -316,11 +316,11 @@ void main()
     finalColor = mix(finalColor, wallColor, wallMasks);
 
     // Doors
-    float doorSize = floor(tileCellSize * 0.55);
-    float doorBlockMaskNorth = step(normelizedCellUV.y * tileCellSize, tileEdgeSize);
-    float doorBlockMaskSouth = step(tileCellSize - tileEdgeSize, normelizedCellUV.y * tileCellSize);
-    float doorBlockMaskWest = step(normelizedCellUV.x * tileCellSize, tileEdgeSize);
-    float doorBlockMaskEast = step(tileCellSize - tileEdgeSize, normelizedCellUV.x * tileCellSize);
+    float doorSize = floor(tileCellSize * 0.525);
+    float doorBlockMaskNorth = step(normalizedCellUV.y * tileCellSize, tileEdgeSize);
+    float doorBlockMaskSouth = step(tileCellSize - tileEdgeSize, normalizedCellUV.y * tileCellSize);
+    float doorBlockMaskWest = step(normalizedCellUV.x * tileCellSize, tileEdgeSize);
+    float doorBlockMaskEast = step(tileCellSize - tileEdgeSize, normalizedCellUV.x * tileCellSize);
     float doorBlockSizeMaskHor = step(abs(mappedCellUV.x) * tileCellSize, tileCellSize - doorSize);
     float doorBlockSizeMaskVert = step(abs(mappedCellUV.y) * tileCellSize, tileCellSize - doorSize);
     float doorSizeMaskHor = step(tileCellSize - doorSize, abs(mappedCellUV.x) * tileCellSize + tileEdgeSize * 2.0);
@@ -377,7 +377,7 @@ void main()
     finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
 
     /* Map Icons */
-    vec4 holeColor = putIconEx(tileMasks.hole, normelizedCellUV, u_common.icons[MAP_ICON_HOLE]);
+    vec4 holeColor = putIconEx(tileMasks.hole, normalizedCellUV, u_common.icons[MAP_ICON_HOLE]);
     finalColor = mix(finalColor, holeColor.rgb, holeColor.a * (1.0 - edgeMask));
 
     /* Current POV */
