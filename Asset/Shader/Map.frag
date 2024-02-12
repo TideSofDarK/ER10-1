@@ -45,6 +45,7 @@ uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
 uniform vec2 u_sizeScreenSpace;
 uniform sampler2D u_commonAtlas;
+uniform sampler3D u_world;
 
 in vec2 f_texCoord;
 

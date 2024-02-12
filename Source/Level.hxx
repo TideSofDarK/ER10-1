@@ -138,6 +138,14 @@ struct STilemap
 
     [[nodiscard]] inline std::size_t WallJointCoordsToIndex(int X, int Y) const { return (Y * (Width + 1)) + X; }
 
+    [[nodiscard]] SVec2Int CalculateMapSize() const
+    {
+        return {
+            MAP_TILE_SIZE_PIXELS * Width + MAP_TILE_EDGE_SIZE_PIXELS,
+            MAP_TILE_SIZE_PIXELS * Height + MAP_TILE_EDGE_SIZE_PIXELS
+        };
+    }
+
     void PostProcess();
 
     void ToggleEdge(const SVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit);

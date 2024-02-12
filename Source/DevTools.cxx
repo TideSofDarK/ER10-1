@@ -11,6 +11,7 @@
 #include <imgui/imgui_impl_sdl3.h>
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
+#include "Draw.hxx"
 #include "Game.hxx"
 #include "GameSystem.hxx"
 #include "AssetTools.hxx"
@@ -89,11 +90,9 @@ void SLevelEditor::Init()
 
     MapFramebuffer.Init(
         TEXTURE_UNIT_MAP_FRAMEBUFFER,
-        Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
-        Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS),
+        int(MapWorldLayerSize.X),
+        int(MapWorldLayerSize.Y),
         TVec3{ 1.0f, 0.0f, 0.0f });
-
-    MapUniformBlock.Init(sizeof(SShaderMapData));
 }
 
 void SLevelEditor::Cleanup()
@@ -111,12 +110,10 @@ void SLevelEditor::SetActive(SGame& Game, bool bActive)
             FitTilemapToWindow();
             bFirstTime = false;
         }
-
-        Game.Renderer.BindMapUniformBlock(&MapUniformBlock);
     }
     else
     {
-        Game.Renderer.BindMapUniformBlock(nullptr);
+        Game.Renderer.UploadMapData(Game.Level, Game.Blob.UnreliableCoordsAndDirection());
     }
 }
 
@@ -355,17 +352,17 @@ void SLevelEditor::ShowLevel(SGame& Game)
         FitTilemapToWindow();
     }
 
-    auto OriginalMapSize = CalculateMapSize();
+    auto OriginalMapSize = Level.CalculateMapSize();
 
     /* @TODO: Update tiles every frame for now. */
     SVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
-    Game.Renderer.UploadMapData(Level, Game.Blob.UnreliableCoordsAndDirection(), &MapUniformBlock);
+    Game.Renderer.UploadMapData(Level, Game.Blob.UnreliableCoordsAndDirection());
 
     /* Render level to framebuffer. */
     SVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
     MapFramebuffer.BindForDrawing();
     MapFramebuffer.ResetViewport();
-    Game.Renderer.DrawMapImmediate(TVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());
+    Game.Renderer.DrawMapImmediate(SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());
     SFramebuffer::Unbind();
 
     float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * MapScale;
@@ -612,17 +609,9 @@ void SLevelEditor::ScanForLevels()
     }
 }
 
-SVec2Int SLevelEditor::CalculateMapSize()
-{
-    return {
-        MAP_TILE_SIZE_PIXELS * Level.Width + MAP_TILE_EDGE_SIZE_PIXELS,
-        MAP_TILE_SIZE_PIXELS * Level.Height + MAP_TILE_EDGE_SIZE_PIXELS
-    };
-}
-
 void SLevelEditor::FitTilemapToWindow()
 {
-    auto MapSizePixels = CalculateMapSize();
+    auto MapSizePixels = Level.CalculateMapSize();
 
     auto Viewport = ImGui::GetMainViewport();
     MapScale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y);

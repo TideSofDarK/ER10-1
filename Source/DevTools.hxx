@@ -53,7 +53,6 @@ struct SLevelEditor
     std::optional<SVec2Int> BlockModeTileCoords{};
     SLevel Level{};
     SFramebuffer MapFramebuffer;
-    SUniformBlock MapUniformBlock;
 
     void Init();
     void Cleanup();

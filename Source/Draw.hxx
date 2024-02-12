@@ -6,6 +6,7 @@
 #include "SharedConstants.hxx"
 #include "Math.hxx"
 #include "Tile.hxx"
+#include "Utility.hxx"
 
 #define RENDERER_QUEUE2D_SIZE 16
 #define RENDERER_QUEUE3D_SIZE 8
@@ -23,6 +24,11 @@
 #define ATLAS_COMMON 0
 #define ATLAS_PRIMARY2D 1
 #define ATLAS_PRIMARY3D 2
+
+inline constexpr SVec2 MapWorldLayerSize{
+    Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
+    Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS)
+};
 
 struct SLevel;
 
@@ -87,7 +93,7 @@ private:
 
 protected:
     virtual void InitUniforms();
-    virtual void InitUniformBlocks() {};
+    virtual void InitUniformBlocks(){};
     virtual void CleanupUniformBlocks() const {};
 
 public:
@@ -162,6 +168,7 @@ public:
     SUniformBlock CommonUniformBlock{};
     SUniformBlock UniformBlock{};
     int UniformCommonAtlasID{};
+    int UniformWorldLayers{};
     int UniformMap{};
 };
 
@@ -190,7 +197,7 @@ struct SWorldFramebuffer
 
     void ResetViewport() const;
 
-    void BindForDrawing() const;
+    void BindForDrawing(int32_t LayerIndex) const;
 
     void BindForReading() const;
 
@@ -462,8 +469,7 @@ struct SRenderer
 
     /* Map */
     void SetMapIcons(const std::array<SSpriteHandle, MAP_ICON_COUNT>& SpriteHandles) const;
-    void BindMapUniformBlock(const SUniformBlock* UniformBlock) const;
-    void UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV, const SUniformBlock* UniformBlock) const;
+    void UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV) const;
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -476,6 +482,8 @@ struct SRenderer
     void DrawMap(SLevel& Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV);
 
     void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize, float Time);
+
+    void DrawWorldLayerImmediate(SLevel& Level, int32_t LayerIndex);
 
     void Draw2D(SVec3 Position, const SSpriteHandle& SpriteHandle);
 

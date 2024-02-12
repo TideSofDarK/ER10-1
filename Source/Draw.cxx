@@ -8,7 +8,6 @@
 #include "glad/gl.h"
 #include "Level.hxx"
 #include "Constants.hxx"
-#include "Utility.hxx"
 #include "Math.hxx"
 #include "Memory.hxx"
 
@@ -253,6 +252,9 @@ void SProgramHUD::InitUniforms()
 void SProgramMap::InitUniforms()
 {
     SProgram2D::InitUniforms();
+    UniformWorldLayers = glGetUniformLocation(ID, "u_world");
+
+    glProgramUniform1i(ID, UniformWorldLayers, TEXTURE_UNIT_WORLD_FRAMEBUFFER);
 
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::CommonMap);
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
@@ -519,12 +521,13 @@ void SWorldFramebuffer::ResetViewport() const
     glViewport(0, 0, Width, Height);
 }
 
-void SWorldFramebuffer::BindForDrawing() const
+void SWorldFramebuffer::BindForDrawing(int32_t LayerIndex) const
 {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
+    glFramebufferTexture3D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, ColorID, 0, LayerIndex);
     glClearColor(ClearColor.X, ClearColor.Y, ClearColor.Z, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void SWorldFramebuffer::BindForReading() const
@@ -784,19 +787,7 @@ void SRenderer::SetupLevelDrawData(const STileset& TileSet)
     }
 }
 
-void SRenderer::BindMapUniformBlock(const SUniformBlock* UniformBlock) const
-{
-    if (UniformBlock)
-    {
-        UniformBlock->Bind(EUniformBlockBinding::Map);
-    }
-    else
-    {
-        ProgramMap.UniformBlock.Bind(EUniformBlockBinding::Map);
-    }
-}
-
-void SRenderer::UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV, const SUniformBlock* UniformBlock) const
+void SRenderer::UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV) const
 {
     SShaderMapData ShaderMapData{};
 
@@ -805,9 +796,7 @@ void SRenderer::UploadMapData(const SLevel& Level, const SCoordsAndDirection& PO
     ShaderMapData.POV = POV;
     ShaderMapData.Tiles = Level.Tiles;
 
-    auto TargetUniformBlock = UniformBlock != nullptr ? UniformBlock->UBO : ProgramMap.UniformBlock.UBO;
-
-    glBindBuffer(GL_UNIFORM_BUFFER, TargetUniformBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlock.UBO);
     /* Upload only relevant tiles within (width * height) range. */
     glBufferSubData(GL_UNIFORM_BUFFER, 0, offsetof(SShaderMapData, Tiles) + sizeof(STile) * (Level.Width * Level.Height), &ShaderMapData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -1010,6 +999,33 @@ void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, co
     glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
 
     glBindVertexArray(0);
+}
+
+void SRenderer::DrawWorldLayerImmediate(SLevel& Level, int32_t LayerIndex)
+{
+    UploadMapData(Level, SCoordsAndDirection{});
+
+    WorldFramebuffer.BindForDrawing(LayerIndex);
+    WorldFramebuffer.ResetViewport();
+
+    auto Size = Level.CalculateMapSize();
+    /* @TODO: Maybe unnecessary? */
+    GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), MapWorldLayerSize);
+    // GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
+
+    ProgramMap.Use();
+
+    glUniform1i(ProgramMap.UniformModeID, MAP_MODE_LAYER);
+    glUniform2f(ProgramMap.UniformPositionScreenSpaceID, 0.0f, 0.0f);
+    glUniform2f(ProgramMap.UniformSizeScreenSpaceID, (float)Size.X, (float)Size.Y);
+
+    glBindVertexArray(Quad2D.VAO);
+
+    glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
+
+    glBindVertexArray(0);
+
+    SWorldFramebuffer::Unbind();
 }
 
 void SRenderer::Draw2D(SVec3 Position, const SSpriteHandle& SpriteHandle)

@@ -612,7 +612,7 @@ void SGame::ChangeLevel()
 {
     Level.PostProcess();
     OnBlobMoved();
-    Renderer.UploadMapData(Level, Blob.UnreliableCoordsAndDirection(), nullptr);
+    Renderer.UploadMapData(Level, Blob.UnreliableCoordsAndDirection());
 }
 
 void SGame::ChangeLevel(const SLevel& NewLevel)
