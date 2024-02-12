@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
 
-set(CMAKE_CXX_STANDARD 17)
-
 set(BUILD_SHARED_LIBS OFF)
 
 include(FetchContent)
@@ -16,7 +14,9 @@ set(SDL_DIRECTX OFF CACHE BOOL "" FORCE)
 set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
 set(SDL_VULKAN OFF CACHE BOOL "" FORCE)
 set(SDL_3DNOW OFF CACHE BOOL "" FORCE)
-set(SDL_TEST OFF CACHE BOOL "" FORCE)
+set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+set(SDL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
+set(SDL_DISABLE_UNINSTALL ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
         SDL
         GIT_REPOSITORY https://github.com/libsdl-org/SDL
@@ -53,6 +53,7 @@ macro(add_equinox_reach_target)
 
     add_executable(${TARGET_NAME})
 
+    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
     target_compile_definitions(${TARGET_NAME} PRIVATE ${TARGET_DEF} EQUINOX_REACH_ASSET_PATH="${ASSET_PATH}")
 
     target_sources(
@@ -85,7 +86,7 @@ macro(add_equinox_reach_target)
     target_link_libraries(
             ${TARGET_NAME}
             PRIVATE
-            SDL3::SDL3
+            # SDL3::SDL3
             SDL3::SDL3-static
     )
 
