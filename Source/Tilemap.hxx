@@ -159,14 +159,3 @@ struct STilemap
     void Deserialize(std::istream& Stream);
 };
 
-struct SLevel : STilemap
-{
-    int Z{};
-
-    /* Draw State */
-    SDrawDoorInfo DoorInfo{};
-    uint32_t DirtyFlags = ELevelDirtyFlags::POVChanged | ELevelDirtyFlags::DrawSet;
-    TVec2<std::size_t> DirtyRange{};
-
-    void Update(float DeltaTime);
-};

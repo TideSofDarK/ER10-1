@@ -70,7 +70,8 @@ macro(add_equinox_reach_target)
             Source/Blob.cxx
             Source/AssetTools.cxx
             Source/Game.cxx
-            Source/Level.cxx
+            Source/World.cxx
+            Source/Tilemap.cxx
             Source/Level/Level01.cxx
             ${TARGET_SOURCES}
     )

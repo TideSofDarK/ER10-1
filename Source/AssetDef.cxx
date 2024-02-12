@@ -105,6 +105,10 @@ namespace Asset::Shader
 namespace Asset::Map
 {
     DEFINE_ASSET(TestMapERM, "Map/TestMap.erm")
+    DEFINE_ASSET(Floor0, "Map/Floor0.erm")
+    DEFINE_ASSET(Floor1, "Map/Floor1.erm")
+    DEFINE_ASSET(Floor2, "Map/Floor2.erm")
+    DEFINE_ASSET(Floor3, "Map/Floor3.erm")
 }
 
 namespace Asset::Tileset::Hotel

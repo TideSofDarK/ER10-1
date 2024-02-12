@@ -15,12 +15,11 @@
 #include "Game.hxx"
 #include "GameSystem.hxx"
 #include "AssetTools.hxx"
-#include "Level.hxx"
+#include "World.hxx"
 #include "Log.hxx"
 #include "Math.hxx"
 #include "Memory.hxx"
 #include "SDL_video.h"
-#include "Utility.hxx"
 
 #define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
 #define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
@@ -78,6 +77,10 @@ void SWorldEditor::Show(SGame& Game)
 {
 }
 
+void SWorldEditor::ShowWorld(SGame& Game)
+{
+}
+
 void SLevelEditor::Init()
 {
     LevelEditorMode = ELevelEditorMode::Normal;
@@ -86,7 +89,7 @@ void SLevelEditor::Init()
     bDrawWallJoints = false;
     bDrawEdges = true;
     bDrawGridLines = false;
-    Level = SLevel{ { 8, 8 } };
+    Level = SWorldLevel{ { 8, 8 } };
 
     MapFramebuffer.Init(
         TEXTURE_UNIT_MAP_FRAMEBUFFER,
@@ -113,7 +116,7 @@ void SLevelEditor::SetActive(SGame& Game, bool bActive)
     }
     else
     {
-        Game.Renderer.UploadMapData(Game.Level, Game.Blob.UnreliableCoordsAndDirection());
+        Game.Renderer.UploadMapData(Game.World.GetLevel(), Game.Blob.UnreliableCoordsAndDirection());
     }
 }
 
@@ -195,7 +198,7 @@ void SLevelEditor::Show(SGame& Game)
         ImGui::SliderInt("Height", &NewLevelSize.Y, 8, MAX_LEVEL_HEIGHT);
         if (ImGui::Button("Accept"))
         {
-            Level = SLevel{ { NewLevelSize.X, NewLevelSize.Y } };
+            Level = SWorldLevel{ { NewLevelSize.X, NewLevelSize.Y } };
             FitTilemapToWindow();
             ImGui::CloseCurrentPopup();
         }
@@ -356,7 +359,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
 
     /* @TODO: Update tiles every frame for now. */
     SVec2 POVOrigin{ (float)Level.Width / 2.0f, (float)Level.Height / 2.0f };
-    Game.Renderer.UploadMapData(Level, Game.Blob.UnreliableCoordsAndDirection());
+    Game.Renderer.UploadMapData(&Level, Game.Blob.UnreliableCoordsAndDirection());
 
     /* Render level to framebuffer. */
     SVec2 MapFramebufferSize{ (float)MapFramebuffer.Width, (float)MapFramebuffer.Height };
@@ -621,8 +624,8 @@ void SLevelEditor::FitTilemapToWindow()
 
 SValidationResult SLevelEditor::Validate(bool bFix)
 {
-    static SLevel TempLevel;
-    SLevel* TargetLevel;
+    static SWorldLevel TempLevel;
+    SWorldLevel* TargetLevel;
     if (bFix)
     {
         TargetLevel = &Level;
@@ -855,12 +858,12 @@ void SDevTools::Update(SGame& Game)
             WorldEditor.Show(Game);
             break;
         default:
-            DebugTools(Game);
+            ShowDebugTools(Game);
             break;
     }
 }
 
-void SDevTools::DebugTools(SGame& Game) const
+void SDevTools::ShowDebugTools(SGame& Game) const
 {
     if (ImGui::Begin("Debug Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -882,29 +885,30 @@ void SDevTools::DebugTools(SGame& Game) const
         ImGui::SetNextItemOpen(true, ImGuiCond_Once);
         if (ImGui::TreeNode("Level Tools"))
         {
+            auto Level = Game.World.GetLevel();
             if (ImGui::Button("Explore Level"))
             {
-                for (auto X = 0; X < Game.Level.Width; X++)
+                for (auto X = 0; X < Level->Width; X++)
                 {
-                    for (auto Y = 0; Y < Game.Level.Height; Y++)
+                    for (auto Y = 0; Y < Level->Height; Y++)
                     {
-                        auto Tile = Game.Level.GetTileAtMutable({ X, Y });
+                        auto Tile = Level->GetTileAtMutable({ X, Y });
                         if (Tile != nullptr)
                         {
                             Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
                         }
                     }
                 }
-                Game.Level.DirtyFlags = ELevelDirtyFlags::All;
-                Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
+                Level->DirtyFlags = ELevelDirtyFlags::All;
+                Level->DirtyRange = { 0, Level->TileCount() };
             }
             if (ImGui::Button("Visit Level"))
             {
-                for (auto X = 0; X < Game.Level.Width; X++)
+                for (auto X = 0; X < Level->Width; X++)
                 {
-                    for (auto Y = 0; Y < Game.Level.Height; Y++)
+                    for (auto Y = 0; Y < Level->Height; Y++)
                     {
-                        auto Tile = Game.Level.GetTileAtMutable({ X, Y });
+                        auto Tile = Level->GetTileAtMutable({ X, Y });
                         if (Tile != nullptr)
                         {
                             Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
@@ -912,8 +916,8 @@ void SDevTools::DebugTools(SGame& Game) const
                         }
                     }
                 }
-                Game.Level.DirtyFlags = ELevelDirtyFlags::All;
-                Game.Level.DirtyRange = { 0, Game.Level.TileCount() };
+                Level->DirtyFlags = ELevelDirtyFlags::All;
+                Level->DirtyRange = { 0, Level->TileCount() };
             }
             if (ImGui::Button("Import Level From Editor"))
             {

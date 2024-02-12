@@ -5,7 +5,6 @@
 #include "Blob.hxx"
 #include "CommonTypes.hxx"
 #include "Constants.hxx"
-#include "Level.hxx"
 #include "Log.hxx"
 #include "Math.hxx"
 #include "Player.hxx"
@@ -14,7 +13,6 @@
 #include "Audio.hxx"
 #include "Draw.hxx"
 #include "Serialization.hxx"
-#include "Tile.hxx"
 
 namespace Asset::Common
 {
@@ -103,10 +101,7 @@ SGame::SGame()
         Asset::Tileset::Hotel::DoorOBJ);
     Tileset.DoorAnimationType = EDoorAnimationType::TwoDoors;
     Tileset.DoorOffset = 0.22f;
-    Renderer.SetupLevelDrawData(Tileset);
-
-    Blob.Direction = SDirection::East();
-    Blob.ApplyDirection(true);
+    Renderer.SetupTileset(&Tileset);
 
     Camera.RegenerateProjection();
 
@@ -147,10 +142,19 @@ SGame::SGame()
     //     true
     // };
 
-    ChangeLevel(Asset::Map::TestMapERM);
+    // ChangeLevel(Asset::Map::TestMapERM);
+
+    World.Init();
+
+    Blob.Coords = World.StartInfo.POV.Coords;
+    Blob.Direction = World.StartInfo.POV.Direction;
+    Blob.ResetEye();
+    Blob.ApplyDirection(true);
+
+    ChangeLevel();
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    DevTools.LevelEditor.Level = Level;
+    DevTools.LevelEditor.Level = *World.GetLevel();
 #endif
 
     SpriteDemoState = 5;
@@ -267,14 +271,14 @@ void SGame::Run()
             Renderer.UploadProjectionAndViewFromCamera(Camera);
             // Renderer.Draw3D({ -7.0f, 0.0f, -4.0f }, &Floor);
 
-            Level.Update(Window.DeltaTime);
-            Renderer.Draw3DLevel(Level, Blob.Coords, Blob.Direction);
+            World.Update(Window.DeltaTime);
+            Renderer.Draw3DLevel(World.GetLevel(), Blob.Coords, Blob.Direction);
 
             MapRectTimeline.Advance(Window.DeltaTime);
             auto MapRectFrom = SRect(bMapMaximized ? MapRectMin : MapRectMax);
             auto MapRectTo = SRect(bMapMaximized ? MapRectMax : MapRectMin);
             MapRect = Math::Mix(MapRectFrom, MapRectTo, MapRectTimeline.Value);
-            Renderer.DrawMap(Level, SVec3(MapRect.Min), SVec2Int(MapRect.Max), Blob.UnreliableCoordsAndDirection());
+            Renderer.DrawMap(World.GetLevel(), SVec3(MapRect.Min), SVec2Int(MapRect.Max), Blob.UnreliableCoordsAndDirection());
 
             // UVec2 centerOffset = Blob.UnreliableCoords() * MAP_TILE_SIZE_PIXELS - MapRect.Max * 0.5 + UVec2(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) / 2.0;
             // Log::Game<ELogLevel::Critical>("%.9f %.9f", centerOffset.X, centerOffset.Y);
@@ -406,7 +410,7 @@ void SGame::HandleBlobMovement()
         }
         else
         {
-            Level.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+            World.GetLevel()->DirtyFlags |= ELevelDirtyFlags::POVChanged;
         }
     }
     else
@@ -467,7 +471,8 @@ void SGame::HandleBlobMovement()
 
 bool SGame::AttemptBlobStep(SDirection Direction)
 {
-    auto CurrentTile = Level.GetTileAt(Blob.Coords);
+    auto Level = World.GetLevel();
+    auto CurrentTile = Level->GetTileAt(Blob.Coords);
     if (CurrentTile == nullptr)
     {
         return false;
@@ -484,7 +489,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
     }
 
     auto DirectionVector = Direction.GetVector<int>();
-    auto NextTile = Level.GetTileAt(Blob.Coords + DirectionVector);
+    auto NextTile = Level->GetTileAt(Blob.Coords + DirectionVector);
     if (NextTile == nullptr || !NextTile->IsWalkable())
     {
         return false;
@@ -497,7 +502,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
             return false;
         }
 
-        Level.DoorInfo.Set(Blob.Coords, Direction);
+        Level->DoorInfo.Set(Blob.Coords, Direction);
 
         Blob.Step(DirectionVector, EBlobAnimationType::Enter);
 
@@ -509,7 +514,7 @@ bool SGame::AttemptBlobStep(SDirection Direction)
     }
     else
     {
-        Level.DoorInfo.Invalidate();
+        Level->DoorInfo.Invalidate();
 
         Blob.Step(DirectionVector);
     }
@@ -521,7 +526,9 @@ bool SGame::AttemptBlobStep(SDirection Direction)
 
 void SGame::OnBlobMoved()
 {
-    auto CurrentTile = Level.GetTileAtMutable(Blob.Coords);
+    auto Level = World.GetLevel();
+
+    auto CurrentTile = Level->GetTileAtMutable(Blob.Coords);
     if (CurrentTile == nullptr)
     {
         return;
@@ -533,18 +540,18 @@ void SGame::OnBlobMoved()
     {
         CurrentTile->SetSpecialFlag(TILE_SPECIAL_VISITED_BIT);
 
-        DirtyRange.X = Level.CoordsToIndex(Blob.Coords);
+        DirtyRange.X = Level->CoordsToIndex(Blob.Coords);
         DirtyRange.Y = DirtyRange.X;
     }
 
     auto RevealTile = [&](SVec2Int Coords, SDirection Direction) {
-        auto Tile = Level.GetTileAtMutable(Coords);
+        auto Tile = Level->GetTileAtMutable(Coords);
         if (Tile != nullptr)
         {
             if (!Tile->CheckSpecialFlag(TILE_SPECIAL_EXPLORED_BIT))
             {
                 Tile->SetSpecialFlag(TILE_SPECIAL_EXPLORED_BIT);
-                std::size_t Index = Level.CoordsToIndex(Coords);
+                std::size_t Index = Level->CoordsToIndex(Coords);
                 DirtyRange.X = std::min(DirtyRange.X, Index);
                 DirtyRange.Y = std::max(DirtyRange.Y, Index);
             }
@@ -558,8 +565,8 @@ void SGame::OnBlobMoved()
     };
 
     auto RevealTileDiagonal = [&](SVec2Int Coords, SDirection DirectionA, SDirection DirectionB) {
-        auto TileA = Level.GetTileAt(Coords + DirectionA.GetVector<int>());
-        auto TileB = Level.GetTileAt(Coords + DirectionB.GetVector<int>());
+        auto TileA = Level->GetTileAt(Coords + DirectionA.GetVector<int>());
+        auto TileB = Level->GetTileAt(Coords + DirectionB.GetVector<int>());
         if (TileA != nullptr && TileB != nullptr)
         {
             if (CurrentTile->IsEdgeEmpty(DirectionA) && CurrentTile->IsEdgeEmpty(DirectionB))
@@ -600,31 +607,31 @@ void SGame::OnBlobMoved()
 
     if (DirtyRange.X != SIZE_MAX)
     {
-        Level.DirtyFlags |= ELevelDirtyFlags::DirtyRange;
-        Level.DirtyRange = DirtyRange;
+        Level->DirtyFlags |= ELevelDirtyFlags::DirtyRange;
+        Level->DirtyRange = DirtyRange;
     }
 
-    Level.DirtyFlags |= ELevelDirtyFlags::DrawSet;
-    Level.DirtyFlags |= ELevelDirtyFlags::POVChanged;
+    Level->DirtyFlags |= ELevelDirtyFlags::DrawSet;
+    Level->DirtyFlags |= ELevelDirtyFlags::POVChanged;
 }
 
 void SGame::ChangeLevel()
 {
-    Level.PostProcess();
+    World.GetLevel()->PostProcess();
     OnBlobMoved();
-    Renderer.UploadMapData(Level, Blob.UnreliableCoordsAndDirection());
+    Renderer.UploadMapData(World.GetLevel(), Blob.UnreliableCoordsAndDirection());
 }
 
-void SGame::ChangeLevel(const SLevel& NewLevel)
+void SGame::ChangeLevel(const SWorldLevel& NewLevel)
 {
-    Level = NewLevel;
+    *World.GetLevel() = NewLevel;
     ChangeLevel();
 }
 
 void SGame::ChangeLevel(const SAsset& LevelAsset)
 {
     Serialization::MemoryStream LevelStream(LevelAsset.SignedCharPtr(), LevelAsset.Length);
-    Level.Deserialize(LevelStream);
+    World.GetLevel()->Deserialize(LevelStream);
     ChangeLevel();
 }
 

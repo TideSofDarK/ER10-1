@@ -6,7 +6,6 @@
 #include "Battle.hxx"
 #include "Audio.hxx"
 #include "Window.hxx"
-#include "Level.hxx"
 #include "GameSystem.hxx"
 #include "Player.hxx"
 #include "World.hxx"
@@ -38,8 +37,6 @@ public:
     SParty PlayerParty;
     SBlob Blob;
     SBattle Battle;
-    SLevel Level;
-    // SGeometry TestGeometry;
     STileset Tileset;
 
     STimeline MapRectTimeline{3.0f};
@@ -63,7 +60,7 @@ public:
     bool AttemptBlobStep(SDirection Direction);
     void OnBlobMoved();
     void ChangeLevel();
-    void ChangeLevel(const SLevel& NewLevel);
+    void ChangeLevel(const SWorldLevel& NewLevel);
     void ChangeLevel(const SAsset& LevelAsset);
 
     [[nodiscard]] bool IsGameRunning() const;

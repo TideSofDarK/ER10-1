@@ -59,6 +59,14 @@ struct TVec2
         return { X / A, Y / A };
     }
 
+    template<typename OtherT>
+    constexpr TVec2<T>& operator=(const TVec2<OtherT>& Other)
+    {
+        X = static_cast<T>(Other.X);
+        Y = static_cast<T>(Other.Y);
+        return *this;
+    }
+
     constexpr bool operator==(const TVec2<T>& Other) const
     {
         return X == Other.X && Y == Other.Y;

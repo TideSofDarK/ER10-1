@@ -30,7 +30,7 @@ inline constexpr SVec2 MapWorldLayerSize{
     Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS)
 };
 
-struct SLevel;
+struct SWorldLevel;
 
 /* @TODO: Redesign so it's easier to upload. */
 struct SShaderMapData
@@ -465,11 +465,11 @@ struct SRenderer
 
     void Cleanup();
 
-    void SetupLevelDrawData(const STileset& TileSet);
+    void SetupTileset(const STileset* TileSet);
 
     /* Map */
     void SetMapIcons(const std::array<SSpriteHandle, MAP_ICON_COUNT>& SpriteHandles) const;
-    void UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV) const;
+    void UploadMapData(const SWorldLevel* Level, const SCoordsAndDirection& POV) const;
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
@@ -479,11 +479,11 @@ struct SRenderer
 
     void DrawHUD(SVec3 Position, SVec2Int Size, int Mode);
 
-    void DrawMap(SLevel& Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV);
+    void DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV);
 
     void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize, float Time);
 
-    void DrawWorldLayerImmediate(SLevel& Level, int32_t LayerIndex);
+    void DrawWorldLayerImmediate(const SWorldLevel* Level, int32_t LayerIndex);
 
     void Draw2D(SVec3 Position, const SSpriteHandle& SpriteHandle);
 
@@ -508,7 +508,7 @@ struct SRenderer
 
     void Draw3D(SVec3 Position, SGeometry* Geometry);
 
-    void Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDirection& POVDirection);
+    void Draw3DLevel(SWorldLevel* Level, const SVec2Int& POVOrigin, const SDirection& POVDirection);
 
     void Draw3DLevelDoor(SInstancedDrawCall& DoorDrawCall, const SVec2Int& TileCoords, SDirection Direction, float AnimationAlpha = 0.0f) const;
 

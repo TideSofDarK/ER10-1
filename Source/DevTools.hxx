@@ -3,9 +3,10 @@
 #include <optional>
 #include <filesystem>
 #include <imgui/imgui.h>
-#include "Level.hxx"
 #include "Draw.hxx"
 #include "World.hxx"
+
+struct SGame;
 
 enum class EDevToolsMode
 {
@@ -22,8 +23,9 @@ struct SWorldEditor
     void Init();
     void Cleanup();
 
-    void SetActive(struct SGame& Game, bool bActive);
-    void Show(struct SGame& Game);
+    void SetActive(SGame& Game, bool bActive);
+    void Show(SGame& Game);
+    void ShowWorld(SGame& Game);
 };
 
 enum class ELevelEditorMode
@@ -51,15 +53,15 @@ struct SLevelEditor
     bool bResetGridPosition = true;
     std::optional<SVec2Int> SelectedTileCoords{};
     std::optional<SVec2Int> BlockModeTileCoords{};
-    SLevel Level{};
+    SWorldLevel Level{};
     SFramebuffer MapFramebuffer;
 
     void Init();
     void Cleanup();
 
-    void SetActive(struct SGame& Game, bool bActive);
-    void Show(struct SGame& Game);
-    void ShowLevel(struct SGame& Game);
+    void SetActive(SGame& Game, bool bActive);
+    void Show(SGame& Game);
+    void ShowLevel(SGame& Game);
 
     void SaveTilemapToFile(const std::filesystem::path& Path);
     void LoadTilemapFromFile(const std::filesystem::path& Path);
@@ -84,9 +86,9 @@ struct SDevTools
 
     static void ProcessEvent(const union SDL_Event* Event);
 
-    void Update(struct SGame& Game);
+    void Update(SGame& Game);
 
-    void DebugTools(struct SGame& Game) const;
+    void ShowDebugTools(SGame& Game) const;
 
     static void DrawParty(struct SParty& Party, float Scale, bool bReversed);
 

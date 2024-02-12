@@ -61,8 +61,6 @@ public:
     SVec3 EyePositionCurrent{};
     SVec3 EyePositionTarget{};
 
-    SBlob();
-
     void Update(float DeltaTime);
 
     void Turn(bool bRight);

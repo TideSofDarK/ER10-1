@@ -1,4 +1,4 @@
-#include "Level.hxx"
+#include "Tilemap.hxx"
 
 #include <iostream>
 #include <fstream>
@@ -158,9 +158,4 @@ void STilemap::Deserialize(std::istream& Stream)
     Serialization::Read32(Stream, bUseWallJoints);
 
     PostProcess();
-}
-
-void SLevel::Update(float DeltaTime)
-{
-    DoorInfo.Timeline.Advance(DeltaTime);
 }

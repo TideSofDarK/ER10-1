@@ -6,7 +6,7 @@
 #include "Log.hxx"
 #include "Tile.hxx"
 #include "glad/gl.h"
-#include "Level.hxx"
+#include "World.hxx"
 #include "Constants.hxx"
 #include "Math.hxx"
 #include "Memory.hxx"
@@ -777,28 +777,28 @@ void SRenderer::SetMapIcons(const std::array<SSpriteHandle, MAP_ICON_COUNT>& Spr
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void SRenderer::SetupLevelDrawData(const STileset& TileSet)
+void SRenderer::SetupTileset(const STileset* Tileset)
 {
-    LevelDrawData.TileSet = &TileSet;
+    LevelDrawData.TileSet = Tileset;
     for (int TileTypeIndex = 0; TileTypeIndex < ETileGeometryType::Count; TileTypeIndex++)
     {
         auto& DrawCall = LevelDrawData.DrawCalls[TileTypeIndex];
-        DrawCall.SubGeometry = &TileSet.TileGeometry[TileTypeIndex];
+        DrawCall.SubGeometry = &Tileset->TileGeometry[TileTypeIndex];
     }
 }
 
-void SRenderer::UploadMapData(const SLevel& Level, const SCoordsAndDirection& POV) const
+void SRenderer::UploadMapData(const SWorldLevel* Level, const SCoordsAndDirection& POV) const
 {
     SShaderMapData ShaderMapData{};
 
-    ShaderMapData.Width = (int)Level.Width;
-    ShaderMapData.Height = (int)Level.Height;
+    ShaderMapData.Width = (int)Level->Width;
+    ShaderMapData.Height = (int)Level->Height;
     ShaderMapData.POV = POV;
-    ShaderMapData.Tiles = Level.Tiles;
+    ShaderMapData.Tiles = Level->Tiles;
 
     glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlock.UBO);
     /* Upload only relevant tiles within (width * height) range. */
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, offsetof(SShaderMapData, Tiles) + sizeof(STile) * (Level.Width * Level.Height), &ShaderMapData);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, offsetof(SShaderMapData, Tiles) + sizeof(STile) * (Level->Width * Level->Height), &ShaderMapData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -948,27 +948,27 @@ void SRenderer::DrawHUD(SVec3 Position, SVec2Int Size, int Mode)
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMap(SLevel& Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV)
+void SRenderer::DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlock.UBO);
-    if (Level.DirtyFlags & ELevelDirtyFlags::POVChanged)
+    if (Level->DirtyFlags & ELevelDirtyFlags::POVChanged)
     {
         glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POV), sizeof(SCoordsAndDirection), &POV);
 
-        Level.DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
+        Level->DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
 
         Log::Draw<ELogLevel::Verbose>("%s(): POV: { { %.2f, %.2f }, %d }", __func__, POV.Coords.X, POV.Coords.Y, POV.Direction.Index);
     }
 
-    if (Level.DirtyFlags & ELevelDirtyFlags::DirtyRange)
+    if (Level->DirtyFlags & ELevelDirtyFlags::DirtyRange)
     {
-        auto DirtyCount = (GLsizeiptr)(Level.DirtyRange.Y - Level.DirtyRange.X) + 1;
-        auto FirstTile = Level.GetTile(Level.DirtyRange.X);
-        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level.DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
+        auto DirtyCount = (GLsizeiptr)(Level->DirtyRange.Y - Level->DirtyRange.X) + 1;
+        auto FirstTile = Level->GetTile(Level->DirtyRange.X);
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level->DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
 
-        Level.DirtyFlags &= ~ELevelDirtyFlags::DirtyRange;
+        Level->DirtyFlags &= ~ELevelDirtyFlags::DirtyRange;
 
-        Log::Draw<ELogLevel::Debug>("%s(): DirtyRange: %d to %d", __func__, Level.DirtyRange.X, Level.DirtyRange.Y);
+        Log::Draw<ELogLevel::Debug>("%s(): DirtyRange: %d to %d", __func__, Level->DirtyRange.X, Level->DirtyRange.Y);
     }
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -1001,14 +1001,14 @@ void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, co
     glBindVertexArray(0);
 }
 
-void SRenderer::DrawWorldLayerImmediate(SLevel& Level, int32_t LayerIndex)
+void SRenderer::DrawWorldLayerImmediate(const SWorldLevel* Level, int32_t LayerIndex)
 {
     UploadMapData(Level, SCoordsAndDirection{});
 
     WorldFramebuffer.BindForDrawing(LayerIndex);
     WorldFramebuffer.ResetViewport();
 
-    auto Size = Level.CalculateMapSize();
+    auto Size = Level->CalculateMapSize();
     /* @TODO: Maybe unnecessary? */
     GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), MapWorldLayerSize);
     // GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
@@ -1140,7 +1140,7 @@ void SRenderer::Draw3D(SVec3 Position, SGeometry* Geometry)
     Queue3D.Enqueue(Entry);
 }
 
-void SRenderer::Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDirection& POVDirection)
+void SRenderer::Draw3DLevel(SWorldLevel* Level, const SVec2Int& POVOrigin, const SDirection& POVDirection)
 {
     auto constexpr DrawDistanceForward = 4;
     auto constexpr DrawDistanceSide = 2;
@@ -1150,7 +1150,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDir
     /* @TODO: Generic CleanDynamic method? */
     DoorDrawCall.DynamicCount = 0;
 
-    if (Level.DirtyFlags & ELevelDirtyFlags::DrawSet)
+    if (Level->DirtyFlags & ELevelDirtyFlags::DrawSet)
     {
         LevelDrawData.Clear();
 
@@ -1164,7 +1164,7 @@ void SRenderer::Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDir
 
         auto& DoorFrameDrawCall = LevelDrawData.DrawCalls[ETileGeometryType::DoorFrame];
 
-        if (!Level.IsValidTile(POVOrigin))
+        if (!Level->IsValidTile(POVOrigin))
         {
             return;
         }
@@ -1193,16 +1193,16 @@ void SRenderer::Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDir
 
                 /* @TODO: Draw joints in separate loop. */
                 /* @TODO: Maybe don't store them at all? */
-                if (Level.bUseWallJoints && Level.IsValidWallJoint({ X, Y }))
+                if (Level->bUseWallJoints && Level->IsValidWallJoint({ X, Y }))
                 {
-                    auto bWallJoint = Level.IsWallJointAt({ X, Y });
+                    auto bWallJoint = Level->IsWallJointAt({ X, Y });
                     if (bWallJoint)
                     {
                         WallJointDrawCall.Push(TileTransform);
                     }
                 }
 
-                auto Tile = Level.GetTileAt(TileCoords);
+                auto Tile = Level->GetTileAt(TileCoords);
 
                 if (Tile == nullptr)
                 {
@@ -1255,9 +1255,9 @@ void SRenderer::Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDir
 
                         /* Check two adjacent tiles for ongoing door animation.
                          * Prevents static doors from being drawn if the animation is playing. */
-                        if (Level.DoorInfo.Timeline.IsPlaying())
+                        if (Level->DoorInfo.Timeline.IsPlaying())
                         {
-                            if (TileCoords == Level.DoorInfo.TileCoords && Direction == Level.DoorInfo.Direction)
+                            if (TileCoords == Level->DoorInfo.TileCoords && Direction == Level->DoorInfo.Direction)
                             {
                                 continue;
                             }
@@ -1272,16 +1272,16 @@ void SRenderer::Draw3DLevel(SLevel& Level, const SVec2Int& POVOrigin, const SDir
                 }
             }
         }
-        Level.DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
+        Level->DirtyFlags &= ~ELevelDirtyFlags::DrawSet;
 
         Log::Draw<ELogLevel::Debug>("%s(): Regenerated Level Draw Set", __func__);
     }
 
     Draw3DLevelDoor(
         DoorDrawCall,
-        Level.DoorInfo.TileCoords,
-        Level.DoorInfo.Direction,
-        Level.DoorInfo.Timeline.Value);
+        Level->DoorInfo.TileCoords,
+        Level->DoorInfo.Direction,
+        Level->DoorInfo.Timeline.Value);
 
     SEntry3D Entry;
 
