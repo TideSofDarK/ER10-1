@@ -55,16 +55,17 @@ struct SShaderMapData
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
 };
 
-struct SShaderWorldLayers
+struct SShaderWorld
 {
     struct SShaderWorldLayer
     {
-        SVec4 Color{};
-        SVec2 Position{};
+        SVec3 Color{};
         uint32_t Index{};
-        uint32_t : 32;
+        SVec2 Position{};
+        SVec2 TextureSize{};
     };
 
+    SVec4 Position;
     SShaderWorldLayer Layers[WORLD_MAX_LAYERS];
 };
 
@@ -189,9 +190,9 @@ protected:
     void CleanupUniformBlocks() const override;
 
 public:
-    SUniformBlock CommonUniformBlock{};
-    SUniformBlock MapUniformBlock{};
-    SUniformBlock WorldLayersUniformBlock{};
+    SUniformBlock UniformBlockCommon{};
+    SUniformBlock UniformBlockMap{};
+    SUniformBlock UniformBlockWorld{};
     int UniformCommonAtlasID{};
     int UniformWorldTextures{};
     int UniformWorldLayers{};
@@ -505,7 +506,7 @@ struct SRenderer
 
     void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize);
 
-    void DrawWorldMap(const SVec2& Position, const SVec2& Size, const SVec2& ScreenSize);
+    void DrawWorldMap(const SVec2& Position, const SVec2& Size);
 
     void DrawWorldLayers(const struct SWorld* World, SVec2Int Range);
 

@@ -26,10 +26,10 @@ struct STileMasks
 
 struct SWorldLayer
 {
-    vec4 color;
-    vec2 position;
+    vec3 color;
     uint index;
-    uint paddingA;
+    vec2 position;
+    vec2 textureSize;
 };
 
 layout(std140) uniform ub_common
@@ -48,10 +48,11 @@ layout(std140) uniform ub_map
     STile[MAX_LEVEL_TILE_COUNT] tiles;
 } u_map;
 
-layout(std140) uniform ub_worldLayers
+layout(std140) uniform ub_world
 {
+    vec4 position;
     SWorldLayer[WORLD_MAX_LAYERS] layers;
-} u_worldLayers;
+} u_world;
 
 uniform int u_mode;
 uniform vec4 u_modeControlA;
@@ -189,6 +190,12 @@ void main()
     vec2 pov = vec2(u_map.povX, u_map.povY);
 
     vec2 texCoord = f_texCoord;
+    if (u_mode == MAP_MODE_WORLD_LAYER)
+    {
+        // texCoord.y = 1.0f - texCoord.y;
+        texCoord.x = 1.0f - texCoord.x;
+    }
+
     vec2 texCoordOriginal = texCoord;
     texCoord *= u_sizeScreenSpace;
 
@@ -198,7 +205,7 @@ void main()
 
     if (u_mode == MAP_MODE_WORLD)
     {
-        pov = round(pov);
+        vec2 position = round(u_world.position.xy);
 
         tileSize = MAP_ISO_TILE_SIZE_PIXELS;
         tileCellSize = MAP_ISO_TILE_CELL_SIZE_PIXELS;
@@ -209,12 +216,33 @@ void main()
 
         vec2 sizeIso = (cartesianToIsometric(u_sizeScreenSpace / 2.0));
 
-        vec2 centerOffset = sizeIso - (pov + vec2(0.5)) * tileSize;
+        vec2 centerOffset = sizeIso - (position + vec2(0.5)) * tileSize;
 
         texCoord -= centerOffset;
-
         texCoord = floor(texCoord);
-    } else if (u_mode == MAP_MODE_WORLD_LAYER)
+
+        /* Draw lower levels. */
+        {
+            for (int i = WORLD_MAX_LAYERS; i > 1; i--)
+            {
+                SWorldLayer layer = u_world.layers[i];
+                // vec2 layerSizeIso = (cartesianToIsometric(layer.textureSize / 2.0f));
+
+                vec2 tempTexCoord = f_texCoord;
+                vec2 pixelCoord = tempTexCoord * u_sizeScreenSpace;
+                // pixelCoord -= vec2(0, floor(tileSize / 2.0f) * i);
+                pixelCoord = cartesianToIsometric(pixelCoord);
+                // pixelCoord -= layerSizeIso - (position + vec2(0.5)) * tileSize;
+                // layer.position = vec2(1.0, 1.0);
+                centerOffset = sizeIso - (layer.position + vec2(0.5)) * tileSize;
+                pixelCoord -= centerOffset;
+                // pixelCoord = floor(pixelCoord);
+                pixelCoord = vec2(layer.textureSize - pixelCoord);
+                finalColor = texelFetch(u_worldTextures, ivec3(pixelCoord, i), 0).rgb;
+            }
+        }
+    }
+    else if (u_mode == MAP_MODE_WORLD_LAYER)
     {
         texCoord = floor(texCoord);
 
@@ -227,7 +255,8 @@ void main()
         //
         // texCoord += centerOffset;
     }
-    else {
+    else
+    {
         texCoord = floor(texCoord);
 
         tileSize = MAP_TILE_SIZE_PIXELS;
@@ -252,6 +281,15 @@ void main()
         // texCoord += centerOffset;
     }
 
+    vec3 edgeColor = vec3(1.0f);
+    vec3 floorColor = vec3(0.0f, 0.0f, 1.0f);
+
+    if (u_mode == MAP_MODE_WORLD_LAYER)
+    {
+        edgeColor *= vec3(0.1f, 0.5f, 0.2f);
+        floorColor = edgeColor * 0.2f;
+    }
+
     float tileSizeReciprocal = 1.0 / tileSize;
 
     vec4 tileInfo = pixelToTile(texCoord, tileSize);
@@ -274,7 +312,7 @@ void main()
 
     // float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
 
-    vec3 floorTile = vec3(0.0, 0.0, 1.0 - ((1.0 - tileVisitedMask) * 0.6));
+    vec3 floorTile = floorColor * (0.5f + tileVisitedMask / 2.0f);
     finalColor = overlay(finalColor, floorTile, floorTileMask);
 
     // Edges
@@ -324,8 +362,7 @@ void main()
     wallMasks *= edgeMask;
     wallMasks *= levelBoundsMask;
 
-    vec3 wallColor = vec3(1.0, 1.0, 1.0);
-    finalColor = mix(finalColor, wallColor, wallMasks);
+    finalColor = mix(finalColor, edgeColor, wallMasks);
 
     // Doors
     float doorSize = floor(tileCellSize * 0.525);
@@ -369,7 +406,7 @@ void main()
     float doorMasks = saturate(doorMaskHor + doorMaskVert + doorMaskCorner);
     doorMasks *= levelBoundsMask;
 
-    finalColor = overlay(finalColor, wallColor, doorMasks);
+    finalColor = overlay(finalColor, edgeColor, doorMasks);
 
     /* Grid */
     if (u_mode != MAP_MODE_WORLD_LAYER)
@@ -406,38 +443,6 @@ void main()
     // float povMask = saturate((povTileMask * (1.0 - distance(vec2(map1to1(tileInfo.z - tileSizeReciprocal / 2.0), map1to1(tileInfo.w - tileSizeReciprocal / 2.0)) * 2.0, vec2(0.0, 0.0))))) * povAnim;
     // vec3 povColor = vec3(1.0, 1.0, 1.0);
     // finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
-
-    if (u_mode == MAP_MODE_WORLD)
-    {
-        finalColor = vec3(0.0);
-        // pixelCoord = floor(pixelCoord);
-        // pixelCoord += vec2(200);
-        // test = cartesianToIsometric(test);
-        // test /= u_sizeScreenSpace;
-        vec2 test = f_texCoord;
-        // test.x /= 2.0f;
-        // test.y /= 2.0f;
-        // test.y = 1.0f - test.y;
-        // test = cartesianToIsometric(test);
-        vec2 pixelCoord = test * 1024;
-        pixelCoord += vec2(u_globals.time);
-        // pixelCoord = cartesianToIsometric(pixelCoord);
-        // pixelCoord += vec2(512, -512);
-        // test /= 1.1f;
-        // test.y *= -1.0f;
-        // test += vec2(-0.5f, 0.0f);
-        // test /= 2.0f;
-        for (int i = 0; i < WORLD_MAX_LAYERS; ++i)
-        {
-            finalColor += texelFetch(u_worldTextures, ivec3(pixelCoord, 0), 0).rgb;
-            // finalColor += texture(u_worldTextures, vec3(test, 1)).rgb;
-        }
-    }
-
-    // if (u_mode == MAP_MODE_WORLD_LAYER)
-    // {
-    //     finalColor = vec3(1.0);
-    // }
 
     color = vec4(finalColor, 1.0);
 }

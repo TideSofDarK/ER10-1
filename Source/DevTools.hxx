@@ -18,6 +18,7 @@ enum class EDevToolsMode
 struct SWorldEditor
 {
     SWorld World;
+    float Scale = 1.0f;
 
     void Init();
     void Cleanup();
@@ -45,7 +46,7 @@ struct SLevelEditor
     ELevelEditorMode LevelEditorMode{};
     uint32_t ToggleEdgeType{};
     SVec2Int NewLevelSize{};
-    float MapScale{};
+    float Scale{};
     bool bDrawWallJoints{};
     bool bDrawEdges{};
     bool bDrawGridLines{};

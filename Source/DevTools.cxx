@@ -251,31 +251,41 @@ void SWorldEditor::ShowWorld(SGame& Game)
         bFirstTime = false;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    Game.Renderer.MapFramebuffer.ResetViewport();
-    SVec2 WindowSize = { 100, 100 };
-    WindowSize = MapTextureSize;
-
-    Game.Renderer.DrawWorldMap({ 0.0f, 0.0f }, WindowSize, WindowSize);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+    ImGuiIO& IO = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::SetNextWindowSize(ImVec2{ WindowSize.X, WindowSize.Y });
+    ImGui::SetNextWindowSize(ImVec2{ 512, 512 }, ImGuiCond_Once);
     if (ImGui::Begin("Overworld", nullptr,
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings))
     {
         auto* DrawList = ImGui::GetWindowDrawList();
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
+        ImVec2 WindowSize = ImGui::GetWindowSize();
+
+        if (ImGui::IsWindowHovered())
+        {
+            Scale += IO.MouseWheel * 1.0f;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        const SVec2 ScaledSize{ std::floor(WindowSize.x / Scale), std::floor(WindowSize.y / Scale) };
+
+        glViewport(0, 0, (int)ScaledSize.X, (int)ScaledSize.Y);
+
+        Game.Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
+        // WindowSize = MapTextureSize;
+
+        Game.Renderer.DrawWorldMap({ 0.0f, 0.0f }, ScaledSize);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         DrawList->AddImage(
             (void*)Game.Renderer.MapFramebuffer.ColorID,
             CursorPos,
-            ImVec2(CursorPos.x + WindowSize.X,
-                CursorPos.y + WindowSize.Y),
-            ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+            ImVec2(CursorPos.x + WindowSize.x,
+                CursorPos.y + WindowSize.y),
+            ImVec2(0.0f, 1.0f / Scale), ImVec2(1.0f / Scale, 0.0f));
 
         ImGui::End();
     }
@@ -290,7 +300,7 @@ void SLevelEditor::Init()
 {
     LevelEditorMode = ELevelEditorMode::Normal;
     NewLevelSize = SVec2Int{ 8, 8 };
-    MapScale = 1.0f;
+    Scale = 1.0f;
     bDrawWallJoints = false;
     bDrawEdges = true;
     bDrawGridLines = false;
@@ -556,11 +566,11 @@ void SLevelEditor::ShowLevel(SGame& Game)
     Game.Renderer.DrawMapImmediate(SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * MapScale;
-    float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * MapScale;
+    float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * Scale;
+    float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * Scale;
     auto ScaledMapSize = SVec2{
-        (float)OriginalMapSize.X * MapScale,
-        (float)OriginalMapSize.Y * MapScale
+        (float)OriginalMapSize.X * Scale,
+        (float)OriginalMapSize.Y * Scale
     };
 
     ImGuiIO& IO = ImGui::GetIO();
@@ -577,8 +587,8 @@ void SLevelEditor::ShowLevel(SGame& Game)
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
     {
         auto* DrawList = ImGui::GetWindowDrawList();
-        ImVec2 GridSize = ImVec2((MapScale * (float)Level.Width),
-            (MapScale * (float)Level.Height));
+        ImVec2 GridSize = ImVec2((Scale * (float)Level.Width),
+            (Scale * (float)Level.Height));
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
 
         ImGui::GetWindowDrawList()->AddImage(
@@ -590,7 +600,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
 
         if (ImGui::IsWindowHovered())
         {
-            MapScale += IO.MouseWheel * 1.0f;
+            Scale += IO.MouseWheel * 1.0f;
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             {
@@ -805,8 +815,8 @@ void SLevelEditor::FitTilemapToWindow()
     auto MapSizePixels = Level.CalculateMapSize();
 
     auto Viewport = ImGui::GetMainViewport();
-    MapScale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y);
-    MapScale = std::max(1.0f, (std::floor(MapScale) - 1.0f));
+    Scale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y);
+    Scale = std::max(1.0f, (std::floor(Scale) - 1.0f));
     bResetGridPosition = true;
 }
 

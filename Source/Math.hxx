@@ -54,6 +54,20 @@ struct TVec2
         return { X * A, Y * A };
     }
 
+    constexpr TVec2<T>& operator*=(const TVec2<T>& Other)
+    {
+        X *= Other.X;
+        Y *= Other.Y;
+        return *this;
+    }
+
+    constexpr TVec2<T>& operator*=(const T Other)
+    {
+        X *= Other;
+        Y *= Other;
+        return *this;
+    }
+
     constexpr TVec2<T> operator/(const T A) const
     {
         return { X / A, Y / A };
