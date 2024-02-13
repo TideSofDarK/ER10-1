@@ -22,7 +22,6 @@ struct SWorldEditor
     void Init();
     void Cleanup();
 
-    void SetActive(SGame& Game, bool bActive);
     void Show(SGame& Game);
     void ShowWorld(SGame& Game);
     void RenderLayers(SGame& Game);
@@ -58,7 +57,6 @@ struct SLevelEditor
     void Init();
     void Cleanup();
 
-    void SetActive(SGame& Game, bool bActive);
     void Show(SGame& Game);
     void ShowLevel(SGame& Game);
 

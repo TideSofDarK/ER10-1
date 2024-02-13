@@ -24,10 +24,11 @@ namespace EUniformBlockBinding
     enum : int32_t
     {
         Globals,
-        Common2D,
-        Common3D,
-        CommonMap,
-        Map
+        Uber2DCommon,
+        Uber3DCommon,
+        MapCommon,
+        Map,
+        MapWorldLayers
     };
 };
 
@@ -216,7 +217,7 @@ void SProgramPostProcess::InitUniforms()
 
 void SProgram3D::InitUniforms()
 {
-    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Common3D);
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Uber3DCommon);
     UniformModelID = glGetUniformLocation(ID, "u_model");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
@@ -227,7 +228,7 @@ void SProgram3D::InitUniforms()
 
 void SProgram2D::InitUniforms()
 {
-    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Common2D);
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Uber2DCommon);
     UniformPositionScreenSpaceID = glGetUniformLocation(ID, "u_positionScreenSpace");
     UniformSizeScreenSpaceID = glGetUniformLocation(ID, "u_sizeScreenSpace");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
@@ -252,28 +253,33 @@ void SProgramHUD::InitUniforms()
 void SProgramMap::InitUniforms()
 {
     SProgram2D::InitUniforms();
-    UniformWorldLayers = glGetUniformLocation(ID, "u_world");
+    UniformWorldTextures = glGetUniformLocation(ID, "u_worldTextures");
     UniformRevealed = glGetUniformLocation(ID, "u_revealed");
 
-    glProgramUniform1i(ID, UniformWorldLayers, ETextureUnits::WorldLayers);
+    glProgramUniform1i(ID, UniformWorldTextures, ETextureUnits::WorldTextures);
 
-    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::CommonMap);
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::MapCommon);
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_worldLayers"), EUniformBlockBinding::MapWorldLayers);
 }
 
 void SProgramMap::InitUniformBlocks()
 {
     CommonUniformBlock.Init(sizeof(SShaderSprite) * MAP_ICON_COUNT);
-    CommonUniformBlock.Bind(EUniformBlockBinding::CommonMap);
+    CommonUniformBlock.Bind(EUniformBlockBinding::MapCommon);
 
-    UniformBlock.Init(sizeof(SShaderMapData));
-    UniformBlock.Bind(EUniformBlockBinding::Map);
+    MapUniformBlock.Init(sizeof(SShaderMapData));
+    MapUniformBlock.Bind(EUniformBlockBinding::Map);
+
+    WorldLayersUniformBlock.Init(sizeof(SShaderWorldLayers));
+    WorldLayersUniformBlock.Bind(EUniformBlockBinding::MapWorldLayers);
 }
 
 void SProgramMap::CleanupUniformBlocks() const
 {
     CommonUniformBlock.Cleanup();
-    UniformBlock.Cleanup();
+    MapUniformBlock.Cleanup();
+    WorldLayersUniformBlock.Cleanup();
 }
 
 void SProgramMap::SetRevealed(bool bRevealed)
@@ -701,20 +707,20 @@ void SRenderer::Init(int Width, int Height)
     GlobalsUniformBlock.Bind(EUniformBlockBinding::Globals);
 
     Queue2D.CommonUniformBlock.Init(32);
-    Queue2D.CommonUniformBlock.Bind(EUniformBlockBinding::Common2D);
+    Queue2D.CommonUniformBlock.Bind(EUniformBlockBinding::Uber2DCommon);
 
     Queue3D.CommonUniformBlock.Init(sizeof(SMat4x4) * 2);
-    Queue3D.CommonUniformBlock.Bind(EUniformBlockBinding::Common3D);
+    Queue3D.CommonUniformBlock.Bind(EUniformBlockBinding::Uber3DCommon);
 
     /* Initialize framebuffers. */
-    WorldFramebuffer.Init(ETextureUnits::WorldLayers,
-        int(MapWorldLayerSize.X),
-        int(MapWorldLayerSize.Y),
+    WorldFramebuffer.Init(ETextureUnits::WorldTextures,
+        int(MapWorldLayerTextureSize.X),
+        int(MapWorldLayerTextureSize.Y),
         TVec3{ 0.0f, 0.0f, 1.0f });
     MapFramebuffer.Init(
         ETextureUnits::MapFramebuffer,
-        int(MapWorldLayerSize.X),
-        int(MapWorldLayerSize.Y),
+        int(MapTextureSize.X),
+        int(MapTextureSize.Y),
         TVec3{ 0.0f, 1.0f, 0.0f });
     MainFramebuffer.Init(ETextureUnits::MainFramebuffer, Width, Height, WINDOW_CLEAR_COLOR);
 
@@ -729,6 +735,9 @@ void SRenderer::Init(int Width, int Height)
     ProgramUber2D.Init(Asset::Shader::Uber2DVERT, Asset::Shader::Uber2DFRAG);
     ProgramUber3D.Init(Asset::Shader::Uber3DVERT, Asset::Shader::Uber3DFRAG);
     ProgramPostProcess.Init(Asset::Shader::PostProcessVERT, Asset::Shader::PostProcessFRAG);
+
+    // Log::Draw<ELogLevel::Critical>("%.2f %.2f", Size.X, Size.Y);
+    // Log::Draw<ELogLevel::Critical>("%.2f %.2f", Size.X * std::cos(Math::Radians(30.0f)) + Size.Y * std::cos(Math::Radians(60.0f)), Size.X * std::sin(Math::Radians(30.0f)) + Size.Y * std::sin(Math::Radians(60.0f)));
 }
 
 void SRenderer::Cleanup()
@@ -786,16 +795,20 @@ void SRenderer::UploadMapData(const SWorldLevel* Level, const SCoordsAndDirectio
     ShaderMapData.POV = POV;
     ShaderMapData.Tiles = Level->Tiles;
 
-    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlock.UBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.MapUniformBlock.UBO);
     /* Upload only relevant tiles within (width * height) range. */
     glBufferSubData(GL_UNIFORM_BUFFER, 0, offsetof(SShaderMapData, Tiles) + sizeof(STile) * (Level->Width * Level->Height), &ShaderMapData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
+void SRenderer::SetTime(float Time) const
+{
+    GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
+}
+
 void SRenderer::Flush(const SWindowData& WindowData)
 {
     GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), { SCREEN_WIDTH, SCREEN_HEIGHT });
-    GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), WindowData.Seconds);
 
     /* Begin Draw */
     glBindFramebuffer(GL_FRAMEBUFFER, MainFramebuffer.FBO);
@@ -941,7 +954,7 @@ void SRenderer::DrawHUD(SVec3 Position, SVec2Int Size, int Mode)
 
 void SRenderer::DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV)
 {
-    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlock.UBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.MapUniformBlock.UBO);
     if (Level->DirtyFlags & ELevelDirtyFlags::POVChanged)
     {
         glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POV), sizeof(SCoordsAndDirection), &POV);
@@ -973,10 +986,9 @@ void SRenderer::DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize, float Time)
+void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize)
 {
     GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScreenSize);
-    GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
 
     ProgramMap.Use();
 
@@ -1011,7 +1023,7 @@ void SRenderer::DrawWorldMap(const SVec2& Position, const SVec2& Size, const SVe
 void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
 {
     /* @TODO: Maybe unnecessary? */
-    GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), MapWorldLayerSize);
+    GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), MapWorldLayerTextureSize);
     // GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
 
     glBindFramebuffer(GL_FRAMEBUFFER, WorldFramebuffer.FBO);
@@ -1034,11 +1046,11 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
         WorldFramebuffer.SetLayer(LayerIndex);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        UploadMapData(Level, SCoordsAndDirection{});
+        UploadMapData(Level, {});
 
-        auto Size = Level->CalculateMapSize();
+        auto Size = Level->CalculateMapIsoSize();
 
         glUniform2f(ProgramMap.UniformSizeScreenSpaceID, (float)Size.X, (float)Size.Y);
 

@@ -146,6 +146,14 @@ struct STilemap
         };
     }
 
+    [[nodiscard]] SVec2Int CalculateMapIsoSize() const
+    {
+        return {
+            MAP_ISO_TILE_SIZE_PIXELS * Width + MAP_ISO_TILE_EDGE_SIZE_PIXELS,
+            MAP_ISO_TILE_SIZE_PIXELS * Height + MAP_ISO_TILE_EDGE_SIZE_PIXELS
+        };
+    }
+
     void PostProcess();
 
     void ToggleEdge(const SVec2Int& Coords, SDirection Direction, UFlagType NorthEdgeBit);

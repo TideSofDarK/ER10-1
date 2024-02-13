@@ -55,23 +55,6 @@ void SWorldEditor::Cleanup()
     // MapFramebuffer.Cleanup();
 }
 
-void SWorldEditor::SetActive(struct SGame& Game, bool bActive)
-{
-    if (bActive)
-    {
-        static bool bFirstTime = true;
-        if (bFirstTime)
-        {
-            bFirstTime = false;
-
-            Game.Renderer.DrawWorldLayers(&Game.World, { 0, 4 });
-        }
-    }
-    else
-    {
-    }
-}
-
 void SWorldEditor::Show(SGame& Game)
 {
     ImGuiID PopupID = ImHashStr("MainMenuPopup");
@@ -261,11 +244,19 @@ void SWorldEditor::Show(SGame& Game)
 
 void SWorldEditor::ShowWorld(SGame& Game)
 {
+    static bool bFirstTime = true;
+    if (bFirstTime)
+    {
+        Game.Renderer.DrawWorldLayers(&Game.World, { 0, 4 });
+        bFirstTime = false;
+    }
+
     glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     Game.Renderer.MapFramebuffer.ResetViewport();
-    SVec2 WindowSize = { 500, 500 };
+    SVec2 WindowSize = { 100, 100 };
+    WindowSize = MapTextureSize;
 
     Game.Renderer.DrawWorldMap({ 0.0f, 0.0f }, WindowSize, WindowSize);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -308,22 +299,6 @@ void SLevelEditor::Init()
 
 void SLevelEditor::Cleanup()
 {
-}
-
-void SLevelEditor::SetActive(SGame& Game, bool bActive)
-{
-    if (bActive)
-    {
-        static bool bFirstTime = true;
-        if (bFirstTime)
-        {
-            FitTilemapToWindow();
-            bFirstTime = false;
-        }
-    }
-    else
-    {
-    }
 }
 
 void SLevelEditor::Show(SGame& Game)
@@ -554,6 +529,13 @@ void SLevelEditor::Show(SGame& Game)
 
 void SLevelEditor::ShowLevel(SGame& Game)
 {
+    static bool bFirstTime = true;
+    if (bFirstTime)
+    {
+        FitTilemapToWindow();
+        bFirstTime = false;
+    }
+
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
     {
         FitTilemapToWindow();
@@ -571,7 +553,7 @@ void SLevelEditor::ShowLevel(SGame& Game)
     glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     Game.Renderer.MapFramebuffer.ResetViewport();
-    Game.Renderer.DrawMapImmediate(SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize, (float)ImGui::GetTime());
+    Game.Renderer.DrawMapImmediate(SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * MapScale;
@@ -1050,13 +1032,11 @@ void SDevTools::Update(SGame& Game)
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F8)))
     {
         Mode = Mode == EDevToolsMode::WorldEditor ? EDevToolsMode::Game : EDevToolsMode::WorldEditor;
-        WorldEditor.SetActive(Game, Mode == EDevToolsMode::WorldEditor);
     }
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))
     {
         Mode = Mode == EDevToolsMode::LevelEditor ? EDevToolsMode::Game : EDevToolsMode::LevelEditor;
-        LevelEditor.SetActive(Game, Mode == EDevToolsMode::LevelEditor);
     }
 
     if (Mode != OldMode)

@@ -239,6 +239,8 @@ void SGame::Run()
             Window.ToggleBorderlessFullscreen();
         }
 
+        Renderer.SetTime(Window.Seconds);
+
         if (IsGameRunning())
         {
             HandleBlobMovement();

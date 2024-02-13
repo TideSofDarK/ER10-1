@@ -24,6 +24,14 @@ struct STileMasks
     float doorWest;
 };
 
+struct SWorldLayer
+{
+    vec4 color;
+    vec2 position;
+    uint index;
+    uint paddingA;
+};
+
 layout(std140) uniform ub_common
 {
     Sprite[MAP_ICON_COUNT] icons;
@@ -40,13 +48,18 @@ layout(std140) uniform ub_map
     STile[MAX_LEVEL_TILE_COUNT] tiles;
 } u_map;
 
+layout(std140) uniform ub_worldLayers
+{
+    SWorldLayer[WORLD_MAX_LAYERS] layers;
+} u_worldLayers;
+
 uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
 uniform vec2 u_sizeScreenSpace;
 uniform float u_revealed;
 uniform sampler2D u_commonAtlas;
-uniform sampler2DArray u_world;
+uniform sampler2DArray u_worldTextures;
 
 in vec2 f_texCoord;
 
@@ -201,7 +214,20 @@ void main()
         texCoord -= centerOffset;
 
         texCoord = floor(texCoord);
-    } else {
+    } else if (u_mode == MAP_MODE_WORLD_LAYER)
+    {
+        texCoord = floor(texCoord);
+
+        tileSize = MAP_ISO_TILE_SIZE_PIXELS;
+        tileCellSize = MAP_ISO_TILE_CELL_SIZE_PIXELS;
+        tileEdgeSize = MAP_ISO_TILE_EDGE_SIZE_PIXELS;
+
+        // vec2 centerOffset = pov * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
+        // centerOffset = floor(centerOffset);
+        //
+        // texCoord += centerOffset;
+    }
+    else {
         texCoord = floor(texCoord);
 
         tileSize = MAP_TILE_SIZE_PIXELS;
@@ -345,7 +371,7 @@ void main()
 
     finalColor = overlay(finalColor, wallColor, doorMasks);
 
-    // Grid
+    /* Grid */
     if (u_mode != MAP_MODE_WORLD_LAYER)
     {
         float gridMasks = edgeMask;
@@ -384,17 +410,34 @@ void main()
     if (u_mode == MAP_MODE_WORLD)
     {
         finalColor = vec3(0.0);
-        vec2 test = f_texCoord * u_sizeScreenSpace;
+        // pixelCoord = floor(pixelCoord);
+        // pixelCoord += vec2(200);
+        // test = cartesianToIsometric(test);
+        // test /= u_sizeScreenSpace;
+        vec2 test = f_texCoord;
+        // test.x /= 2.0f;
+        // test.y /= 2.0f;
+        // test.y = 1.0f - test.y;
+        // test = cartesianToIsometric(test);
+        vec2 pixelCoord = test * 1024;
+        pixelCoord += vec2(u_globals.time);
+        // pixelCoord = cartesianToIsometric(pixelCoord);
+        // pixelCoord += vec2(512, -512);
+        // test /= 1.1f;
+        // test.y *= -1.0f;
+        // test += vec2(-0.5f, 0.0f);
+        // test /= 2.0f;
         for (int i = 0; i < WORLD_MAX_LAYERS; ++i)
         {
-            finalColor += texture(u_world, vec3(f_texCoord, 0)).rgb;
+            finalColor += texelFetch(u_worldTextures, ivec3(pixelCoord, 0), 0).rgb;
+            // finalColor += texture(u_worldTextures, vec3(test, 1)).rgb;
         }
     }
 
-    if (u_mode == MAP_MODE_WORLD_LAYER)
-    {
-        finalColor = vec3(1.0);
-    }
+    // if (u_mode == MAP_MODE_WORLD_LAYER)
+    // {
+    //     finalColor = vec3(1.0);
+    // }
 
     color = vec4(finalColor, 1.0);
 }

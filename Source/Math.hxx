@@ -302,6 +302,15 @@ using SRect = TRect<float>;
 using SRectInt = TRect<int>;
 
 template <typename T>
+struct TMat2x2
+{
+    SVec2 X{};
+    SVec2 Y{};
+
+    constexpr TMat2x2() = default;
+};
+
+template <typename T>
 struct TMat4x4
 {
     SVec4 X{};

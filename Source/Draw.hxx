@@ -27,13 +27,18 @@ namespace ETextureUnits
         AtlasPrimary3D,
         MainFramebuffer,
         MapFramebuffer,
-        WorldLayers
+        WorldTextures
     };
 }
 
-inline constexpr SVec2 MapWorldLayerSize{
+inline constexpr SVec2 MapTextureSize{
     Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
     Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS)
+};
+
+inline constexpr SVec2 MapWorldLayerTextureSize{
+    Utility::NextPowerOfTwo(MAP_ISO_MAX_WIDTH_PIXELS),
+    Utility::NextPowerOfTwo(MAP_ISO_MAX_WIDTH_PIXELS)
 };
 
 struct SWorldLevel;
@@ -48,6 +53,19 @@ struct SShaderMapData
     int : 32;
     int : 32;
     std::array<STile, MAX_LEVEL_TILE_COUNT> Tiles{};
+};
+
+struct SShaderWorldLayers
+{
+    struct SShaderWorldLayer
+    {
+        SVec4 Color{};
+        SVec2 Position{};
+        uint32_t Index{};
+        uint32_t : 32;
+    };
+
+    SShaderWorldLayer Layers[WORLD_MAX_LAYERS];
 };
 
 struct SShaderGlobals
@@ -172,8 +190,10 @@ protected:
 
 public:
     SUniformBlock CommonUniformBlock{};
-    SUniformBlock UniformBlock{};
+    SUniformBlock MapUniformBlock{};
+    SUniformBlock WorldLayersUniformBlock{};
     int UniformCommonAtlasID{};
+    int UniformWorldTextures{};
     int UniformWorldLayers{};
     int UniformMap{};
     int UniformRevealed{};
@@ -473,6 +493,8 @@ struct SRenderer
 
     void UploadProjectionAndViewFromCamera(const SCamera& Camera) const;
 
+    void SetTime(float Time) const;
+
     void Flush(const SWindowData& WindowData);
 
 #pragma region Queue_2D_API
@@ -481,7 +503,7 @@ struct SRenderer
 
     void DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV);
 
-    void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize, float Time);
+    void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize);
 
     void DrawWorldMap(const SVec2& Position, const SVec2& Size, const SVec2& ScreenSize);
 
