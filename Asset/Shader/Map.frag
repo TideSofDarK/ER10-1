@@ -230,7 +230,7 @@ void main()
 
                 vec2 tempTexCoord = f_texCoord;
                 vec2 pixelCoord = tempTexCoord * u_sizeScreenSpace;
-                // pixelCoord -= vec2(0, floor(tileSize / 2.0f) * i);
+                pixelCoord -= vec2(0, floor(tileSize / 2.0f) * i);
                 pixelCoord = cartesianToIsometric(pixelCoord);
                 // pixelCoord -= layerSizeIso - (position + vec2(0.5)) * tileSize;
                 // layer.position = vec2(1.0, 1.0);
@@ -238,7 +238,10 @@ void main()
                 pixelCoord -= centerOffset;
                 // pixelCoord = floor(pixelCoord);
                 pixelCoord = vec2(layer.textureSize - pixelCoord);
-                finalColor = texelFetch(u_worldTextures, ivec3(pixelCoord, i), 0).rgb;
+                vec4 layerColor = texelFetch(u_worldTextures, ivec3(pixelCoord, i), 0);
+                // float layerMask = pixelCoord.x >= 0 && pixelCoord.x < layer.textureSize.x && pixelCoord.y >= 0 && pixelCoord.y < layer.textureSize.y ? 1.0f : 0.0f;
+                float layerMask = withinMask(pixelCoord, layer.textureSize);
+                finalColor = overlay(finalColor, layerColor.rgb, layerMask * layerColor.a);
             }
         }
     }
@@ -409,7 +412,7 @@ void main()
     finalColor = overlay(finalColor, edgeColor, doorMasks);
 
     /* Grid */
-    if (u_mode != MAP_MODE_WORLD_LAYER)
+    if (u_mode != MAP_MODE_WORLD_LAYER && u_mode != MAP_MODE_WORLD)
     {
         float gridMasks = edgeMask;
         float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_globals.time * 0.25)) * 2.0) - 1.0));
@@ -444,5 +447,5 @@ void main()
     // vec3 povColor = vec3(1.0, 1.0, 1.0);
     // finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
 
-    color = vec4(finalColor, 1.0);
+    color = vec4(finalColor, ceil(finalColor.r + finalColor.g + finalColor.b));
 }

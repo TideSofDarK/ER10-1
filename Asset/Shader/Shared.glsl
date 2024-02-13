@@ -205,3 +205,13 @@ mat2 rotationMatrix(float angle)
     return mat2(cosine, -sine,
         sine, cosine);
 }
+
+float withinMask(vec2 value, vec2 range)
+{
+    float mask = max(0.0, sign(value.x + 0.0f));
+    mask = min(mask, sign(value.y + 0.0f));
+    mask = min(mask, 1.0 - step(range.x - value.x, 0.0));
+    mask = min(mask, 1.0 - step(range.y - value.y, 0.0));
+    mask = saturate(mask);
+    return mask;
+}

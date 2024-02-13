@@ -261,6 +261,7 @@ void SWorldEditor::ShowWorld(SGame& Game)
         auto* DrawList = ImGui::GetWindowDrawList();
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
         ImVec2 WindowSize = ImGui::GetWindowSize();
+        const float WindowAspect = WindowSize.y / WindowSize.x;
 
         if (ImGui::IsWindowHovered())
         {
@@ -285,7 +286,7 @@ void SWorldEditor::ShowWorld(SGame& Game)
             CursorPos,
             ImVec2(CursorPos.x + WindowSize.x,
                 CursorPos.y + WindowSize.y),
-            ImVec2(0.0f, 1.0f / Scale), ImVec2(1.0f / Scale, 0.0f));
+            ImVec2(0.0f, 1.0f / Scale * WindowAspect), ImVec2(1.0f / Scale, 0.0f));
 
         ImGui::End();
     }
