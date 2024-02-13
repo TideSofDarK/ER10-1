@@ -1057,6 +1057,7 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
 
         ShaderWorld.Layers[LayerIndex].Index = LayerIndex;
         ShaderWorld.Layers[LayerIndex].TextureSize = Size;
+        ShaderWorld.Layers[LayerIndex].Color = Level->Color;
 
         LayerIndex++;
     }

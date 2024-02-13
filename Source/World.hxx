@@ -9,6 +9,7 @@ inline constexpr int WorldMaxLevels = 8;
 
 struct SWorldLevel : STilemap
 {
+    SVec3 Color{};
     SVec3Int Position{};
 
     /* Draw State */

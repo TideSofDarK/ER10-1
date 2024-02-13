@@ -223,7 +223,7 @@ void main()
 
         /* Draw lower levels. */
         {
-            for (int i = WORLD_MAX_LAYERS; i > 1; i--)
+            for (int i = WORLD_MAX_LAYERS; i >= 1; i--)
             {
                 SWorldLayer layer = u_world.layers[i];
                 // vec2 layerSizeIso = (cartesianToIsometric(layer.textureSize / 2.0f));
@@ -241,7 +241,7 @@ void main()
                 vec4 layerColor = texelFetch(u_worldTextures, ivec3(pixelCoord, i), 0);
                 // float layerMask = pixelCoord.x >= 0 && pixelCoord.x < layer.textureSize.x && pixelCoord.y >= 0 && pixelCoord.y < layer.textureSize.y ? 1.0f : 0.0f;
                 float layerMask = withinMask(pixelCoord, layer.textureSize);
-                finalColor = overlay(finalColor, layerColor.rgb, layerMask * layerColor.a);
+                finalColor = overlay(finalColor, layerColor.rgb * layer.color, layerMask * layerColor.a);
             }
         }
     }
@@ -286,11 +286,13 @@ void main()
 
     vec3 edgeColor = vec3(1.0f);
     vec3 floorColor = vec3(0.0f, 0.0f, 1.0f);
+    vec3 tileGridColor = vec3(0.0f, 0.0f, 0.5f);
 
     if (u_mode == MAP_MODE_WORLD_LAYER)
     {
-        edgeColor *= vec3(0.1f, 0.5f, 0.2f);
+        edgeColor = vec3(1.0f);
         floorColor = edgeColor * 0.2f;
+        tileGridColor = edgeColor * 0.1f;
     }
 
     float tileSizeReciprocal = 1.0 / tileSize;
@@ -412,23 +414,27 @@ void main()
     finalColor = overlay(finalColor, edgeColor, doorMasks);
 
     /* Grid */
+    float gridMasks = edgeMask;
+    float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_globals.time * 0.25)) * 2.0) - 1.0));
+    gridPulseX = pow(gridPulseX, 4);
+    float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_globals.time * 0.15)) * 2.0) - 1.0));
+    gridPulseY = pow(gridPulseY, 4);
+    float gridPulse = (max(gridPulseX, gridPulseY) * 0.5) + 0.5;
+    float tileGrid = floorTileMask; // + wallMasks;
+    vec3 grid = mix(vec3(0.05, 0.15, 0.6) * gridPulse, tileGridColor, tileGrid);
+    // texCoordOriginal *= u_sizeScreenSpace;
+    // texCoordOriginal = floor(texCoordOriginal);
+    // float gridForceMask = (1.0 - step(0.001, mod(texCoordOriginal.x, u_sizeScreenSpace.x - 1))) + (1.0 - step(0.001, mod(texCoordOriginal.y, u_sizeScreenSpace.y - 1)));
+    // gridForceMask = saturate(gridForceMask);
+    // gridForceMask = 0.0;
+    // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
     if (u_mode != MAP_MODE_WORLD_LAYER && u_mode != MAP_MODE_WORLD)
     {
-        float gridMasks = edgeMask;
-        float gridPulseX = saturate(abs((fract(texCoordOriginal.x + (u_globals.time * 0.25)) * 2.0) - 1.0));
-        gridPulseX = pow(gridPulseX, 4);
-        float gridPulseY = saturate(abs((fract(texCoordOriginal.y + (u_globals.time * 0.15)) * 2.0) - 1.0));
-        gridPulseY = pow(gridPulseY, 4);
-        float gridPulse = (max(gridPulseX, gridPulseY) * 0.5) + 0.5;
-        float tileGrid = floorTileMask; // + wallMasks;
-        vec3 grid = mix(vec3(0.05, 0.15, 0.6) * gridPulse, vec3(0.15, 0.25, 0.5) * 1.2, tileGrid * 0.7f);
-        // texCoordOriginal *= u_sizeScreenSpace;
-        // texCoordOriginal = floor(texCoordOriginal);
-        // float gridForceMask = (1.0 - step(0.001, mod(texCoordOriginal.x, u_sizeScreenSpace.x - 1))) + (1.0 - step(0.001, mod(texCoordOriginal.y, u_sizeScreenSpace.y - 1)));
-        // gridForceMask = saturate(gridForceMask);
-        // gridForceMask = 0.0;
-        // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
         finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+    }
+    else
+    {
+        finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks) * floorTileMask));
     }
 
     /* Map Icons */
