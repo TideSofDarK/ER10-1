@@ -122,6 +122,7 @@ struct TVec3
     {
         X = Vec2.X;
         Y = Vec2.Y;
+        Z = 0;
     }
 
     explicit constexpr TVec3(T InValue)

@@ -713,7 +713,7 @@ void SRenderer::Init(int Width, int Height)
     Queue3D.CommonUniformBlock.Bind(EUniformBlockBinding::Uber3DCommon);
 
     /* Initialize framebuffers. */
-    WorldFramebuffer.Init(ETextureUnits::WorldTextures,
+    WorldLayersFramebuffer.Init(ETextureUnits::WorldTextures,
         int(MapWorldLayerTextureSize.X),
         int(MapWorldLayerTextureSize.Y),
         TVec3{ 0.0f, 0.0f, 1.0f });
@@ -744,7 +744,7 @@ void SRenderer::Cleanup()
 {
     MainFramebuffer.Cleanup();
     MapFramebuffer.Cleanup();
-    WorldFramebuffer.Cleanup();
+    WorldLayersFramebuffer.Cleanup();
     for (auto& Atlas : Atlases)
     {
         Atlas.Cleanup();
@@ -1005,6 +1005,18 @@ void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, co
 
 void SRenderer::DrawWorldMap(const SVec2& Position, const SVec2& Size)
 {
+    SEntry2D Entry;
+    Entry.Program2DType = EProgram2DType::Map;
+    Entry.Position = SVec3(Position);
+    Entry.SizePixels = Size;
+
+    Entry.Mode = SEntryMode{ MAP_MODE_WORLD };
+
+    Queue2D.Enqueue(Entry);
+}
+
+void SRenderer::DrawWorldMapImmediate(const SVec2& Position, const SVec2& Size)
+{
     ProgramMap.Use();
 
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_WORLD);
@@ -1022,11 +1034,12 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
 {
     SShaderWorld ShaderWorld{};
 
-    glBindFramebuffer(GL_FRAMEBUFFER, WorldFramebuffer.FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, WorldLayersFramebuffer.FBO);
 
     glBindVertexArray(Quad2D.VAO);
 
     ProgramMap.Use();
+    ProgramMap.SetRevealed(true);
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_WORLD_LAYER);
     glUniform2f(ProgramMap.UniformPositionScreenSpaceID, 0.0f, 0.0f);
 
@@ -1038,7 +1051,7 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
         {
             continue;
         }
-        WorldFramebuffer.SetLayer(LayerIndex);
+        WorldLayersFramebuffer.SetLayer(LayerIndex);
 
         auto Size = Level->CalculateMapIsoSize();
 
@@ -1046,7 +1059,7 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
 
         glViewport(0, 0, Size.X, Size.Y);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         UploadMapData(Level, {});
@@ -1062,11 +1075,15 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
         LayerIndex++;
     }
 
+    ProgramMap.SetRevealed(false);
+
     glBindVertexArray(0);
 
     glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlockWorld.UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderWorld), &ShaderWorld);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void SRenderer::Draw2D(SVec3 Position, const SSpriteHandle& SpriteHandle)

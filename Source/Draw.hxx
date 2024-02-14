@@ -478,7 +478,7 @@ struct SRenderer
 
     SFramebuffer MainFramebuffer;
     SFramebuffer MapFramebuffer;
-    SWorldFramebuffer WorldFramebuffer;
+    SWorldFramebuffer WorldLayersFramebuffer;
     SGeometry Quad2D;
     SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;
 
@@ -507,6 +507,8 @@ struct SRenderer
     void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize);
 
     void DrawWorldMap(const SVec2& Position, const SVec2& Size);
+
+    void DrawWorldMapImmediate(const SVec2& Position, const SVec2& Size);
 
     void DrawWorldLayers(const struct SWorld* World, SVec2Int Range);
 

@@ -58,6 +58,8 @@ static const SRectInt MapRectMin{
 };
 static const SRectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH, SCENE_HEIGHT };
 
+static const SRectInt WorldRect{ SCREEN_WIDTH - 128, MapRectMin.Min.Y + 150, 100, 120 };
+
 SGame::SGame()
     : MapRect(MapRectMin)
 {
@@ -145,6 +147,8 @@ SGame::SGame()
     // ChangeLevel(Asset::Map::TestMapERM);
 
     World.Init();
+
+    Renderer.DrawWorldLayers(&World, { 0, 4 });
 
     Blob.Coords = World.StartInfo.POV.Coords;
     Blob.Direction = World.StartInfo.POV.Direction;
@@ -281,6 +285,8 @@ void SGame::Run()
             auto MapRectTo = SRect(bMapMaximized ? MapRectMax : MapRectMin);
             MapRect = Math::Mix(MapRectFrom, MapRectTo, MapRectTimeline.Value);
             Renderer.DrawMap(World.GetLevel(), SVec3(MapRect.Min), SVec2Int(MapRect.Max), Blob.UnreliableCoordsAndDirection());
+
+            Renderer.DrawWorldMap(SVec2(WorldRect.Min), SVec2(WorldRect.Max));
 
             // UVec2 centerOffset = Blob.UnreliableCoords() * MAP_TILE_SIZE_PIXELS - MapRect.Max * 0.5 + UVec2(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) / 2.0;
             // Log::Game<ELogLevel::Critical>("%.9f %.9f", centerOffset.X, centerOffset.Y);

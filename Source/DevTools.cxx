@@ -1,6 +1,7 @@
 #include "DevTools.hxx"
 
 #include <cstdint>
+#include <functional>
 #include <algorithm>
 #include <fstream>
 #include <glad/gl.h>
@@ -15,6 +16,7 @@
 #include "Game.hxx"
 #include "GameSystem.hxx"
 #include "AssetTools.hxx"
+#include "Utility.hxx"
 #include "World.hxx"
 #include "Log.hxx"
 #include "Math.hxx"
@@ -38,21 +40,128 @@ namespace Asset::Common
     EXTERN_ASSET(IBMPlexSansTTF)
 }
 
+struct SEditorFramebuffer
+{
+    int Width{};
+    int Height{};
+    SVec4 ClearColor{};
+    uint32_t FBO{};
+    uint32_t ColorID{};
+
+    void Init(int InWidth, int InHeight, SVec4 InClearColor)
+    {
+        Width = InWidth;
+        Height = InHeight;
+        ClearColor = InClearColor;
+
+        // glActiveTexture(0);
+        glGenTextures(1, &ColorID);
+        glBindTexture(GL_TEXTURE_2D, ColorID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, InWidth, InHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glGenFramebuffers(1, &FBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorID, 0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void Resize(int InWidth, int InHeight)
+    {
+        Width = InWidth;
+        Height = InHeight;
+        glBindTexture(GL_TEXTURE_2D, ColorID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, InWidth, InHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void Cleanup()
+    {
+        glDeleteFramebuffers(1, &FBO);
+        glDeleteTextures(1, &ColorID);
+    }
+};
+
 static const std::filesystem::path MapExtension = ".erm";
 static std::vector<std::filesystem::path> AvailableMaps(20);
 
+static SEditorFramebuffer Framebuffer{};
+
+static void GenericEditorWindow(const char* WindowName, float* Scale, const std::function<void()>& InputFunc, const std::function<void(const SVec2&)>& DrawFunc)
+{
+    static bool bFirstTime = true;
+    if (bFirstTime)
+    {
+        bFirstTime = false;
+    }
+
+    ImGuiIO& IO = ImGui::GetIO();
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3);
+    ImGui::SetNextWindowSize(ImVec2{ 512, 512 }, ImGuiCond_Once);
+    if (ImGui::Begin(WindowName, nullptr,
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
+    {
+        auto* DrawList = ImGui::GetWindowDrawList();
+        ImVec2 CursorPos = ImGui::GetCursorScreenPos();
+
+        if (ImGui::IsWindowHovered())
+        {
+            *Scale += IO.MouseWheel * 1.0f;
+            InputFunc();
+        }
+
+        ImVec2 WindowSize = ImGui::GetWindowSize();
+        const SVec2 ScaledSize{ WindowSize.x / *Scale, WindowSize.y / *Scale };
+        if (ScaledSize.X > (float)Framebuffer.Width || ScaledSize.Y > (float)Framebuffer.Height)
+        {
+            auto MaxFramebufferDimension = std::max(Utility::NextPowerOfTwo((uint32_t)ScaledSize.X), Utility::NextPowerOfTwo((uint32_t)ScaledSize.Y));
+            Framebuffer.Resize((int)MaxFramebufferDimension, (int)MaxFramebufferDimension);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, Framebuffer.FBO);
+        glViewport(0, 0, (int)ScaledSize.X, (int)ScaledSize.Y);
+        glClearColor(Framebuffer.ClearColor.X, Framebuffer.ClearColor.Y, Framebuffer.ClearColor.Z, Framebuffer.ClearColor.W);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        DrawFunc(ScaledSize);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        DrawList->AddImage(
+            reinterpret_cast<void*>(Framebuffer.ColorID),
+            CursorPos,
+            ImVec2(CursorPos.x + WindowSize.x,
+                CursorPos.y + WindowSize.y),
+            ImVec2(0.0f, ScaledSize.Y / (float)Framebuffer.Height), ImVec2(ScaledSize.X / (float)Framebuffer.Width, 0.0f));
+
+        ImGui::End();
+    }
+    ImGui::PopStyleVar(2);
+}
+//
+// static void FitEditorWindow(const SVec2& BaseSize, float* Scale)
+// {
+//     auto MapSizePixels = Level.CalculateMapSize();
+//
+//     auto Viewport = ImGui::GetMainViewport();
+//     Scale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y);
+//     Scale = std::max(1.0f, (std::floor(Scale) - 1.0f));
+//     bResetGridPosition = true;
+// }
+
 void SWorldEditor::Init()
 {
-    // MapFramebuffer.Init(
-    //     TEXTURE_UNIT_MAP_FRAMEBUFFER,
-    //     Utility::NextPowerOfTwo(MAP_MAX_WIDTH_PIXELS),
-    //     Utility::NextPowerOfTwo(MAP_MAX_HEIGHT_PIXELS),
-    //     SVec3{ 1.0f, 0.0f, 0.0f });
 }
 
 void SWorldEditor::Cleanup()
 {
-    // MapFramebuffer.Cleanup();
 }
 
 void SWorldEditor::Show(SGame& Game)
@@ -239,7 +348,18 @@ void SWorldEditor::Show(SGame& Game)
     // }
     // ImGui::PopID();
 
-    ShowWorld(Game);
+    // ShowWorld(Game);
+
+    static const auto InputFunc = [&]() {
+    };
+
+    static const auto DrawFunc = [&](const SVec2& ScaledSize) {
+        Game.Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
+        Game.Renderer.DrawWorldMapImmediate({ 0.0f, 0.0f }, ScaledSize);
+    };
+
+    GenericEditorWindow(
+        "WorldCanvas", &Scale, InputFunc, DrawFunc);
 }
 
 void SWorldEditor::ShowWorld(SGame& Game)
@@ -247,46 +367,48 @@ void SWorldEditor::ShowWorld(SGame& Game)
     static bool bFirstTime = true;
     if (bFirstTime)
     {
-        Game.Renderer.DrawWorldLayers(&Game.World, { 0, 4 });
         bFirstTime = false;
     }
 
     ImGuiIO& IO = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3);
     ImGui::SetNextWindowSize(ImVec2{ 512, 512 }, ImGuiCond_Once);
     if (ImGui::Begin("Overworld", nullptr,
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings))
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
     {
         auto* DrawList = ImGui::GetWindowDrawList();
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
-        ImVec2 WindowSize = ImGui::GetWindowSize();
-        const float WindowAspect = WindowSize.y / WindowSize.x;
 
         if (ImGui::IsWindowHovered())
         {
             Scale += IO.MouseWheel * 1.0f;
         }
 
-        glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
+        ImVec2 WindowSize = ImGui::GetWindowSize();
+        const SVec2 ScaledSize{ WindowSize.x / Scale, WindowSize.y / Scale };
+        if (ScaledSize.X > (float)Framebuffer.Width || ScaledSize.Y > (float)Framebuffer.Height)
+        {
+            auto MaxFramebufferDimension = std::max(Utility::NextPowerOfTwo((uint32_t)ScaledSize.X), Utility::NextPowerOfTwo((uint32_t)ScaledSize.Y));
+            Framebuffer.Resize((int)MaxFramebufferDimension, (int)MaxFramebufferDimension);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, Framebuffer.FBO);
+        glViewport(0, 0, (int)ScaledSize.X, (int)ScaledSize.Y);
+        glClearColor(Framebuffer.ClearColor.X, Framebuffer.ClearColor.Y, Framebuffer.ClearColor.Z, Framebuffer.ClearColor.W);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        const SVec2 ScaledSize{ std::floor(WindowSize.x / Scale), std::floor(WindowSize.y / Scale) };
-
-        glViewport(0, 0, (int)ScaledSize.X, (int)ScaledSize.Y);
-
         Game.Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
-        // WindowSize = MapTextureSize;
+        Game.Renderer.DrawWorldMapImmediate({ 0.0f, 0.0f }, ScaledSize);
 
-        Game.Renderer.DrawWorldMap({ 0.0f, 0.0f }, ScaledSize);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         DrawList->AddImage(
-            (void*)Game.Renderer.MapFramebuffer.ColorID,
+            (void*)Framebuffer.ColorID,
             CursorPos,
             ImVec2(CursorPos.x + WindowSize.x,
                 CursorPos.y + WindowSize.y),
-            ImVec2(0.0f, 1.0f / Scale * WindowAspect), ImVec2(1.0f / Scale, 0.0f));
+            ImVec2(0.0f, ScaledSize.Y / (float)Framebuffer.Height), ImVec2(ScaledSize.X / (float)Framebuffer.Width, 0.0f));
 
         ImGui::End();
     }
@@ -1000,6 +1122,8 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
     ImGui_ImplSDL3_InitForOpenGL(Window, Context);
     ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
 
+    Framebuffer.Init(512, 512, { 0.0f, 0.0f, 1.0f, 1.0f });
+
     LevelEditor.Init();
     WorldEditor.Init();
 
@@ -1014,6 +1138,7 @@ void SDevTools::Init(SDL_Window* Window, void* Context)
 
 void SDevTools::Cleanup()
 {
+    Framebuffer.Cleanup();
     LevelEditor.Cleanup();
     WorldEditor.Cleanup();
 
