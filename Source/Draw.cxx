@@ -128,7 +128,6 @@ unsigned int SProgram::CreateProgram(unsigned int VertexShader, unsigned int Fra
     glAttachShader(ProgramID, VertexShader);
     glAttachShader(ProgramID, FragmentShader);
     glLinkProgram(ProgramID);
-    CheckProgram(ProgramID);
     return ProgramID;
 }
 
@@ -156,6 +155,7 @@ void SProgram::Init(const SAsset& InVertexShaderAsset, const SAsset& InFragmentS
     SProgram::InitUniforms();
     InitUniforms();
     InitUniformBlocks();
+    CheckProgram(ID);
 }
 
 void SProgram::Cleanup() const
@@ -197,14 +197,17 @@ void SProgram::Reload()
 
     ShaderFile.close();
 
+    Log::Draw<ELogLevel::Debug>("Reloading GL program");
+    Log::Draw<ELogLevel::Debug>("Vertex shader: %s", VertexShaderAsset->Path().string().c_str());
+    Log::Draw<ELogLevel::Debug>("Fragment shader: %s", FragmentShaderAsset->Path().string().c_str());
+
     glDeleteProgram(ID);
     ID = CreateProgram(VertexShader, FragmentShader);
     glDeleteShader(VertexShader);
     glDeleteShader(FragmentShader);
     SProgram::InitUniforms();
     InitUniforms();
-
-    Log::Draw<ELogLevel::Debug>("Reloading SProgram");
+    CheckProgram(ID);
 }
 #endif
 
