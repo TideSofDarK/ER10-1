@@ -293,7 +293,7 @@ void main()
 
     vec3 edgeColor = vec3(1.0f);
     vec3 floorColor = vec3(0.0f, 0.0f, 1.0f);
-    vec3 tileGridColor = vec3(0.0f, 0.0f, 0.5f);
+    vec3 tileGridColor = vec3(0.05f, 0.11f, 0.61f);
 
     if (u_mode == MAP_MODE_WORLD_LAYER)
     {
