@@ -64,7 +64,6 @@ struct SShaderWorld
         SVec2 Position{};
         SVec2 TextureSize{};
     };
-
     SVec4 Position;
     SShaderWorldLayer Layers[WORLD_MAX_LAYERS];
 };
@@ -198,6 +197,7 @@ public:
     int UniformWorldLayers{};
     int UniformMap{};
     int UniformRevealed{};
+    int UniformCursor{};
 
     void SetRevealed(bool bRevealed);
 };
@@ -504,7 +504,7 @@ struct SRenderer
 
     void DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV);
 
-    void DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize);
+    void DrawMapImmediate(const SVec2& Position, const SVec2& Size);
 
     void DrawWorldMap(const SVec2& Position, const SVec2& Size);
 

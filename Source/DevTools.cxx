@@ -59,8 +59,8 @@ struct SEditorFramebuffer
         glBindTexture(GL_TEXTURE_2D, ColorID);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, InWidth, InHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -93,7 +93,12 @@ static std::vector<std::filesystem::path> AvailableMaps(20);
 
 static SEditorFramebuffer Framebuffer{};
 
-static void GenericEditorWindow(const char* WindowName, float* Scale, const std::function<void()>& InputFunc, const std::function<void(const SVec2&)>& DrawFunc)
+static void GenericMapWindow(
+    const char* WindowName,
+    float* Scale,
+    SVec4* MapCursorPosition,
+    const std::function<void()>& InputFunc,
+    const std::function<void(const SVec2&)>& DrawFunc)
 {
     static bool bFirstTime = true;
     if (bFirstTime)
@@ -106,18 +111,23 @@ static void GenericEditorWindow(const char* WindowName, float* Scale, const std:
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3);
     ImGui::SetNextWindowSize(ImVec2{ 512, 512 }, ImGuiCond_Once);
     if (ImGui::Begin(WindowName, nullptr,
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings))
     {
         auto* DrawList = ImGui::GetWindowDrawList();
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
+        ImVec2 WindowSize = ImGui::GetWindowSize();
+
+        /* Snap-to-even fix. */
+        // WindowSize = ImVec2(((int)WindowSize.x) & ~1, ((int)WindowSize.y) & ~1);
+        // ImGui::SetWindowSize(WindowSize, ImGuiCond_Always);
 
         if (ImGui::IsWindowHovered())
         {
             *Scale += IO.MouseWheel * 1.0f;
-            InputFunc();
+            *Scale = std::floor(*Scale);
+            *Scale = std::max(1.0f, *Scale);
         }
 
-        ImVec2 WindowSize = ImGui::GetWindowSize();
         const SVec2 ScaledSize{ WindowSize.x / *Scale, WindowSize.y / *Scale };
         if (ScaledSize.X > (float)Framebuffer.Width || ScaledSize.Y > (float)Framebuffer.Height)
         {
@@ -141,8 +151,22 @@ static void GenericEditorWindow(const char* WindowName, float* Scale, const std:
                 CursorPos.y + WindowSize.y),
             ImVec2(0.0f, ScaledSize.Y / (float)Framebuffer.Height), ImVec2(ScaledSize.X / (float)Framebuffer.Width, 0.0f));
 
-        ImGui::End();
+        InputFunc();
+
+        ImGui::InvisibleButton("##DragHelper", WindowSize);
+        if (ImGui::IsItemHovered())
+        {
+            if (ImGui::IsMouseDragging(2))
+            {
+                ImVec2 DragDelta = ImGui::GetMouseDragDelta(2);
+                ImGui::ResetMouseDragDelta(2);
+
+                *MapCursorPosition -= SVec4(SVec2{ DragDelta.x, DragDelta.y } / *Scale);
+                Log::DevTools<ELogLevel::Critical>("Drag registered! %.2f %.2f", DragDelta.x, DragDelta.y);
+            }
+        }
     }
+    ImGui::End();
     ImGui::PopStyleVar(2);
 }
 //
@@ -355,64 +379,12 @@ void SWorldEditor::Show(SGame& Game)
 
     static const auto DrawFunc = [&](const SVec2& ScaledSize) {
         Game.Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
+        glProgramUniform4f(Game.Renderer.ProgramMap.ID, Game.Renderer.ProgramMap.UniformCursor, CursorPosition.X, CursorPosition.Y, CursorPosition.Z, CursorPosition.W);
         Game.Renderer.DrawWorldMapImmediate({ 0.0f, 0.0f }, ScaledSize);
     };
 
-    GenericEditorWindow(
-        "WorldCanvas", &Scale, InputFunc, DrawFunc);
-}
-
-void SWorldEditor::ShowWorld(SGame& Game)
-{
-    static bool bFirstTime = true;
-    if (bFirstTime)
-    {
-        bFirstTime = false;
-    }
-
-    ImGuiIO& IO = ImGui::GetIO();
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 3);
-    ImGui::SetNextWindowSize(ImVec2{ 512, 512 }, ImGuiCond_Once);
-    if (ImGui::Begin("Overworld", nullptr,
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
-    {
-        auto* DrawList = ImGui::GetWindowDrawList();
-        ImVec2 CursorPos = ImGui::GetCursorScreenPos();
-
-        if (ImGui::IsWindowHovered())
-        {
-            Scale += IO.MouseWheel * 1.0f;
-        }
-
-        ImVec2 WindowSize = ImGui::GetWindowSize();
-        const SVec2 ScaledSize{ WindowSize.x / Scale, WindowSize.y / Scale };
-        if (ScaledSize.X > (float)Framebuffer.Width || ScaledSize.Y > (float)Framebuffer.Height)
-        {
-            auto MaxFramebufferDimension = std::max(Utility::NextPowerOfTwo((uint32_t)ScaledSize.X), Utility::NextPowerOfTwo((uint32_t)ScaledSize.Y));
-            Framebuffer.Resize((int)MaxFramebufferDimension, (int)MaxFramebufferDimension);
-        }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, Framebuffer.FBO);
-        glViewport(0, 0, (int)ScaledSize.X, (int)ScaledSize.Y);
-        glClearColor(Framebuffer.ClearColor.X, Framebuffer.ClearColor.Y, Framebuffer.ClearColor.Z, Framebuffer.ClearColor.W);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        Game.Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
-        Game.Renderer.DrawWorldMapImmediate({ 0.0f, 0.0f }, ScaledSize);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        DrawList->AddImage(
-            (void*)Framebuffer.ColorID,
-            CursorPos,
-            ImVec2(CursorPos.x + WindowSize.x,
-                CursorPos.y + WindowSize.y),
-            ImVec2(0.0f, ScaledSize.Y / (float)Framebuffer.Height), ImVec2(ScaledSize.X / (float)Framebuffer.Width, 0.0f));
-
-        ImGui::End();
-    }
-    ImGui::PopStyleVar(2);
+    GenericMapWindow(
+        "World Editor", &Scale, &CursorPosition, InputFunc, DrawFunc);
 }
 
 void SWorldEditor::RenderLayers(SGame& Game)
@@ -657,81 +629,30 @@ void SLevelEditor::Show(SGame& Game)
         }
     }
 
-    ShowLevel(Game);
-}
-
-void SLevelEditor::ShowLevel(SGame& Game)
-{
-    static bool bFirstTime = true;
-    if (bFirstTime)
-    {
-        FitTilemapToWindow();
-        bFirstTime = false;
-    }
-
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
-    {
-        FitTilemapToWindow();
-    }
-
-    auto OriginalMapSize = Level.CalculateMapSize();
-
-    /* @TODO: Update tiles every frame for now. */
-    SVec2 POVOrigin{ (float)Level.Width / 2.0f - 0.5f, (float)Level.Height / 2.0f - 0.5f };
-    // Game.Renderer.UploadMapData(&Level, Game.Blob.UnreliableCoordsAndDirection());
-    Game.Renderer.UploadMapData(&Level, SCoordsAndDirection{ POVOrigin, SDirection::North() });
-
-    /* Render level to framebuffer. */
-    SVec2 MapFramebufferSize{ (float)Game.Renderer.MapFramebuffer.Width, (float)Game.Renderer.MapFramebuffer.Height };
-    glBindFramebuffer(GL_FRAMEBUFFER, Game.Renderer.MapFramebuffer.FBO);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Game.Renderer.MapFramebuffer.ResetViewport();
-    Game.Renderer.DrawMapImmediate(SVec2{ 0.0f, 0.0f }, OriginalMapSize, MapFramebufferSize);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * Scale;
-    float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * Scale;
-    auto ScaledMapSize = SVec2{
-        (float)OriginalMapSize.X * Scale,
-        (float)OriginalMapSize.Y * Scale
-    };
-
-    ImGuiIO& IO = ImGui::GetIO();
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::SetNextWindowSize(ImVec2{ ScaledMapSize.X, ScaledMapSize.Y });
-    if (bResetGridPosition)
-    {
-        ImGui::SetNextWindowPos(ImVec2(IO.DisplaySize.x * 0.5f - ScaledMapSize.X * 0.5f,
-            IO.DisplaySize.y * 0.5f - ScaledMapSize.Y * 0.5f));
-        bResetGridPosition = false;
-    }
-    if (ImGui::Begin("Grid", nullptr,
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
-    {
+    static const auto InputFunc = [&]() {
         auto* DrawList = ImGui::GetWindowDrawList();
-        ImVec2 GridSize = ImVec2((Scale * (float)Level.Width),
-            (Scale * (float)Level.Height));
         ImVec2 CursorPos = ImGui::GetCursorScreenPos();
 
-        ImGui::GetWindowDrawList()->AddImage(
-            (void*)Game.Renderer.MapFramebuffer.ColorID,
-            CursorPos,
-            ImVec2(CursorPos.x + ScaledMapSize.X,
-                CursorPos.y + ScaledMapSize.Y),
-            ImVec2(0, 1.0f), ImVec2((float)OriginalMapSize.X / 512.0f, 1.0f - (float)OriginalMapSize.Y / 512.0f));
+        auto OriginalMapSize = Level.CalculateMapSize();
 
-        if (ImGui::IsWindowHovered())
+        float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * Scale;
+        float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * Scale;
+        auto ScaledMapSize = SVec2{
+            (float)OriginalMapSize.X * Scale,
+            (float)OriginalMapSize.Y * Scale
+        };
+
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
         {
-            Scale += IO.MouseWheel * 1.0f;
+            FitTilemapToWindow();
+        }
 
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            {
-                auto MousePos = ImGui::GetMousePos();
-                MousePos = ImVec2(MousePos.x - CursorPos.x, MousePos.y - CursorPos.y);
-                SelectedTileCoords = SVec2Int{ (int)(MousePos.x / ScaledTileSize),
-                    (int)(MousePos.y / ScaledTileSize) };
-            }
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+            auto MousePos = ImGui::GetMousePos();
+            MousePos = ImVec2(MousePos.x - CursorPos.x, MousePos.y - CursorPos.y);
+            SelectedTileCoords = SVec2Int{ (int)(MousePos.x / ScaledTileSize),
+                (int)(MousePos.y / ScaledTileSize) };
         }
 
         if (ImGui::IsWindowFocused())
@@ -878,18 +799,16 @@ void SLevelEditor::ShowLevel(SGame& Game)
                 }
             }
         }
+    };
 
-        // if (!ImGui::IsWindowFocused())
-        // {
-        //     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-        //     {
-        //         SelectedTileCoords.reset();
-        //     }
-        // }
+    static const auto DrawFunc = [&](const SVec2& ScaledSize) {
+        Game.Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
+        glProgramUniform4f(Game.Renderer.ProgramMap.ID, Game.Renderer.ProgramMap.UniformCursor, CursorPosition.X, CursorPosition.Y, CursorPosition.Z, CursorPosition.W);
+        Game.Renderer.DrawMapImmediate({ 0.0f, 0.0f }, ScaledSize);
+    };
 
-        ImGui::End();
-    }
-    ImGui::PopStyleVar(2);
+    GenericMapWindow(
+        "Level Editor", &Scale, &CursorPosition, InputFunc, DrawFunc);
 }
 
 void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path)

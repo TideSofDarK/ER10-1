@@ -118,7 +118,7 @@ struct TVec3
     constexpr TVec3(T InX, T InY, T InZ)
         : X(InX), Y(InY), Z(InZ){};
 
-    explicit constexpr TVec3(TVec2<T> Vec2)
+    explicit constexpr TVec3(const TVec2<T>& Vec2)
     {
         X = Vec2.X;
         Y = Vec2.Y;
@@ -209,11 +209,27 @@ struct TVec4
     {
     }
 
+    explicit constexpr TVec4(const TVec2<T>& Vec2)
+    {
+        X = Vec2.X;
+        Y = Vec2.Y;
+        Z = 0;
+        W = 0;
+    }
+
+    explicit constexpr TVec4(const TVec3<T>& Vec3)
+    {
+        X = Vec3.X;
+        Y = Vec3.Y;
+        Z = Vec3.Z;
+        W = 0;
+    }
+
     explicit constexpr TVec4(T InValue)
         : X(InValue), Y(InValue), Z(InValue), W(InValue){};
 
-    constexpr TVec4<T>(const TVec3<T> FromVector3, T InW)
-        : X(FromVector3.X), Y(FromVector3.Y), Z(FromVector3.Z), W(InW)
+    constexpr TVec4<T>(const TVec3<T> Vec3, T InW)
+        : X(Vec3.X), Y(Vec3.Y), Z(Vec3.Z), W(InW)
     {
     }
 
@@ -233,6 +249,15 @@ struct TVec4
         Y += Other.Y;
         Z += Other.Z;
         W += Other.W;
+        return *this;
+    }
+
+    constexpr TVec4<T>& operator-=(const TVec4<T>& Other)
+    {
+        X -= Other.X;
+        Y -= Other.Y;
+        Z -= Other.Z;
+        W -= Other.W;
         return *this;
     }
 

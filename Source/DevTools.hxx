@@ -17,6 +17,7 @@ enum class EDevToolsMode
 
 struct SWorldEditor
 {
+    SVec4 CursorPosition{};
     SWorld World;
     float Scale = 1.0f;
 
@@ -24,7 +25,6 @@ struct SWorldEditor
     void Cleanup();
 
     void Show(SGame& Game);
-    void ShowWorld(SGame& Game);
     void RenderLayers(SGame& Game);
 };
 
@@ -43,6 +43,7 @@ struct SValidationResult
 
 struct SLevelEditor
 {
+    SVec4 CursorPosition{};
     ELevelEditorMode LevelEditorMode{};
     uint32_t ToggleEdgeType{};
     SVec2Int NewLevelSize{};
@@ -59,7 +60,6 @@ struct SLevelEditor
     void Cleanup();
 
     void Show(SGame& Game);
-    void ShowLevel(SGame& Game);
 
     void SaveTilemapToFile(const std::filesystem::path& Path);
     void LoadTilemapFromFile(const std::filesystem::path& Path);

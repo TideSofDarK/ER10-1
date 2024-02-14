@@ -255,6 +255,7 @@ void SProgramMap::InitUniforms()
     SProgram2D::InitUniforms();
     UniformWorldTextures = glGetUniformLocation(ID, "u_worldTextures");
     UniformRevealed = glGetUniformLocation(ID, "u_revealed");
+    UniformCursor = glGetUniformLocation(ID, "u_cursor");
 
     glProgramUniform1i(ID, UniformWorldTextures, ETextureUnits::WorldTextures);
 
@@ -986,15 +987,13 @@ void SRenderer::DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const
     Queue2D.Enqueue(Entry);
 }
 
-void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2Int& Size, const SVec2& ScreenSize)
+void SRenderer::DrawMapImmediate(const SVec2& Position, const SVec2& Size)
 {
-    GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScreenSize);
-
     ProgramMap.Use();
 
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_NORMAL);
     glUniform2f(ProgramMap.UniformPositionScreenSpaceID, Position.X, Position.Y);
-    glUniform2f(ProgramMap.UniformSizeScreenSpaceID, (float)Size.X, (float)Size.Y);
+    glUniform2f(ProgramMap.UniformSizeScreenSpaceID, Size.X, Size.Y);
 
     glBindVertexArray(Quad2D.VAO);
 

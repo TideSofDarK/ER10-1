@@ -59,6 +59,7 @@ uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
 uniform vec2 u_sizeScreenSpace;
 uniform float u_revealed;
+uniform vec4 u_cursor;
 uniform sampler2D u_commonAtlas;
 uniform sampler2DArray u_worldTextures;
 
@@ -120,7 +121,7 @@ STileMasks getTileMasks(float tileX, float tileY)
     tileMasks.nonEmpty = nonEmptyMask(tile.flags);
     tileMasks.floor = bitMask(tile.flags, TILE_FLOOR_BIT);
     tileMasks.hole = bitMask(tile.flags, TILE_HOLE_BIT);
-    tileMasks.visited = bitMask(tile.specialFlags, TILE_SPECIAL_VISITED_BIT);
+    tileMasks.visited = visitedMask(tile.specialFlags);
     tileMasks.explored = exploredMask(tile.specialFlags);
     tileMasks.wallNorth = bitMask(tile.edgeFlags, TILE_EDGE_WALL_BIT);
     tileMasks.wallSouth = bitMask(tile.edgeFlags, TILE_EDGE_WALL_SOUTH_BIT);
@@ -199,13 +200,15 @@ void main()
     vec2 texCoordOriginal = texCoord;
     texCoord *= u_sizeScreenSpace;
 
-    float tileSize = 0.0;
-    float tileCellSize = 0.0;
-    float tileEdgeSize = 0.0;
+    float tileSize = 0.0f;
+    float tileCellSize = 0.0f;
+    float tileEdgeSize = 0.0f;
 
     if (u_mode == MAP_MODE_WORLD)
     {
         vec2 position = round(u_world.position.xy);
+
+        texCoord += u_cursor.xy;
 
         tileSize = MAP_ISO_TILE_SIZE_PIXELS;
         tileCellSize = MAP_ISO_TILE_CELL_SIZE_PIXELS;
@@ -230,6 +233,7 @@ void main()
 
                 vec2 tempTexCoord = f_texCoord;
                 vec2 pixelCoord = tempTexCoord * u_sizeScreenSpace;
+                pixelCoord += u_cursor.xy;
                 pixelCoord -= vec2(0, floor(tileSize / 2.0f) * i);
                 pixelCoord = cartesianToIsometric(pixelCoord);
                 // pixelCoord -= layerSizeIso - (position + vec2(0.5)) * tileSize;
@@ -241,7 +245,8 @@ void main()
                 vec4 layerColor = texelFetch(u_worldTextures, ivec3(pixelCoord, i), 0);
                 // float layerMask = pixelCoord.x >= 0 && pixelCoord.x < layer.textureSize.x && pixelCoord.y >= 0 && pixelCoord.y < layer.textureSize.y ? 1.0f : 0.0f;
                 float layerMask = withinMask(pixelCoord, layer.textureSize);
-                finalColor = overlay(finalColor, layerColor.rgb * layer.color, layerMask * layerColor.a);
+                float layerAlpha = ceil(layerColor.r + layerColor.g + layerColor.b);
+                finalColor = mix(finalColor, layerColor.rgb * layer.color, saturate(layerMask * layerAlpha));
             }
         }
     }
@@ -260,6 +265,8 @@ void main()
     }
     else
     {
+        texCoord += u_cursor.xy;
+
         texCoord = floor(texCoord);
 
         tileSize = MAP_TILE_SIZE_PIXELS;
@@ -296,31 +303,19 @@ void main()
     }
 
     float tileSizeReciprocal = 1.0 / tileSize;
-
-    vec4 tileInfo = pixelToTile(texCoord, tileSize);
-    STile tileData = getTileData(tileInfo.x, tileInfo.y, levelWidth, levelHeight);
-    float validTileMask = calculateValidTileMask(tileInfo.x, tileInfo.y, levelWidth, levelHeight);
     float levelBoundsMask = step(texCoord.x, levelWidth * tileSize + 1) * step(texCoord.y, levelHeight * tileSize + 1) * step(0.0, texCoord.x) * step(0.0, texCoord.y);
 
+    vec4 tileInfo = pixelToTile(texCoord, tileSize);
     STileMasks tileMasks = getTileMasks(tileInfo.x, tileInfo.y);
 
-    float tileExploredMask = exploredMask(tileData.specialFlags);
-
-    validTileMask *= tileExploredMask;
-
-    float tileVisitedMask = visitedMask(tileData.specialFlags);
-
-    float tileNonEmptyMask = nonEmptyMask(tileData.flags);
-
-    // Floor
-    float floorTileMask = (tileMasks.hole + tileMasks.floor) * validTileMask;
+    /* Floor */
+    float floorTileMask = (tileMasks.hole + tileMasks.floor) * tileMasks.valid * tileMasks.explored;
 
     // float checkerMask = floor(mod(tileX + mod(tileY, 2.0), 2.0));
-
-    vec3 floorTile = floorColor * (0.5f + tileVisitedMask / 2.0f);
+    vec3 floorTile = floorColor * (0.5f + tileMasks.visited / 2.0f);
     finalColor = overlay(finalColor, floorTile, floorTileMask);
 
-    // Edges
+    /* Edges */
     vec2 normalizedCellUV = vec2(inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.z), inverseMix(tileSizeReciprocal * round(tileEdgeSize / 2.0), 1.0, tileInfo.w));
     vec2 mappedCellUV = normalizedCellUV * 2.0 - vec2(1.0);
 
@@ -422,12 +417,7 @@ void main()
     float gridPulse = (max(gridPulseX, gridPulseY) * 0.5) + 0.5;
     float tileGrid = floorTileMask; // + wallMasks;
     vec3 grid = mix(vec3(0.05, 0.15, 0.6) * gridPulse, tileGridColor, tileGrid);
-    // texCoordOriginal *= u_sizeScreenSpace;
-    // texCoordOriginal = floor(texCoordOriginal);
-    // float gridForceMask = (1.0 - step(0.001, mod(texCoordOriginal.x, u_sizeScreenSpace.x - 1))) + (1.0 - step(0.001, mod(texCoordOriginal.y, u_sizeScreenSpace.y - 1)));
-    // gridForceMask = saturate(gridForceMask);
-    // gridForceMask = 0.0;
-    // finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
+
     if (u_mode != MAP_MODE_WORLD_LAYER && u_mode != MAP_MODE_WORLD)
     {
         finalColor = mix(finalColor, grid, saturate(gridMasks * (1.0 - wallMasks) * (1.0 - doorMasks)));
@@ -439,7 +429,7 @@ void main()
 
     /* Map Icons */
     vec4 holeColor = putIconEx(tileMasks.hole, normalizedCellUV, u_common.icons[MAP_ICON_HOLE]);
-    finalColor = mix(finalColor, holeColor.rgb, holeColor.a * (1.0 - edgeMask));
+    finalColor = mix(finalColor, holeColor.rgb, tileMasks.valid * tileMasks.explored * holeColor.a * (1.0 - edgeMask));
 
     /* Current POV */
     if (u_mode == MAP_MODE_NORMAL)
@@ -453,5 +443,5 @@ void main()
     // vec3 povColor = vec3(1.0, 1.0, 1.0);
     // finalColor = overlay(finalColor, povColor, povMask * levelBoundsMask);
 
-    color = vec4(finalColor, ceil(finalColor.r + finalColor.g + finalColor.b));
+    color = vec4(finalColor, 1.0f);
 }
