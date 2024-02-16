@@ -257,7 +257,6 @@ void SProgramMap::InitUniforms()
 {
     SProgram2D::InitUniforms();
     UniformWorldTextures = glGetUniformLocation(ID, "u_worldTextures");
-    UniformRevealed = glGetUniformLocation(ID, "u_revealed");
     UniformCursor = glGetUniformLocation(ID, "u_cursor");
 
     glProgramUniform1i(ID, UniformWorldTextures, ETextureUnits::WorldTextures);
@@ -269,7 +268,7 @@ void SProgramMap::InitUniforms()
 
 void SProgramMap::InitUniformBlocks()
 {
-    UniformBlockCommon.Init(sizeof(SShaderSprite) * MAP_ICON_COUNT);
+    UniformBlockCommon.Init(sizeof(SShaderMapCommon));
     UniformBlockCommon.Bind(EUniformBlockBinding::MapCommon);
 
     UniformBlockMap.Init(sizeof(SShaderMapData));
@@ -286,9 +285,9 @@ void SProgramMap::CleanupUniformBlocks() const
     UniformBlockWorld.Cleanup();
 }
 
-void SProgramMap::SetRevealed(bool bRevealed)
+void SProgramMap::SetEditor(bool bEditor) const
 {
-    glProgramUniform1f(ID, UniformRevealed, bRevealed ? 1.0f : 0.0f);
+    UniformBlockCommon.SetFloat(offsetof(SShaderMapCommon, Editor), bEditor ? 1.0f : 0.0f);
 }
 
 void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
@@ -776,7 +775,7 @@ void SRenderer::SetMapIcons(const std::array<SSpriteHandle, MAP_ICON_COUNT>& Spr
     }
 
     glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlockCommon.UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderSprite) * MAP_ICON_COUNT, Sprites.data());
+    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapCommon, Icons), sizeof(SShaderSprite) * MAP_ICON_COUNT, Sprites.data());
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -1040,8 +1039,8 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
 
     glBindVertexArray(Quad2D.VAO);
 
+    ProgramMap.SetEditor(true);
     ProgramMap.Use();
-    ProgramMap.SetRevealed(true);
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_WORLD_LAYER);
     glUniform2f(ProgramMap.UniformPositionScreenSpaceID, 0.0f, 0.0f);
 
@@ -1077,7 +1076,7 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
         LayerIndex++;
     }
 
-    ProgramMap.SetRevealed(false);
+    ProgramMap.SetEditor(false);
 
     glBindVertexArray(0);
 

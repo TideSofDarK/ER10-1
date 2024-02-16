@@ -84,6 +84,13 @@ struct SShaderSprite
     int : 32;
 };
 
+struct SShaderMapCommon
+{
+    float Editor{};
+    SVec3 PaddingA{};
+    SShaderSprite Icons[MAP_ICON_COUNT];
+};
+
 struct SUniformBlock
 {
     unsigned UBO{};
@@ -196,10 +203,9 @@ public:
     int UniformWorldTextures{};
     int UniformWorldLayers{};
     int UniformMap{};
-    int UniformRevealed{};
     int UniformCursor{};
 
-    void SetRevealed(bool bRevealed);
+    void SetEditor(bool bEditor) const;
 };
 
 struct SProgram3D : SProgram

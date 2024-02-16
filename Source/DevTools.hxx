@@ -8,24 +8,43 @@
 
 struct SGame;
 
-enum class EDevToolsMode
+struct SEditorFramebuffer
 {
-    Game,
-    LevelEditor,
-    WorldEditor
+    int Width{};
+    int Height{};
+    SVec4 ClearColor{};
+    uint32_t FBO{};
+    uint32_t ColorID{};
+
+    void Init(int InWidth, int InHeight, SVec4 InClearColor);
+    void Resize(int InWidth, int InHeight);
+    void Cleanup();
 };
 
-struct SWorldEditor
-{
+struct SEditorBase {
+    SGame* Game{};
+    SEditorFramebuffer Framebuffer{};
     SVec4 CursorPosition{};
-    SWorld World;
-    float Scale = 1.0f;
+    float Scale{};
 
-    void Init();
+    virtual void DrawFunc(const SVec2& ScaledSize) = 0;
+    virtual void InputFunc() = 0;
+    virtual void ToolsFunc() = 0;
+};
+
+struct SWorldEditor : SEditorBase
+{
+    SWorld World;
+
+    void Init(SGame* InGame);
     void Cleanup();
 
-    void Show(SGame& Game);
+    void Show();
     void RenderLayers(SGame& Game);
+
+    void DrawFunc(const SVec2& ScaledSize) final;
+    void InputFunc() final;
+    void ToolsFunc() final;
 };
 
 enum class ELevelEditorMode
@@ -41,13 +60,11 @@ struct SValidationResult
     int Door{};
 };
 
-struct SLevelEditor
+struct SLevelEditor : SEditorBase
 {
-    SVec4 CursorPosition{};
     ELevelEditorMode LevelEditorMode{};
     uint32_t ToggleEdgeType{};
     SVec2Int NewLevelSize{};
-    float Scale{};
     bool bDrawWallJoints{};
     bool bDrawEdges{};
     bool bDrawGridLines{};
@@ -56,10 +73,14 @@ struct SLevelEditor
     std::optional<SVec2Int> BlockModeTileCoords{};
     SWorldLevel Level{};
 
-    void Init();
+    void Init(SGame* InGame);
     void Cleanup();
 
-    void Show(SGame& Game);
+    void Show();
+
+    void DrawFunc(const SVec2& ScaledSize) final;
+    void InputFunc() final;
+    void ToolsFunc() final;
 
     void SaveTilemapToFile(const std::filesystem::path& Path);
     void LoadTilemapFromFile(const std::filesystem::path& Path);
@@ -72,21 +93,29 @@ struct SLevelEditor
     SValidationResult Validate(bool bFix);
 };
 
+enum class EDevToolsMode
+{
+    Game,
+    LevelEditor,
+    WorldEditor
+};
+
 struct SDevTools
 {
+    SGame* Game{};
     EDevToolsMode Mode{};
     SLevelEditor LevelEditor;
     SWorldEditor WorldEditor;
 
-    void Init(struct SDL_Window* Window, void* Context);
+    void Init(SGame* InGame);
 
     void Cleanup();
 
     static void ProcessEvent(const union SDL_Event* Event);
 
-    void Update(SGame& Game);
+    void Update();
 
-    void ShowDebugTools(SGame& Game) const;
+    void ShowDebugTools() const;
 
     static void DrawParty(struct SParty& Party, float Scale, bool bReversed);
 

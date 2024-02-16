@@ -37,6 +37,11 @@ namespace Utility
 
     void ParseInts(const char* Start, const char* End, int* Ints, int IntCount);
 
+    inline constexpr int MakeEven(int Number)
+    {
+        return Number & ~1;
+    }
+
     inline constexpr uint32_t NextPowerOfTwo(uint32_t Number)
     {
         --Number;

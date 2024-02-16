@@ -34,6 +34,10 @@ struct SWorldLayer
 
 layout(std140) uniform ub_common
 {
+    float editor;
+    float paddingA;
+    float paddingB;
+    float paddingC;
     Sprite[MAP_ICON_COUNT] icons;
 } u_common;
 
@@ -58,7 +62,6 @@ uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
 uniform vec2 u_sizeScreenSpace;
-uniform float u_revealed;
 uniform vec4 u_cursor;
 uniform sampler2D u_commonAtlas;
 uniform sampler2DArray u_worldTextures;
@@ -100,12 +103,12 @@ vec4 pixelToTile(vec2 texCoord, float tileSize)
 
 float visitedMask(uint flags)
 {
-    return bitMask(flags, TILE_SPECIAL_VISITED_BIT) + u_revealed;
+    return bitMask(flags, TILE_SPECIAL_VISITED_BIT) + u_common.editor;
 }
 
 float exploredMask(uint flags)
 {
-    return bitMask(flags, TILE_SPECIAL_EXPLORED_BIT) + u_revealed;
+    return bitMask(flags, TILE_SPECIAL_EXPLORED_BIT) + u_common.editor;
 }
 
 float nonEmptyMask(uint flags)
@@ -197,6 +200,8 @@ void main()
         texCoord.x = 1.0f - texCoord.x;
     }
 
+    vec2 halfSizeFloored = floor(u_sizeScreenSpace / 2.0);
+
     vec2 texCoordOriginal = texCoord;
     texCoord *= u_sizeScreenSpace;
 
@@ -208,7 +213,7 @@ void main()
     {
         vec2 position = round(u_world.position.xy);
 
-        texCoord += u_cursor.xy;
+        texCoord += floor(u_cursor.xy);
 
         tileSize = MAP_ISO_TILE_SIZE_PIXELS;
         tileCellSize = MAP_ISO_TILE_CELL_SIZE_PIXELS;
@@ -217,7 +222,7 @@ void main()
         texCoord = cartesianToIsometric(texCoord);
         texCoordOriginal = cartesianToIsometric(texCoordOriginal);
 
-        vec2 sizeIso = (cartesianToIsometric(u_sizeScreenSpace / 2.0));
+        vec2 sizeIso = cartesianToIsometric(halfSizeFloored);
 
         vec2 centerOffset = sizeIso - (position + vec2(0.5)) * tileSize;
 
@@ -225,25 +230,19 @@ void main()
         texCoord = floor(texCoord);
 
         /* Draw lower levels. */
+        // if (false)
         {
             for (int i = WORLD_MAX_LAYERS; i >= 1; i--)
             {
                 SWorldLayer layer = u_world.layers[i];
-                // vec2 layerSizeIso = (cartesianToIsometric(layer.textureSize / 2.0f));
-
-                vec2 tempTexCoord = f_texCoord;
-                vec2 pixelCoord = tempTexCoord * u_sizeScreenSpace;
-                pixelCoord += u_cursor.xy;
+                vec2 pixelCoord = f_texCoord * u_sizeScreenSpace;
+                pixelCoord += floor(u_cursor.xy);
                 pixelCoord -= vec2(0, floor(tileSize / 2.0f) * i);
                 pixelCoord = cartesianToIsometric(pixelCoord);
-                // pixelCoord -= layerSizeIso - (position + vec2(0.5)) * tileSize;
-                // layer.position = vec2(1.0, 1.0);
                 centerOffset = sizeIso - (layer.position + vec2(0.5)) * tileSize;
                 pixelCoord -= centerOffset;
-                // pixelCoord = floor(pixelCoord);
                 pixelCoord = vec2(layer.textureSize - pixelCoord);
                 vec4 layerColor = texelFetch(u_worldTextures, ivec3(pixelCoord, i), 0);
-                // float layerMask = pixelCoord.x >= 0 && pixelCoord.x < layer.textureSize.x && pixelCoord.y >= 0 && pixelCoord.y < layer.textureSize.y ? 1.0f : 0.0f;
                 float layerMask = withinMask(pixelCoord, layer.textureSize);
                 float layerAlpha = ceil(layerColor.r + layerColor.g + layerColor.b);
                 finalColor = mix(finalColor, layerColor.rgb * layer.color, saturate(layerMask * layerAlpha));
@@ -265,7 +264,7 @@ void main()
     }
     else
     {
-        texCoord += u_cursor.xy;
+        texCoord += floor(u_cursor.xy);
 
         texCoord = floor(texCoord);
 
@@ -273,7 +272,7 @@ void main()
         tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
-        vec2 centerOffset = pov * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
+        vec2 centerOffset = (pov * (1.0f - u_common.editor)) * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
         centerOffset = floor(centerOffset);
 
         texCoord += centerOffset;

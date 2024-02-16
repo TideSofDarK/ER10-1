@@ -64,7 +64,7 @@ SGame::SGame()
     : MapRect(MapRectMin)
 {
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    DevTools.Init(Window.Window, Window.Context);
+    DevTools.Init(this);
 #endif
 
     Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -231,7 +231,7 @@ void SGame::Run()
         UpdateInputState();
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-        DevTools.Update(*this);
+        DevTools.Update();
 #endif
         // if (InputState.Cancel == EKeyState::Pressed)
         // {
