@@ -83,21 +83,30 @@ void SEditorFramebuffer::Cleanup()
 static const std::filesystem::path MapExtension = ".erm";
 static std::vector<std::filesystem::path> AvailableMaps(20);
 
-static void GenericMapWindow(
+static void GenericEditorWindow(
     const char* WindowName,
     SEditorBase* Editor)
 {
+    ImGuiIO& IO = ImGui::GetIO();
+
     static bool bFirstTime = true;
     if (bFirstTime)
     {
         bFirstTime = false;
     }
 
-    ImGuiIO& IO = ImGui::GetIO();
+    auto Viewport = ImGui::GetMainViewport();
+    ImVec2 WindowSize = Viewport->Size;
+    ImVec2 WindowPos = ImVec2((WindowSize.x - (WindowSize.x * 0.75f)) * 0.5, ((WindowSize.y - (WindowSize.y * 0.75f)) * 0.5f));
+    WindowSize.x *= 0.75f;
+    WindowSize.y *= 0.75f;
+
+    ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Once);
+    ImGui::SetNextWindowPos(WindowPos, ImGuiCond_Once);
     if (ImGui::Begin(WindowName, nullptr,
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
     {
-        Editor->ShowEditorTools();
+        Editor->EditorTools();
         ImGui::SameLine();
         if (ImGui::BeginChild("MapCanvas"))
         {
@@ -117,11 +126,11 @@ static void GenericMapWindow(
             glClearColor(Framebuffer->ClearColor.X, Framebuffer->ClearColor.Y, Framebuffer->ClearColor.Z, Framebuffer->ClearColor.W);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            Editor->RenderToFramebuffer(SVec2(ScaledSize));
+            Editor->EditorDraw(SVec2(ScaledSize));
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            Editor->UpdateEditor();
+            Editor->EditorUpdate();
 
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2());
             ImGui::ImageButton(reinterpret_cast<void*>(Framebuffer->ColorID), ImVec2((float)ScaledSize.X * CanvasScale, (float)ScaledSize.Y * CanvasScale),
@@ -170,21 +179,21 @@ void SWorldEditor::Cleanup()
     Framebuffer.Cleanup();
 }
 
-void SWorldEditor::RenderToFramebuffer(const SVec2& ScaledSize)
+void SWorldEditor::EditorDraw(const SVec2& ScaledSize)
 {
     auto& Renderer = Game->Renderer;
     Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
-    glProgramUniform4f(Renderer.ProgramMap.ID, Renderer.ProgramMap.UniformCursor, CursorPosition.X, CursorPosition.Y, CursorPosition.Z, CursorPosition.W);
+    Renderer.ProgramMap.SetCursor(CursorPosition.XY());
     Renderer.DrawWorldMapImmediate({ 0.0f, 0.0f }, ScaledSize);
 }
 
-void SWorldEditor::UpdateEditor()
+void SWorldEditor::EditorUpdate()
 {
 }
 
-void SWorldEditor::ShowEditorTools()
+void SWorldEditor::EditorTools()
 {
-    static ImGuiID PopupID = ImHashStr("MainMenuPopup");
+    static ImGuiID PopupID = ImHashStr("WorldEditorPopup");
 
     static std::string SavePathString{};
 
@@ -392,23 +401,21 @@ void SLevelEditor::Cleanup()
     Framebuffer.Cleanup();
 }
 
-void SLevelEditor::RenderToFramebuffer(const SVec2& ScaledSize)
+void SLevelEditor::EditorDraw(const SVec2& ScaledSize)
 {
     auto& Renderer = Game->Renderer;
     Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
-    glProgramUniform4f(Renderer.ProgramMap.ID, Renderer.ProgramMap.UniformCursor, CursorPosition.X, CursorPosition.Y, CursorPosition.Z, CursorPosition.W);
+    Renderer.ProgramMap.SetCursor(CursorPosition.XY());
     Renderer.DrawMapImmediate({ 0.0f, 0.0f }, ScaledSize);
 }
 
-void SLevelEditor::UpdateEditor()
+void SLevelEditor::EditorUpdate()
 {
-    // ImVec2 RectMin = ImGui
-    // Log::DevTools<ELogLevel::Critical>("Drag registered: X = %.2f, Y = %.2f", DragDelta.x, DragDelta.y);
     ImVec2 WindowSize = ImGui::GetWindowSize();
     auto* DrawList = ImGui::GetWindowDrawList();
     ImVec2 CursorPos = ImGui::GetCursorScreenPos();
 
-    auto OriginalMapSize = Level.CalculateMapSize();
+    SVec2Int OriginalMapSize = Level.CalculateMapSize();
 
     float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * Scale;
     float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * Scale;
@@ -432,6 +439,7 @@ void SLevelEditor::UpdateEditor()
             MousePos += CursorPosition.XY();
             MousePos -= SVec2{WindowSize.x * 0.5f, WindowSize.y * 0.5f} / Scale;
             MousePos += SVec2((float)(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) * 0.5f);
+            MousePos += SVec2(OriginalMapSize) * 0.5f;
             SelectedTileCoords = SVec2Int{
                 (int)std::floor(MousePos.X / MAP_TILE_SIZE_PIXELS),
                 (int)std::floor(MousePos.Y / MAP_TILE_SIZE_PIXELS)
@@ -586,9 +594,9 @@ void SLevelEditor::UpdateEditor()
     }
 }
 
-void SLevelEditor::ShowEditorTools()
+void SLevelEditor::EditorTools()
 {
-    static ImGuiID PopupID = ImHashStr("MainMenuPopup");
+    static ImGuiID PopupID = ImHashStr("LevelEditorPopup");
 
     static SValidationResult ValidationResult;
     static std::string SavePathString{};
@@ -789,7 +797,7 @@ void SLevelEditor::ShowEditorTools()
 
     auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
 
-    if (ImGui::BeginChild("Tile Settings", ImVec2(ImGui::GetFontSize() * 7, 0),
+    if (ImGui::BeginChild("Tile Settings", ImVec2(ImGui::GetFontSize() * 14, 0),
             ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_Border))
     {
         ImGui::Text("X = %d, Y = %d", SelectedTileCoords->X, SelectedTileCoords->Y);
@@ -1115,23 +1123,23 @@ void SDevTools::Update()
 
     if (bEditorOpened)
     {
-        Game->Renderer.ProgramMap.SetEditor(true);
+        Game->Renderer.ProgramMap.SetEditorData(SVec2(), SVec4(), true, false, false);
     }
 
     if (bReturnedToGame)
     {
-        Game->Renderer.ProgramMap.SetEditor(false);
+        Game->Renderer.ProgramMap.SetEditorData(SVec2(), SVec4(), false, false, false);
         Game->Renderer.UploadMapData(Game->World.GetLevel(), Game->Blob.UnreliableCoordsAndDirection());
     }
 
     switch (Mode)
     {
         case EDevToolsMode::LevelEditor:
-            GenericMapWindow(
+            GenericEditorWindow(
                 "Level Editor", &LevelEditor);
             break;
         case EDevToolsMode::WorldEditor:
-            GenericMapWindow(
+            GenericEditorWindow(
                 "World Editor", &WorldEditor);
             break;
         default:

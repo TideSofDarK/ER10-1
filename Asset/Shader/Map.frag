@@ -34,12 +34,23 @@ struct SWorldLayer
 
 layout(std140) uniform ub_common
 {
-    float editor;
+    vec2 cursor;
     float paddingA;
     float paddingB;
-    float paddingC;
     Sprite[MAP_ICON_COUNT] icons;
 } u_common;
+
+layout(std140) uniform ub_editor
+{
+    vec4 selectedBlock;
+    vec2 selectedTile;
+    bool enabled;
+    bool toggleMode;
+    bool blockMode;
+    bool paddingA;
+    bool paddingB;
+    bool paddingC;
+} u_editor;
 
 layout(std140) uniform ub_map
 {
@@ -62,7 +73,6 @@ uniform int u_mode;
 uniform vec4 u_modeControlA;
 uniform vec4 u_modeControlB;
 uniform vec2 u_sizeScreenSpace;
-uniform vec4 u_cursor;
 uniform sampler2D u_commonAtlas;
 uniform sampler2DArray u_worldTextures;
 
@@ -103,12 +113,26 @@ vec4 pixelToTile(vec2 texCoord, float tileSize)
 
 float visitedMask(uint flags)
 {
-    return bitMask(flags, TILE_SPECIAL_VISITED_BIT) + u_common.editor;
+    if (u_editor.enabled)
+    {
+        return 1.0f;
+    }
+    else
+    {
+        return bitMask(flags, TILE_SPECIAL_VISITED_BIT);
+    }
 }
 
 float exploredMask(uint flags)
 {
-    return bitMask(flags, TILE_SPECIAL_EXPLORED_BIT) + u_common.editor;
+    if (u_editor.enabled)
+    {
+        return 1.0f;
+    }
+    else
+    {
+        return bitMask(flags, TILE_SPECIAL_EXPLORED_BIT);
+    }
 }
 
 float nonEmptyMask(uint flags)
@@ -213,7 +237,7 @@ void main()
     {
         vec2 position = round(u_world.position.xy);
 
-        texCoord += floor(u_cursor.xy);
+        texCoord += floor(u_common.cursor.xy);
 
         tileSize = MAP_ISO_TILE_SIZE_PIXELS;
         tileCellSize = MAP_ISO_TILE_CELL_SIZE_PIXELS;
@@ -236,7 +260,7 @@ void main()
             {
                 SWorldLayer layer = u_world.layers[i];
                 vec2 pixelCoord = f_texCoord * u_sizeScreenSpace;
-                pixelCoord += floor(u_cursor.xy);
+                pixelCoord += floor(u_common.cursor.xy);
                 pixelCoord -= vec2(0, floor(tileSize / 2.0f) * i);
                 pixelCoord = cartesianToIsometric(pixelCoord);
                 centerOffset = sizeIso - (layer.position + vec2(0.5)) * tileSize;
@@ -253,41 +277,37 @@ void main()
     {
         texCoord = floor(texCoord);
 
+        /* Render in isometric scale for further transformation. */
         tileSize = MAP_ISO_TILE_SIZE_PIXELS;
         tileCellSize = MAP_ISO_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_ISO_TILE_EDGE_SIZE_PIXELS;
-
-        // vec2 centerOffset = pov * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
-        // centerOffset = floor(centerOffset);
-        //
-        // texCoord += centerOffset;
     }
     else
     {
-        texCoord += floor(u_cursor.xy);
-
+        texCoord += floor(u_common.cursor.xy);
         texCoord = floor(texCoord);
 
         tileSize = MAP_TILE_SIZE_PIXELS;
         tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
         tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
 
-        vec2 centerOffset = (pov * (1.0f - u_common.editor)) * tileSize - u_sizeScreenSpace * 0.5 + vec2(tileSize + tileEdgeSize) / 2;
+        vec2 fullMapSize = vec2(levelWidth * tileSize + tileEdgeSize, levelHeight * tileSize + tileEdgeSize);
+
+        vec2 centerOffset = vec2(tileSize + tileEdgeSize) / 2;
+        if (u_editor.enabled)
+        {
+            /* Center out if in editor. */
+            centerOffset -= halfSizeFloored;
+            centerOffset += fullMapSize * 0.5f;
+        }
+        else
+        {
+            /* Align to POV if not in editor. */
+            centerOffset += pov * tileSize - halfSizeFloored;
+        }
         centerOffset = floor(centerOffset);
 
         texCoord += centerOffset;
-
-        // pov = floor(pov) + floor(fract(pov) * (tileSize / 2.0)) / (tileSize / 2.0);
-
-        // texCoord = floor(texCoord);
-        //
-        // tileSize = MAP_TILE_SIZE_PIXELS;
-        // tileCellSize = MAP_TILE_CELL_SIZE_PIXELS;
-        // tileEdgeSize = MAP_TILE_EDGE_SIZE_PIXELS;
-        //
-        // vec2 centerOffset = round(u_sizeScreenSpace * 0.5 - vec2(u_map.width, u_map.height) / 2.0 * tileSize);
-        //
-        // texCoord += centerOffset;
     }
 
     vec3 edgeColor = vec3(1.0f);

@@ -27,6 +27,7 @@ namespace EUniformBlockBinding
         Uber2DCommon,
         Uber3DCommon,
         MapCommon,
+        MapEditor,
         Map,
         MapWorld
     };
@@ -257,11 +258,11 @@ void SProgramMap::InitUniforms()
 {
     SProgram2D::InitUniforms();
     UniformWorldTextures = glGetUniformLocation(ID, "u_worldTextures");
-    UniformCursor = glGetUniformLocation(ID, "u_cursor");
 
     glProgramUniform1i(ID, UniformWorldTextures, ETextureUnits::WorldTextures);
 
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::MapCommon);
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_editor"), EUniformBlockBinding::MapEditor);
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_map"), EUniformBlockBinding::Map);
     glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_world"), EUniformBlockBinding::MapWorld);
 }
@@ -270,6 +271,9 @@ void SProgramMap::InitUniformBlocks()
 {
     UniformBlockCommon.Init(sizeof(SShaderMapCommon));
     UniformBlockCommon.Bind(EUniformBlockBinding::MapCommon);
+
+    UniformBlockEditor.Init(sizeof(SShaderMapEditor));
+    UniformBlockEditor.Bind(EUniformBlockBinding::MapEditor);
 
     UniformBlockMap.Init(sizeof(SShaderMapData));
     UniformBlockMap.Bind(EUniformBlockBinding::Map);
@@ -281,13 +285,28 @@ void SProgramMap::InitUniformBlocks()
 void SProgramMap::CleanupUniformBlocks() const
 {
     UniformBlockCommon.Cleanup();
+    UniformBlockEditor.Cleanup();
     UniformBlockMap.Cleanup();
     UniformBlockWorld.Cleanup();
 }
 
-void SProgramMap::SetEditor(bool bEditor) const
+void SProgramMap::SetEditorData(const SVec2& SelectedTile, const SVec4& SelectedBlock, uint32_t bEnabled, uint32_t bToggleMode, uint32_t bBlockMode) const
 {
-    UniformBlockCommon.SetFloat(offsetof(SShaderMapCommon, Editor), bEditor ? 1.0f : 0.0f);
+    SShaderMapEditor ShaderMapEditor;
+    ShaderMapEditor.bBlockMode = bBlockMode;
+    ShaderMapEditor.bToggleMode = bToggleMode;
+    ShaderMapEditor.SelectedTile = SelectedTile;
+    ShaderMapEditor.SelectedBlock = SelectedBlock;
+    ShaderMapEditor.bEnabled = bEnabled;
+
+    glBindBuffer(GL_UNIFORM_BUFFER, UniformBlockEditor.UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SShaderMapEditor), &ShaderMapEditor);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void SProgramMap::SetCursor(const SVec2& Cursor) const
+{
+    UniformBlockCommon.SetVector2(offsetof(SShaderMapCommon, Cursor), Cursor);
 }
 
 void SGeometry::InitFromRawMesh(const CRawMesh& RawMesh)
@@ -1020,7 +1039,7 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
 
     glBindVertexArray(Quad2D.VAO);
 
-    ProgramMap.SetEditor(true);
+    ProgramMap.SetEditorData(SVec2(), SVec4(), true, false, false);
     ProgramMap.Use();
     glUniform1i(ProgramMap.UniformModeID, MAP_MODE_WORLD_LAYER);
     glUniform2f(ProgramMap.UniformPositionScreenSpaceID, 0.0f, 0.0f);
@@ -1057,7 +1076,7 @@ void SRenderer::DrawWorldLayers(const SWorld* World, SVec2Int Range)
         LayerIndex++;
     }
 
-    ProgramMap.SetEditor(false);
+    ProgramMap.SetEditorData(SVec2(), SVec4(), false, false, false);
 
     glBindVertexArray(0);
 

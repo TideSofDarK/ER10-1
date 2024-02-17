@@ -43,6 +43,22 @@ inline constexpr SVec2 MapWorldLayerTextureSize{
 
 struct SWorldLevel;
 
+struct SShaderGlobals
+{
+    SVec2 ScreenSize;
+    float Time{};
+    float Random{};
+};
+
+struct SShaderSprite
+{
+    SVec4 UVRect{};
+    int SizeX{};
+    int SizeY{};
+    int : 32;
+    int : 32;
+};
+
 /* @TODO: Redesign so it's easier to upload. */
 struct SShaderMapData
 {
@@ -68,26 +84,23 @@ struct SShaderWorld
     SShaderWorldLayer Layers[WORLD_MAX_LAYERS];
 };
 
-struct SShaderGlobals
+struct SShaderMapEditor
 {
-    SVec2 ScreenSize;
-    float Time{};
-    float Random{};
-};
-
-struct SShaderSprite
-{
-    SVec4 UVRect{};
-    int SizeX{};
-    int SizeY{};
+    SVec4 SelectedBlock{};
+    SVec2 SelectedTile{};
+    uint32_t bEnabled{};
+    uint32_t bToggleMode{};
+    uint32_t bBlockMode{};
+    int : 32;
     int : 32;
     int : 32;
 };
 
 struct SShaderMapCommon
 {
-    float Editor{};
-    SVec3 PaddingA{};
+    SVec2 Cursor{};
+    uint32_t bEditor{};
+    int : 32;
     SShaderSprite Icons[MAP_ICON_COUNT];
 };
 
@@ -197,15 +210,13 @@ protected:
 
 public:
     SUniformBlock UniformBlockCommon{};
+    SUniformBlock UniformBlockEditor{};
     SUniformBlock UniformBlockMap{};
     SUniformBlock UniformBlockWorld{};
-    int UniformCommonAtlasID{};
     int UniformWorldTextures{};
-    int UniformWorldLayers{};
-    int UniformMap{};
-    int UniformCursor{};
 
-    void SetEditor(bool bEditor) const;
+    void SetEditorData(const SVec2& SelectedTile, const SVec4& SelectedBlock, uint32_t bEnabled, uint32_t bToggleMode, uint32_t bBlockMode) const;
+    void SetCursor(const SVec2& Cursor) const;
 };
 
 struct SProgram3D : SProgram
