@@ -97,7 +97,7 @@ static void GenericEditorWindow(
 
     auto Viewport = ImGui::GetMainViewport();
     ImVec2 WindowSize = Viewport->Size;
-    ImVec2 WindowPos = ImVec2((WindowSize.x - (WindowSize.x * 0.75f)) * 0.5, ((WindowSize.y - (WindowSize.y * 0.75f)) * 0.5f));
+    ImVec2 WindowPos = ImVec2((WindowSize.x - (WindowSize.x * 0.75f)) * 0.5f, ((WindowSize.y - (WindowSize.y * 0.75f)) * 0.5f));
     WindowSize.x *= 0.75f;
     WindowSize.y *= 0.75f;
 
@@ -108,7 +108,7 @@ static void GenericEditorWindow(
     {
         Editor->EditorTools();
         ImGui::SameLine();
-        if (ImGui::BeginChild("MapCanvas"))
+        if (ImGui::BeginChild("MapCanvas", ImVec2(), ImGuiChildFlags_None, ImGuiWindowFlags_NoNav))
         {
             SEditorFramebuffer* Framebuffer = &Editor->Framebuffer;
             ImVec2 CanvasSize = ImGui::GetWindowSize();
@@ -139,9 +139,9 @@ static void GenericEditorWindow(
 
             if (ImGui::IsWindowHovered())
             {
-                CanvasScale += IO.MouseWheel * 1.0f;
-                CanvasScale = std::floor(CanvasScale);
-                Editor->Scale = std::max(1.0f, CanvasScale);
+                Editor->Scale += IO.MouseWheel * 1.0f;
+                Editor->Scale = std::floor(Editor->Scale);
+                Editor->Scale = std::max(1.0f, Editor->Scale);
                 if (ImGui::IsMouseDragging(2))
                 {
                     ImVec2 DragDelta = ImGui::GetMouseDragDelta(2);
@@ -406,191 +406,178 @@ void SLevelEditor::EditorDraw(const SVec2& ScaledSize)
     auto& Renderer = Game->Renderer;
     Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
     Renderer.ProgramMap.SetCursor(CursorPosition.XY());
+    if (bLevelChanged)
+    {
+        Renderer.UploadMapData(&Level, Game->Blob.UnreliableCoordsAndDirection());
+        bLevelChanged = false;
+    }
+    if (bEditorStateChanged)
+    {
+        Renderer.ProgramMap.SetEditorData(
+            SVec2(SelectedTileCoords),
+            SVec4(BlockModeTileCoords, SelectedTileCoords),
+            true,
+            LevelEditorMode == ELevelEditorMode::ToggleEdge,
+            LevelEditorMode == ELevelEditorMode::Block);
+        bEditorStateChanged = false;
+    }
     Renderer.DrawMapImmediate({ 0.0f, 0.0f }, ScaledSize);
 }
 
 void SLevelEditor::EditorUpdate()
 {
     ImVec2 WindowSize = ImGui::GetWindowSize();
-    auto* DrawList = ImGui::GetWindowDrawList();
     ImVec2 CursorPos = ImGui::GetCursorScreenPos();
 
     SVec2Int OriginalMapSize = Level.CalculateMapSize();
-
-    float ScaledTileSize = (float)MAP_TILE_SIZE_PIXELS * Scale;
-    float ScaledTileEdgeSize = (float)MAP_TILE_EDGE_SIZE_PIXELS * Scale;
-    auto ScaledMapSize = SVec2{
-        (float)OriginalMapSize.X * Scale,
-        (float)OriginalMapSize.Y * Scale
-    };
-
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)))
-    {
-        FitTilemapToWindow();
-    }
 
     if (ImGui::IsWindowHovered())
     {
         if (ImGui::IsMouseClicked(0))
         {
             auto AbsoluteMousePos = ImGui::GetMousePos();
-            SVec2 MousePos{AbsoluteMousePos.x - CursorPos.x, AbsoluteMousePos.y - CursorPos.y};
+            SVec2 MousePos{ AbsoluteMousePos.x - CursorPos.x, AbsoluteMousePos.y - CursorPos.y };
             MousePos /= Scale;
             MousePos += CursorPosition.XY();
-            MousePos -= SVec2{WindowSize.x * 0.5f, WindowSize.y * 0.5f} / Scale;
-            MousePos += SVec2((float)(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) * 0.5f);
+            MousePos -= SVec2{ WindowSize.x * 0.5f, WindowSize.y * 0.5f } / Scale;
             MousePos += SVec2(OriginalMapSize) * 0.5f;
-            SelectedTileCoords = SVec2Int{
+            SVec2Int NewSelectedTileCoords{
                 (int)std::floor(MousePos.X / MAP_TILE_SIZE_PIXELS),
                 (int)std::floor(MousePos.Y / MAP_TILE_SIZE_PIXELS)
             };
-            Log::DevTools<ELogLevel::Critical>("Drag registered: X = %d, Y = %d", SelectedTileCoords->X, SelectedTileCoords->Y);
+            if (Level.IsValidTile(NewSelectedTileCoords))
+            {
+                SelectedTileCoords = NewSelectedTileCoords;
+                bEditorStateChanged = true;
+            }
         }
     }
 
     if (ImGui::IsWindowFocused())
     {
-        if (SelectedTileCoords.has_value())
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
         {
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+            LevelEditorMode = ELevelEditorMode::Normal;
+        }
+        else if (LevelEditorMode == ELevelEditorMode::Normal || LevelEditorMode == ELevelEditorMode::Block)
+        {
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
             {
-                LevelEditorMode = ELevelEditorMode::Normal;
+                SelectedTileCoords.Y = std::max(0, SelectedTileCoords.Y - 1);
+                bEditorStateChanged = true;
             }
-            else if (LevelEditorMode == ELevelEditorMode::Normal || LevelEditorMode == ELevelEditorMode::Block)
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
             {
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
-                {
-                    SelectedTileCoords->Y = std::max(0, SelectedTileCoords->Y - 1);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
-                {
-                    SelectedTileCoords->X = std::max(0, SelectedTileCoords->X - 1);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
-                {
-                    SelectedTileCoords->Y = std::min(Level.Height - 1, SelectedTileCoords->Y + 1);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
-                {
-                    SelectedTileCoords->X = std::min(Level.Width - 1, SelectedTileCoords->X + 1);
-                }
+                SelectedTileCoords.X = std::max(0, SelectedTileCoords.X - 1);
+                bEditorStateChanged = true;
             }
-            if (LevelEditorMode == ELevelEditorMode::Block)
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
             {
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
-                {
-                    Level.EditBlock(SRectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_FLOOR_BIT);
-                    LevelEditorMode = ELevelEditorMode::Normal;
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
-                {
-                    Level.EditBlock(SRectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), 0);
-                    LevelEditorMode = ELevelEditorMode::Normal;
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
-                {
-                    Level.EditBlock(SRectInt::FromTwo(*SelectedTileCoords, *BlockModeTileCoords), TILE_HOLE_BIT);
-                    LevelEditorMode = ELevelEditorMode::Normal;
-                }
+                SelectedTileCoords.Y = std::min(Level.Height - 1, SelectedTileCoords.Y + 1);
+                bEditorStateChanged = true;
             }
-            else if (LevelEditorMode == ELevelEditorMode::Normal)
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
             {
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
-                {
-                    Level.Edit(*SelectedTileCoords, TILE_FLOOR_BIT);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
-                {
-                    Level.Edit(*SelectedTileCoords, 0);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
-                {
-                    Level.Edit(*SelectedTileCoords, TILE_HOLE_BIT);
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D)))
-                {
-                    LevelEditorMode = ELevelEditorMode::ToggleEdge;
-                    ToggleEdgeType = TILE_EDGE_DOOR_BIT;
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)))
-                {
-                    LevelEditorMode = ELevelEditorMode::ToggleEdge;
-                    ToggleEdgeType = TILE_EDGE_WALL_BIT;
-                }
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_V)))
-                {
-                    LevelEditorMode = ELevelEditorMode::Block;
-                    BlockModeTileCoords.emplace(*SelectedTileCoords);
-                }
-            }
-            else if (LevelEditorMode == ELevelEditorMode::ToggleEdge)
-            {
-                auto ToggleEdge = [this](SDirection Direction) {
-                    Level.ToggleEdge(*SelectedTileCoords, Direction, ToggleEdgeType);
-                    LevelEditorMode = ELevelEditorMode::Normal;
-                };
-                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
-                {
-                    ToggleEdge(SDirection::North());
-                }
-                else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
-                {
-                    ToggleEdge(SDirection::West());
-                }
-                else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
-                {
-                    ToggleEdge(SDirection::South());
-                }
-                else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
-                {
-                    ToggleEdge(SDirection::East());
-                }
-            }
-
-            /* Outline block selection. */
-            if (LevelEditorMode == ELevelEditorMode::Block && BlockModeTileCoords.has_value())
-            {
-                auto MinTileX = std::min(BlockModeTileCoords->X, SelectedTileCoords->X);
-                auto MinTileY = std::min(BlockModeTileCoords->Y, SelectedTileCoords->Y);
-
-                auto MaxTileX = std::max(BlockModeTileCoords->X, SelectedTileCoords->X);
-                auto MaxTileY = std::max(BlockModeTileCoords->Y, SelectedTileCoords->Y);
-
-                auto BlockWidth = MaxTileX - MinTileX + 1;
-                auto BlockHeight = MaxTileY - MinTileY + 1;
-
-                auto SelectedTilePosMin = ImVec2(
-                    CursorPos.x + ((float)MinTileX * ScaledTileSize),
-                    CursorPos.y + ((float)MinTileY * ScaledTileSize));
-                auto SelectedTilePosMax = ImVec2(
-                    SelectedTilePosMin.x + (ScaledTileSize * (float)BlockWidth) + ScaledTileEdgeSize,
-                    SelectedTilePosMin.y + (ScaledTileSize * (float)BlockHeight) + ScaledTileEdgeSize);
-
-                auto Thickness = ScaledTileEdgeSize;
-
-                DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                    BLOCK_SELECTION_COLOR, 0.0f, 0, Thickness);
-            }
-            else /* Outline single tile. */
-            {
-                auto SelectedTilePosMin = ImVec2(CursorPos.x + ((float)SelectedTileCoords->X * ScaledTileSize),
-                    CursorPos.y + ((float)SelectedTileCoords->Y * ScaledTileSize));
-                auto SelectedTilePosMax = ImVec2(SelectedTilePosMin.x + ScaledTileSize + ScaledTileEdgeSize,
-                    SelectedTilePosMin.y + ScaledTileSize + ScaledTileEdgeSize);
-                auto Thickness = ScaledTileEdgeSize;
-                if (LevelEditorMode == ELevelEditorMode::Normal)
-                {
-                    DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                        SELECTION_COLOR, 0.0f, 0, Thickness);
-                }
-                else
-                {
-                    Thickness += std::abs(1.0f * std::sin((float)ImGui::GetTime() * 10.0f));
-                    DrawList->AddRect(SelectedTilePosMin, SelectedTilePosMax,
-                        SELECTION_MODIFY_COLOR, 0.0f, 0, Thickness);
-                }
+                SelectedTileCoords.X = std::min(Level.Width - 1, SelectedTileCoords.X + 1);
+                bEditorStateChanged = true;
             }
         }
+        if (LevelEditorMode == ELevelEditorMode::Block)
+        {
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
+            {
+                Level.EditBlock(SRectInt::FromTwo(SelectedTileCoords, BlockModeTileCoords), TILE_FLOOR_BIT);
+                LevelEditorMode = ELevelEditorMode::Normal;
+                bEditorStateChanged = true;
+                bLevelChanged = true;
+            }
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
+            {
+                Level.EditBlock(SRectInt::FromTwo(SelectedTileCoords, BlockModeTileCoords), 0);
+                LevelEditorMode = ELevelEditorMode::Normal;
+                bEditorStateChanged = true;
+                bLevelChanged = true;
+            }
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
+            {
+                Level.EditBlock(SRectInt::FromTwo(SelectedTileCoords, BlockModeTileCoords), TILE_HOLE_BIT);
+                LevelEditorMode = ELevelEditorMode::Normal;
+                bEditorStateChanged = true;
+                bLevelChanged = true;
+            }
+        }
+        else if (LevelEditorMode == ELevelEditorMode::Normal)
+        {
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
+            {
+                Level.Edit(SelectedTileCoords, TILE_FLOOR_BIT);
+                bLevelChanged = true;
+            }
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
+            {
+                Level.Edit(SelectedTileCoords, 0);
+                bLevelChanged = true;
+            }
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
+            {
+                Level.Edit(SelectedTileCoords, TILE_HOLE_BIT);
+                bLevelChanged = true;
+            }
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D)))
+            {
+                LevelEditorMode = ELevelEditorMode::ToggleEdge;
+                ToggleEdgeType = TILE_EDGE_DOOR_BIT;
+                bEditorStateChanged = true;
+            }
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)))
+            {
+                LevelEditorMode = ELevelEditorMode::ToggleEdge;
+                ToggleEdgeType = TILE_EDGE_WALL_BIT;
+                bEditorStateChanged = true;
+            }
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_V)))
+            {
+                LevelEditorMode = ELevelEditorMode::Block;
+                BlockModeTileCoords = SelectedTileCoords;
+                bEditorStateChanged = true;
+            }
+        }
+        else if (LevelEditorMode == ELevelEditorMode::ToggleEdge)
+        {
+            auto ToggleEdge = [&, this](SDirection Direction) {
+                Level.ToggleEdge(SelectedTileCoords, Direction, ToggleEdgeType);
+                LevelEditorMode = ELevelEditorMode::Normal;
+                bEditorStateChanged = true;
+                bLevelChanged = true;
+            };
+            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
+            {
+                ToggleEdge(SDirection::North());
+            }
+            else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
+            {
+                ToggleEdge(SDirection::West());
+            }
+            else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
+            {
+                ToggleEdge(SDirection::South());
+            }
+            else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
+            {
+                ToggleEdge(SDirection::East());
+            }
+        }
+    }
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)) || bResetView)
+    {
+        Scale = std::min(WindowSize.x / (float)OriginalMapSize.X, WindowSize.y / (float)OriginalMapSize.Y);
+        Scale = std::max(1.0f, (std::floor(Scale) - 1.0f));
+        Log::DevTools<ELogLevel::Critical>("%f", Scale);
+        CursorPosition.X = 0.0f;
+        CursorPosition.Y = 0.0f;
+        bEditorStateChanged = true;
+        bResetView = false;
     }
 }
 
@@ -649,7 +636,7 @@ void SLevelEditor::EditorTools()
             ImGui::Separator();
             if (ImGui::MenuItem("Fit to Screen", "Home"))
             {
-                FitTilemapToWindow();
+                bResetView = true;
             }
             ImGui::EndMenu();
         }
@@ -674,7 +661,8 @@ void SLevelEditor::EditorTools()
         if (ImGui::Button("Accept"))
         {
             Level = SWorldLevel{ { NewLevelSize.X, NewLevelSize.Y } };
-            FitTilemapToWindow();
+            bLevelChanged = true;
+            bResetView = true;
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -782,25 +770,22 @@ void SLevelEditor::EditorTools()
     }
     ImGui::PopID();
 
-    /* Validate selected tile. */
-    if (SelectedTileCoords.has_value())
+    /* Validate selected tiles. */
+    if (!Level.IsValidTile(SelectedTileCoords))
     {
-        if (!Level.IsValidTile(*SelectedTileCoords))
-        {
-            SelectedTileCoords.emplace(SVec2Int{ 0, 0 });
-        }
+        SelectedTileCoords = { 0, 0 };
     }
-    else
+    if (!Level.IsValidTile(BlockModeTileCoords))
     {
-        SelectedTileCoords = SelectedTileCoords.value_or(SVec2Int{ 0, 0 });
+        BlockModeTileCoords = SelectedTileCoords;
     }
 
-    auto SelectedTile = Level.GetTileAtMutable(*SelectedTileCoords);
+    auto SelectedTile = Level.GetTileAtMutable(SelectedTileCoords);
 
     if (ImGui::BeginChild("Tile Settings", ImVec2(ImGui::GetFontSize() * 14, 0),
             ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_Border))
     {
-        ImGui::Text("X = %d, Y = %d", SelectedTileCoords->X, SelectedTileCoords->Y);
+        ImGui::Text("X = %d, Y = %d", SelectedTileCoords.X, SelectedTileCoords.Y);
         ImGui::Text("Flags = %d", SelectedTile->Flags);
         ImGui::Text("Special Flags = %d", SelectedTile->SpecialFlags);
         ImGui::Text("Edge Flags = %d", SelectedTile->EdgeFlags);
@@ -828,6 +813,7 @@ void SLevelEditor::EditorTools()
 void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path)
 {
     Validate(true);
+    bLevelChanged = true;
 
     const auto& Tilemap = Level;
 
@@ -844,7 +830,8 @@ void SLevelEditor::LoadTilemapFromFile(const std::filesystem::path& Path)
     TilemapFile.open(Path, std::ifstream::binary);
     Tilemap.Deserialize(TilemapFile);
     TilemapFile.close();
-    FitTilemapToWindow();
+    bLevelChanged = true;
+    bResetView = true;
 }
 
 void SLevelEditor::ScanForLevels()
@@ -864,16 +851,6 @@ void SLevelEditor::ScanForLevels()
         }
         AvailableMaps.emplace_back(File);
     }
-}
-
-void SLevelEditor::FitTilemapToWindow()
-{
-    auto MapSizePixels = Level.CalculateMapSize();
-
-    auto Viewport = ImGui::GetMainViewport();
-    Scale = std::min((float)Viewport->Size.x / (float)MapSizePixels.X, (float)Viewport->Size.y / (float)MapSizePixels.Y);
-    Scale = std::max(1.0f, (std::floor(Scale) - 1.0f));
-    bResetGridPosition = true;
 }
 
 SValidationResult SLevelEditor::Validate(bool bFix)

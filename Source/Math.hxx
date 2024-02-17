@@ -222,6 +222,15 @@ struct TVec4
         W = 0;
     }
 
+    template <typename AnotherT>
+    explicit constexpr TVec4(const TVec2<AnotherT>& Vec2A, const TVec2<AnotherT>& Vec2B)
+    {
+        X = Vec2A.X;
+        Y = Vec2A.Y;
+        Z = Vec2B.X;
+        W = Vec2B.Y;
+    }
+
     explicit constexpr TVec4(const TVec3<T>& Vec3)
     {
         X = Vec3.X;

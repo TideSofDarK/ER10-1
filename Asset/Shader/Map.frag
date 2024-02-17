@@ -267,7 +267,8 @@ void main()
                 pixelCoord -= centerOffset;
                 pixelCoord = vec2(layer.textureSize - pixelCoord);
                 vec4 layerColor = texelFetch(u_worldTextures, ivec3(pixelCoord, i), 0);
-                float layerMask = withinMask(pixelCoord, layer.textureSize);
+                // float layerMask = withinMask(pixelCoord, layer.textureSize);
+                float layerMask = withinMask(pixelCoord, vec2(0.0f), layer.textureSize);
                 float layerAlpha = ceil(layerColor.r + layerColor.g + layerColor.b);
                 finalColor = mix(finalColor, layerColor.rgb * layer.color, saturate(layerMask * layerAlpha));
             }
@@ -299,6 +300,7 @@ void main()
             /* Center out if in editor. */
             centerOffset -= halfSizeFloored;
             centerOffset += fullMapSize * 0.5f;
+            centerOffset -= (tileSize + tileEdgeSize) * 0.5f;
         }
         else
         {
@@ -321,8 +323,8 @@ void main()
         tileGridColor = edgeColor * 0.1f;
     }
 
-    float tileSizeReciprocal = 1.0 / tileSize;
-    float levelBoundsMask = step(texCoord.x, levelWidth * tileSize + 1) * step(texCoord.y, levelHeight * tileSize + 1) * step(0.0, texCoord.x) * step(0.0, texCoord.y);
+    float tileSizeReciprocal = 1.0f / tileSize;
+    float levelBoundsMask = withinMask(texCoord, vec2(0.0f), vec2(levelWidth * tileSize + tileEdgeSize, levelHeight * tileSize + tileEdgeSize));
 
     vec4 tileInfo = pixelToTile(texCoord, tileSize);
     STileMasks tileMasks = getTileMasks(tileInfo.x, tileInfo.y);
@@ -455,6 +457,38 @@ void main()
     {
         vec4 playerIcon = putIcon(texCoord, pov, u_map.povDirection, tileSize, tileEdgeSize, u_common.icons[MAP_ICON_PLAYER]);
         finalColor = overlay(finalColor, playerIcon.rgb, playerIcon.a);
+    }
+
+    /* Draw editor-specific stuff. */
+    if (u_mode == MAP_MODE_NORMAL && u_editor.enabled)
+    {
+        const vec3 selectedTileColor = vec3(0.99f, 0.0396f, 0.261f);
+        const vec3 selectedBlockColor = vec3(0.99f, 0.777f, 0.0792f);
+        const vec3 levelBoundsColor = vec3(0.0f, 0.79f, 0.606f);
+
+        float levelBoundsEditorMask = 0.0f;
+        levelBoundsEditorMask += withinMask(texCoord.y, -tileEdgeSize, 0.0f) * withinMask(texCoord.x, -tileEdgeSize, levelWidth * tileSize + tileEdgeSize * 2.0f);
+        levelBoundsEditorMask += withinMask(texCoord.x, -tileEdgeSize, 0.0f) * withinMask(texCoord.y, -tileEdgeSize, levelHeight * tileSize + tileEdgeSize * 2.0f);
+        levelBoundsEditorMask += withinMask(texCoord.y, levelHeight * tileSize + tileEdgeSize, levelHeight * tileSize + tileEdgeSize * 2.0f) * withinMask(texCoord.x, -tileEdgeSize, levelWidth * tileSize + tileEdgeSize * 2.0f);
+        levelBoundsEditorMask += withinMask(texCoord.x, levelWidth * tileSize + tileEdgeSize, levelWidth * tileSize + tileEdgeSize * 2.0f) * withinMask(texCoord.y, -tileEdgeSize, levelHeight * tileSize + tileEdgeSize * 2.0f);
+        finalColor = mix(finalColor, levelBoundsColor, saturate(levelBoundsEditorMask));
+
+        if (u_editor.blockMode)
+        {
+            vec4 selectedBlock = floor(u_editor.selectedBlock);
+            vec2 selectedMin = vec2(min(selectedBlock.x, selectedBlock.z), min(selectedBlock.y, selectedBlock.w));
+            vec2 selectedMax = vec2(max(selectedBlock.x, selectedBlock.z), max(selectedBlock.y, selectedBlock.w));
+            float selectedBlockMask = withinMask(texCoord, selectedMin * tileSize, selectedMax * tileSize + tileSize + tileEdgeSize);
+            selectedBlockMask *= saturate(edgeMask);
+            finalColor = mix(finalColor, selectedBlockColor, selectedBlockMask);
+        }
+        else
+        {
+            vec2 selectedTile = floor(u_editor.selectedTile);
+            float selectedTileMask = withinMask(texCoord, selectedTile * tileSize, selectedTile * tileSize + vec2(tileCellSize + tileEdgeSize * 2.0f));
+            selectedTileMask *= saturate(edgeMask);
+            finalColor = mix(finalColor, selectedTileColor, selectedTileMask);
+        }
     }
 
     // float povAnim = (abs(sin((u_globals.time * 10.0))) * 0.6) + 0.4;

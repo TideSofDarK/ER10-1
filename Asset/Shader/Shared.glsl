@@ -1,3 +1,7 @@
+#ifndef EPSILON
+#define EPSILON 0.00001
+#endif
+
 #ifndef PI
 #define PI 3.1415926535897932384626433832795
 #endif
@@ -206,12 +210,26 @@ mat2 rotationMatrix(float angle)
         sine, cosine);
 }
 
-float withinMask(vec2 value, vec2 range)
+// float withinMask(vec2 value, vec2 range)
+// {
+//     float mask = max(0.0, sign(value.x + 0.0f));
+//     mask = min(mask, sign(value.y + 0.0f));
+//     mask = min(mask, 1.0 - step(range.x - value.x, 0.0));
+//     mask = min(mask, 1.0 - step(range.y - value.y, 0.0));
+//     mask = saturate(mask);
+//     return mask;
+// }
+
+float withinMask(float value, float min, float max)
 {
-    float mask = max(0.0, sign(value.x + 0.0f));
-    mask = min(mask, sign(value.y + 0.0f));
-    mask = min(mask, 1.0 - step(range.x - value.x, 0.0));
-    mask = min(mask, 1.0 - step(range.y - value.y, 0.0));
-    mask = saturate(mask);
+    float mask = step(min, value);
+    mask *= 1.0f - step(max, value);
+    return mask;
+}
+
+float withinMask(vec2 value, vec2 min, vec2 max)
+{
+    float mask = withinMask(value.x, min.x, max.x);
+    mask *= withinMask(value.y, min.y, max.y);
     return mask;
 }

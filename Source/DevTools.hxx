@@ -21,7 +21,8 @@ struct SEditorFramebuffer
     void Cleanup();
 };
 
-struct SEditorBase {
+struct SEditorBase
+{
     SGame* Game{};
     SEditorFramebuffer Framebuffer{};
     SVec4 CursorPosition{};
@@ -67,10 +68,13 @@ struct SLevelEditor : SEditorBase
     bool bDrawWallJoints{};
     bool bDrawEdges{};
     bool bDrawGridLines{};
-    bool bResetGridPosition = true;
-    std::optional<SVec2Int> SelectedTileCoords{};
-    std::optional<SVec2Int> BlockModeTileCoords{};
+    bool bResetView = true;
+    SVec2Int SelectedTileCoords{};
+    SVec2Int BlockModeTileCoords{};
     SWorldLevel Level{};
+
+    bool bLevelChanged{};
+    bool bEditorStateChanged{};
 
     void Init(SGame* InGame);
     void Cleanup();
@@ -85,7 +89,6 @@ struct SLevelEditor : SEditorBase
     void ScanForLevels();
 
     SVec2Int CalculateMapSize();
-    void FitTilemapToWindow();
 
     SValidationResult Validate(bool bFix);
 };
