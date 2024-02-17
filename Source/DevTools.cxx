@@ -141,10 +141,10 @@ static void GenericMapWindow(
                     Log::DevTools<ELogLevel::Verbose>("Drag registered: X = %.2f, Y = %.2f", DragDelta.x, DragDelta.y);
                 }
             }
-            ImGui::EndChild();
         }
-        ImGui::End();
+        ImGui::EndChild();
     }
+    ImGui::End();
 }
 //
 // static void FitEditorWindow(const SVec2& BaseSize, float* Scale)
@@ -822,8 +822,8 @@ void SLevelEditor::ToolsFunc()
                 ImGui::Spacing();
             }
         }
-        ImGui::EndChild();
     }
+    ImGui::EndChild();
 }
 
 void SLevelEditor::Show()
@@ -1118,13 +1118,13 @@ void SDevTools::Update()
 
     if (Mode != OldMode)
     {
-        if (OldMode == EDevToolsMode::Game)
-        {
-            bEditorOpened = true;
-        }
-        else if (Mode == EDevToolsMode::Game)
+        if (Mode == EDevToolsMode::Game)
         {
             bReturnedToGame = true;
+        }
+        else
+        {
+            bEditorOpened = true;
         }
     }
 

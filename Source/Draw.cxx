@@ -490,7 +490,7 @@ void SCamera::Update()
     View = SMat4x4::LookAtRH(Position, Target, SVec3{ 0.0f, 1.0f, 0.0f });
 }
 
-void SWorldFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering)
+void SWorldFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor)
 {
     Width = InWidth;
     Height = InHeight;
@@ -508,24 +508,8 @@ void SWorldFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // if (bLinearFiltering)
-    // {
-    //     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // }
-    // else
-    // {
-    //     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    // }
-
-    // glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
     glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-    // glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorID, 0);
-    // glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, ColorID, 0, 0);
-    // glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorID, 0);
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorID, 0, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -738,9 +722,6 @@ void SRenderer::Init(int Width, int Height)
     ProgramUber2D.Init(Asset::Shader::Uber2DVERT, Asset::Shader::Uber2DFRAG);
     ProgramUber3D.Init(Asset::Shader::Uber3DVERT, Asset::Shader::Uber3DFRAG);
     ProgramPostProcess.Init(Asset::Shader::PostProcessVERT, Asset::Shader::PostProcessFRAG);
-
-    // Log::Draw<ELogLevel::Critical>("%.2f %.2f", Size.X, Size.Y);
-    // Log::Draw<ELogLevel::Critical>("%.2f %.2f", Size.X * std::cos(Math::Radians(30.0f)) + Size.Y * std::cos(Math::Radians(60.0f)), Size.X * std::sin(Math::Radians(30.0f)) + Size.Y * std::sin(Math::Radians(60.0f)));
 }
 
 void SRenderer::Cleanup()

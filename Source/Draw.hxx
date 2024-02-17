@@ -227,7 +227,7 @@ struct SWorldFramebuffer
     unsigned ColorID{};
     SVec3 ClearColor{};
 
-    void Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering = false);
+    void Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor);
 
     void Cleanup();
 
