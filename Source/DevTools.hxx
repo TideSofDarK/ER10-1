@@ -27,9 +27,9 @@ struct SEditorBase {
     SVec4 CursorPosition{};
     float Scale{};
 
-    virtual void DrawFunc(const SVec2& ScaledSize) = 0;
-    virtual void InputFunc() = 0;
-    virtual void ToolsFunc() = 0;
+    virtual void RenderToFramebuffer(const SVec2& ScaledSize) = 0;
+    virtual void UpdateEditor() = 0;
+    virtual void ShowEditorTools() = 0;
 };
 
 struct SWorldEditor : SEditorBase
@@ -39,12 +39,11 @@ struct SWorldEditor : SEditorBase
     void Init(SGame* InGame);
     void Cleanup();
 
-    void Show();
     void RenderLayers(SGame& Game);
 
-    void DrawFunc(const SVec2& ScaledSize) final;
-    void InputFunc() final;
-    void ToolsFunc() final;
+    void RenderToFramebuffer(const SVec2& ScaledSize) final;
+    void UpdateEditor() final;
+    void ShowEditorTools() final;
 };
 
 enum class ELevelEditorMode
@@ -76,11 +75,9 @@ struct SLevelEditor : SEditorBase
     void Init(SGame* InGame);
     void Cleanup();
 
-    void Show();
-
-    void DrawFunc(const SVec2& ScaledSize) final;
-    void InputFunc() final;
-    void ToolsFunc() final;
+    void RenderToFramebuffer(const SVec2& ScaledSize) final;
+    void UpdateEditor() final;
+    void ShowEditorTools() final;
 
     void SaveTilemapToFile(const std::filesystem::path& Path);
     void LoadTilemapFromFile(const std::filesystem::path& Path);

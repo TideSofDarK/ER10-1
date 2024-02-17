@@ -97,7 +97,7 @@ static void GenericMapWindow(
     if (ImGui::Begin(WindowName, nullptr,
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
     {
-        Editor->ToolsFunc();
+        Editor->ShowEditorTools();
         ImGui::SameLine();
         if (ImGui::BeginChild("MapCanvas"))
         {
@@ -117,21 +117,22 @@ static void GenericMapWindow(
             glClearColor(Framebuffer->ClearColor.X, Framebuffer->ClearColor.Y, Framebuffer->ClearColor.Z, Framebuffer->ClearColor.W);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            Editor->DrawFunc(SVec2(ScaledSize));
+            Editor->RenderToFramebuffer(SVec2(ScaledSize));
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            Editor->InputFunc();
+            Editor->UpdateEditor();
 
-            ImGui::Image(reinterpret_cast<void*>(Framebuffer->ColorID), ImVec2((float)ScaledSize.X * CanvasScale, (float)ScaledSize.Y * CanvasScale),
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2());
+            ImGui::ImageButton(reinterpret_cast<void*>(Framebuffer->ColorID), ImVec2((float)ScaledSize.X * CanvasScale, (float)ScaledSize.Y * CanvasScale),
                 ImVec2(0.0f, (float)ScaledSize.Y / (float)Framebuffer->Height), ImVec2((float)ScaledSize.X / (float)Framebuffer->Width, 0.0f));
+            ImGui::PopStyleVar();
 
             if (ImGui::IsWindowHovered())
             {
                 CanvasScale += IO.MouseWheel * 1.0f;
                 CanvasScale = std::floor(CanvasScale);
                 Editor->Scale = std::max(1.0f, CanvasScale);
-
                 if (ImGui::IsMouseDragging(2))
                 {
                     ImVec2 DragDelta = ImGui::GetMouseDragDelta(2);
@@ -169,7 +170,7 @@ void SWorldEditor::Cleanup()
     Framebuffer.Cleanup();
 }
 
-void SWorldEditor::DrawFunc(const SVec2& ScaledSize)
+void SWorldEditor::RenderToFramebuffer(const SVec2& ScaledSize)
 {
     auto& Renderer = Game->Renderer;
     Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
@@ -177,11 +178,11 @@ void SWorldEditor::DrawFunc(const SVec2& ScaledSize)
     Renderer.DrawWorldMapImmediate({ 0.0f, 0.0f }, ScaledSize);
 }
 
-void SWorldEditor::InputFunc()
+void SWorldEditor::UpdateEditor()
 {
 }
 
-void SWorldEditor::ToolsFunc()
+void SWorldEditor::ShowEditorTools()
 {
     static ImGuiID PopupID = ImHashStr("MainMenuPopup");
 
@@ -368,12 +369,6 @@ void SWorldEditor::ToolsFunc()
     // ShowWorld(Game);
 }
 
-void SWorldEditor::Show()
-{
-    GenericMapWindow(
-        "World Editor", this);
-}
-
 void SWorldEditor::RenderLayers(SGame& Game)
 {
 }
@@ -397,7 +392,7 @@ void SLevelEditor::Cleanup()
     Framebuffer.Cleanup();
 }
 
-void SLevelEditor::DrawFunc(const SVec2& ScaledSize)
+void SLevelEditor::RenderToFramebuffer(const SVec2& ScaledSize)
 {
     auto& Renderer = Game->Renderer;
     Renderer.GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), ScaledSize);
@@ -405,7 +400,7 @@ void SLevelEditor::DrawFunc(const SVec2& ScaledSize)
     Renderer.DrawMapImmediate({ 0.0f, 0.0f }, ScaledSize);
 }
 
-void SLevelEditor::InputFunc()
+void SLevelEditor::UpdateEditor()
 {
     // ImVec2 RectMin = ImGui
     // Log::DevTools<ELogLevel::Critical>("Drag registered: X = %.2f, Y = %.2f", DragDelta.x, DragDelta.y);
@@ -431,19 +426,15 @@ void SLevelEditor::InputFunc()
     {
         if (ImGui::IsMouseClicked(0))
         {
-            auto MousePos = ImGui::GetMousePos();
-            MousePos = ImVec2(MousePos.x - CursorPos.x, MousePos.y - CursorPos.y);
-            MousePos.x /= Scale;
-            MousePos.y /= Scale;
-            MousePos.x += CursorPosition.X;
-            MousePos.y += CursorPosition.Y;
-            MousePos.x -= (WindowSize.x * 0.5f / Scale);// - (float)OriginalMapSize.X * 0.5f);
-            MousePos.y -= (WindowSize.y * 0.5f / Scale);// - (float)OriginalMapSize.Y * 0.5f);
-            MousePos.x += (float)(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) * 0.5f;
-            MousePos.y += (float)(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) * 0.5f;
+            auto AbsoluteMousePos = ImGui::GetMousePos();
+            SVec2 MousePos{AbsoluteMousePos.x - CursorPos.x, AbsoluteMousePos.y - CursorPos.y};
+            MousePos /= Scale;
+            MousePos += CursorPosition.XY();
+            MousePos -= SVec2{WindowSize.x * 0.5f, WindowSize.y * 0.5f} / Scale;
+            MousePos += SVec2((float)(MAP_TILE_SIZE_PIXELS + MAP_TILE_EDGE_SIZE_PIXELS) * 0.5f);
             SelectedTileCoords = SVec2Int{
-                (int)std::floor(MousePos.x / MAP_TILE_SIZE_PIXELS),
-                (int)std::floor(MousePos.y / MAP_TILE_SIZE_PIXELS)
+                (int)std::floor(MousePos.X / MAP_TILE_SIZE_PIXELS),
+                (int)std::floor(MousePos.Y / MAP_TILE_SIZE_PIXELS)
             };
             Log::DevTools<ELogLevel::Critical>("Drag registered: X = %d, Y = %d", SelectedTileCoords->X, SelectedTileCoords->Y);
         }
@@ -595,7 +586,7 @@ void SLevelEditor::InputFunc()
     }
 }
 
-void SLevelEditor::ToolsFunc()
+void SLevelEditor::ShowEditorTools()
 {
     static ImGuiID PopupID = ImHashStr("MainMenuPopup");
 
@@ -604,7 +595,7 @@ void SLevelEditor::ToolsFunc()
 
     if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu("Level"))
+        if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("New", "Ctrl+N"))
             {
@@ -661,7 +652,7 @@ void SLevelEditor::ToolsFunc()
         ImGui::Text("Current Mode: %s", EditorModes[(int)LevelEditorMode]);
 
         ImGui::Separator();
-        ImGui::Text("Scale: %.2f", Scale);
+        ImGui::Text("Scale: %.1fx", Scale);
 
         ImGui::EndMenuBar();
     }
@@ -824,12 +815,6 @@ void SLevelEditor::ToolsFunc()
         }
     }
     ImGui::EndChild();
-}
-
-void SLevelEditor::Show()
-{
-    GenericMapWindow(
-        "Level Editor", this);
 }
 
 void SLevelEditor::SaveTilemapToFile(const class std::filesystem::path& Path)
@@ -1142,10 +1127,12 @@ void SDevTools::Update()
     switch (Mode)
     {
         case EDevToolsMode::LevelEditor:
-            LevelEditor.Show();
+            GenericMapWindow(
+                "Level Editor", &LevelEditor);
             break;
         case EDevToolsMode::WorldEditor:
-            WorldEditor.Show();
+            GenericMapWindow(
+                "World Editor", &WorldEditor);
             break;
         default:
             ShowDebugTools();

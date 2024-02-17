@@ -44,6 +44,13 @@ struct TVec2
         return *this;
     }
 
+    constexpr TVec2<T>& operator-=(const TVec2<T>& Other)
+    {
+        X -= Other.X;
+        Y -= Other.Y;
+        return *this;
+    }
+
     constexpr TVec2<T> operator-() const
     {
         return { -X, -Y };
@@ -68,12 +75,19 @@ struct TVec2
         return *this;
     }
 
+    constexpr TVec2<T>& operator/=(const T Other)
+    {
+        X /= Other;
+        Y /= Other;
+        return *this;
+    }
+
     constexpr TVec2<T> operator/(const T A) const
     {
         return { X / A, Y / A };
     }
 
-    template<typename OtherT>
+    template <typename OtherT>
     constexpr TVec2<T>& operator=(const TVec2<OtherT>& Other)
     {
         X = static_cast<T>(Other.X);
@@ -91,19 +105,10 @@ struct TVec2
         return X != Other.X || Y != Other.Y;
     }
 
-    constexpr TVec2<T> Swapped() const
+    [[nodiscard]] constexpr TVec2<T> Swapped() const
     {
         return { Y, X };
     }
-
-    //    [[nodiscard]] SVec2<T> Cross(const SVec3<T>& Other) const
-    //    {
-    //        SVec3<T> Result{};
-    //        Result.X = Y * Other.Z - Z * Other.Y;
-    //        Result.Y = Z * Other.X - X * Other.Z;
-    //        Result.Z = X * Other.Y - Y * Other.X;
-    //        return Result;
-    //    }
 };
 
 template <typename T>
@@ -231,6 +236,11 @@ struct TVec4
     constexpr TVec4<T>(const TVec3<T> Vec3, T InW)
         : X(Vec3.X), Y(Vec3.Y), Z(Vec3.Z), W(InW)
     {
+    }
+
+    [[nodiscard]] constexpr TVec2<T> XY() const
+    {
+        return TVec2<T>{ X, Y };
     }
 
     constexpr TVec4<T> operator+(const TVec4<T>& Other) const
