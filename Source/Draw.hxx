@@ -247,18 +247,22 @@ struct SWorldFramebuffer
     void SetLayer(int LayerIndex) const;
 };
 
-struct SFramebuffer
+struct SMainFramebuffer
 {
     int Width{};
     int Height{};
+    int Scale{1};
     unsigned FBO{};
     unsigned ColorID{};
     unsigned DepthID{};
-    SVec3 ClearColor{};
 
-    void Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering = false);
+    void Init(int TextureUnitID, int InWindowWidth, int InWindowHeight);
 
     void Cleanup();
+
+    void CalculateSize(int InWindowWidth, int InWindowHeight);
+
+    void Resize(int InWindowWidth, int InWindowHeight);
 
     void ResetViewport() const;
 };
@@ -353,8 +357,6 @@ struct STexture
     void InitFromRawImage(const CRawImage& RawImage);
 
     void Cleanup();
-
-    void BindToTextureUnit(int TextureUnit) const;
 };
 
 enum class EProgram2DType
@@ -493,8 +495,7 @@ struct SRenderer
     SProgram3D ProgramUber3D;
     SProgramPostProcess ProgramPostProcess;
 
-    SFramebuffer MainFramebuffer;
-    SFramebuffer MapFramebuffer;
+    SMainFramebuffer MainFramebuffer;
     SWorldFramebuffer WorldLayersFramebuffer;
     SGeometry Quad2D;
     SInstancedDrawData<ETileGeometryType::Count> LevelDrawData;

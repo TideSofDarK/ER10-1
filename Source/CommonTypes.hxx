@@ -8,12 +8,12 @@ struct SWindowData
 {
     int Width{};
     int Height{};
-    int BlitWidth{};
-    int BlitHeight{};
-    int BlitX{};
-    int BlitY{};
-    unsigned long long Last{};
-    unsigned long long Now{};
+    // int BlitWidth{};
+    // int BlitHeight{};
+    // int BlitX{};
+    // int BlitY{};
+    uint64_t Last{};
+    uint64_t Now{};
     float TimeScale = 1.0f;
     float Seconds{};
     float DeltaTime{};

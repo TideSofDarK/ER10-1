@@ -14,8 +14,6 @@ struct SWindow : SWindowData
 
     void SwapBuffers() const;
 
-    void OnWindowResized();
-
     void ToggleBorderlessFullscreen() const;
 
     [[nodiscard]] static SVec2Int CalculateOptimalWindowedResolution(unsigned DisplayID);

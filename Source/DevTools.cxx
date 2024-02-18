@@ -1133,6 +1133,7 @@ void SDevTools::ShowDebugTools() const
         {
             ImGui::Text("Frames Per Second: %.f", 1000.0f / Game->Window.DeltaTime / 1000.0f);
             ImGui::Text("Number Of Blocks: %zu", Memory::NumberOfBlocks());
+            ImGui::Text("Display Scale: %d", Game->Renderer.MainFramebuffer.Scale);
             ImGui::TreePop();
         }
         if (ImGui::TreeNode("Player Info"))

@@ -67,7 +67,7 @@ SGame::SGame()
     DevTools.Init(this);
 #endif
 
-    Renderer.Init(SCREEN_WIDTH, SCREEN_HEIGHT);
+    Renderer.Init(Window.Width, Window.Height);
 
     auto& CommonAtlas = Renderer.Atlases[ATLAS_COMMON];
     NoiseSprite = CommonAtlas.AddSprite(
@@ -218,7 +218,8 @@ void SGame::Run()
             switch (Event.type)
             {
                 case SDL_EVENT_WINDOW_RESIZED:
-                    Window.OnWindowResized();
+                    SDL_GetWindowSize(Window.Window, &Window.Width, &Window.Height);
+                    Renderer.MainFramebuffer.Resize(Window.Width, Window.Height);
                     break;
                 case SDL_EVENT_QUIT:
                     Window.bQuit = true;

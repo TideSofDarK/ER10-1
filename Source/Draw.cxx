@@ -221,13 +221,14 @@ void SProgramPostProcess::InitUniforms()
 
 void SProgram3D::InitUniforms()
 {
-    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Uber3DCommon);
     UniformModelID = glGetUniformLocation(ID, "u_model");
     UniformCommonAtlasID = glGetUniformLocation(ID, "u_commonAtlas");
     UniformPrimaryAtlasID = glGetUniformLocation(ID, "u_primaryAtlas");
 
     glProgramUniform1i(ID, UniformCommonAtlasID, ETextureUnits::AtlasCommon);
     glProgramUniform1i(ID, UniformPrimaryAtlasID, ETextureUnits::AtlasPrimary3D);
+
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, "ub_common"), EUniformBlockBinding::Uber3DCommon);
 }
 
 void SProgram2D::InitUniforms()
@@ -519,13 +520,14 @@ void SWorldFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3
     glGenTextures(1, &ColorID);
     glBindTexture(GL_TEXTURE_2D_ARRAY, ColorID);
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, InWidth, InHeight, WORLD_MAX_LAYERS, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glActiveTexture(GL_TEXTURE0);
 
     glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -549,43 +551,29 @@ void SWorldFramebuffer::ResetViewport() const
 
 void SWorldFramebuffer::SetLayer(int LayerIndex) const
 {
-    // glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, ColorID, 0, LayerIndex);
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ColorID, 0, LayerIndex);
 }
 
-void SFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InClearColor, bool bLinearFiltering)
+void SMainFramebuffer::Init(int TextureUnitID, int InWindowWidth, int InWindowHeight)
 {
-    Width = InWidth;
-    Height = InHeight;
-    ClearColor = InClearColor;
+    CalculateSize(InWindowWidth, InWindowHeight);
 
     glActiveTexture(GL_TEXTURE0 + TextureUnitID);
     glGenTextures(1, &ColorID);
     glBindTexture(GL_TEXTURE_2D, ColorID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, InWidth, InHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-
-    if (bLinearFiltering)
-    {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    }
-    else
-    {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    }
-
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    /* @TODO: Why is it transient? */
-    glActiveTexture(GL_TEXTURE0 + ETextureUnits::Transient);
-
+    glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &DepthID);
     glBindTexture(GL_TEXTURE_2D, DepthID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, InWidth, InHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, Width, Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE0, 0);
 
     glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -593,19 +581,51 @@ void SFramebuffer::Init(int TextureUnitID, int InWidth, int InHeight, SVec3 InCl
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, DepthID, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void SFramebuffer::Cleanup()
+void SMainFramebuffer::Cleanup()
 {
     glDeleteFramebuffers(1, &FBO);
     glDeleteTextures(1, &ColorID);
     glDeleteTextures(1, &DepthID);
 
-    Log::Draw<ELogLevel::Debug>("Deleting SFramebuffer");
+    Log::Draw<ELogLevel::Debug>("Deleting SMainFramebuffer");
 }
 
-void SFramebuffer::ResetViewport() const
+void SMainFramebuffer::CalculateSize(int InWindowWidth, int InWindowHeight)
+{
+    int NewWidth = SCREEN_WIDTH;
+    int NewHeight = SCREEN_HEIGHT;
+
+    const int MaxAvailableScale = std::min(InWindowWidth / SCREEN_WIDTH, InWindowHeight / SCREEN_HEIGHT);
+    if (MaxAvailableScale >= 1)
+    {
+        NewWidth += (InWindowWidth - MaxAvailableScale * SCREEN_WIDTH) / MaxAvailableScale;
+        NewHeight += (InWindowHeight - MaxAvailableScale * SCREEN_HEIGHT) / MaxAvailableScale;
+
+        NewWidth++;
+        NewHeight++;
+    }
+
+    Width = NewWidth;
+    Height = NewHeight;
+    Scale = MaxAvailableScale;
+}
+
+void SMainFramebuffer::Resize(int InWindowWidth, int InWindowHeight)
+{
+    CalculateSize(InWindowWidth, InWindowHeight);
+
+    glBindTexture(GL_TEXTURE_2D, ColorID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    glBindTexture(GL_TEXTURE_2D, DepthID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, Width, Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void SMainFramebuffer::ResetViewport() const
 {
     glViewport(0, 0, Width, Height);
 }
@@ -652,7 +672,7 @@ void SUniformBlock::SetFloat(int Position, const float Value) const
 
 void SRenderer::Init(int Width, int Height)
 {
-    /* Common OpenGL settings */
+    /* Common OpenGL settings. */
     glDepthFunc(GL_LESS);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
@@ -723,12 +743,7 @@ void SRenderer::Init(int Width, int Height)
         int(MapWorldLayerTextureSize.X),
         int(MapWorldLayerTextureSize.Y),
         TVec3{ 0.0f, 0.0f, 1.0f });
-    MapFramebuffer.Init(
-        ETextureUnits::MapFramebuffer,
-        int(MapTextureSize.X),
-        int(MapTextureSize.Y),
-        TVec3{ 0.0f, 1.0f, 0.0f });
-    MainFramebuffer.Init(ETextureUnits::MainFramebuffer, Width, Height, WINDOW_CLEAR_COLOR);
+    MainFramebuffer.Init(ETextureUnits::MainFramebuffer, Width, Height);
 
     /* Initialize atlases. */
     Atlases[ATLAS_COMMON].Init(ETextureUnits::AtlasCommon);
@@ -746,7 +761,6 @@ void SRenderer::Init(int Width, int Height)
 void SRenderer::Cleanup()
 {
     MainFramebuffer.Cleanup();
-    MapFramebuffer.Cleanup();
     WorldLayersFramebuffer.Cleanup();
     for (auto& Atlas : Atlases)
     {
@@ -811,11 +825,11 @@ void SRenderer::SetTime(float Time) const
 
 void SRenderer::Flush(const SWindowData& WindowData)
 {
-    GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), { SCREEN_WIDTH, SCREEN_HEIGHT });
+    GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), { (float)MainFramebuffer.Width, (float)MainFramebuffer.Height });
 
     /* Begin Draw */
     glBindFramebuffer(GL_FRAMEBUFFER, MainFramebuffer.FBO);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.0028f, 0.0566f, 0.07f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     /* Draw 3D */
@@ -865,7 +879,7 @@ void SRenderer::Flush(const SWindowData& WindowData)
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    glViewport(0, 0, MainFramebuffer.Width, MainFramebuffer.Height);
 
     glBindVertexArray(Quad2D.VAO);
 
@@ -919,15 +933,16 @@ void SRenderer::Flush(const SWindowData& WindowData)
         glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
     }
 
-    /* Display everything */
+    /* Blit main framebuffer to our window. */
     glDisable(GL_BLEND);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glViewport(0, 0, WindowData.Width, WindowData.Height);
+    glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glViewport(WindowData.BlitX, WindowData.BlitY, WindowData.BlitWidth, WindowData.BlitHeight);
+    glViewport(0, 0, MainFramebuffer.Width * MainFramebuffer.Scale, MainFramebuffer.Height * MainFramebuffer.Scale);
 
     ProgramPostProcess.Use();
     glDrawElements(GL_TRIANGLES, Quad2D.ElementCount, GL_UNSIGNED_SHORT, nullptr);
@@ -957,27 +972,33 @@ void SRenderer::DrawHUD(SVec3 Position, SVec2Int Size, int Mode)
 
 void SRenderer::DrawMap(SWorldLevel* Level, SVec3 Position, SVec2Int Size, const SCoordsAndDirection& POV)
 {
-    glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlockMap.UBO);
-    if (Level->DirtyFlags & ELevelDirtyFlags::POVChanged)
+    bool bPOVChanged = Level->DirtyFlags & ELevelDirtyFlags::POVChanged;
+    bool bDirtyRange = Level->DirtyFlags & ELevelDirtyFlags::DirtyRange;
+
+    if (bPOVChanged || bDirtyRange)
     {
-        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POV), sizeof(SCoordsAndDirection), &POV);
+        glBindBuffer(GL_UNIFORM_BUFFER, ProgramMap.UniformBlockMap.UBO);
+        if (bPOVChanged)
+        {
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, POV), sizeof(SCoordsAndDirection), &POV);
 
-        Level->DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
+            Level->DirtyFlags &= ~ELevelDirtyFlags::POVChanged;
 
-        Log::Draw<ELogLevel::Verbose>("%s(): POV: { { %.2f, %.2f }, %d }", __func__, POV.Coords.X, POV.Coords.Y, POV.Direction.Index);
+            Log::Draw<ELogLevel::Verbose>("%s(): POV: { { %.2f, %.2f }, %d }", __func__, POV.Coords.X, POV.Coords.Y, POV.Direction.Index);
+        }
+
+        if (bDirtyRange)
+        {
+            auto DirtyCount = (GLsizeiptr)(Level->DirtyRange.Y - Level->DirtyRange.X) + 1;
+            auto FirstTile = Level->GetTile(Level->DirtyRange.X);
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level->DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
+
+            Level->DirtyFlags &= ~ELevelDirtyFlags::DirtyRange;
+
+            Log::Draw<ELogLevel::Debug>("%s(): DirtyRange: %d to %d", __func__, Level->DirtyRange.X, Level->DirtyRange.Y);
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
-
-    if (Level->DirtyFlags & ELevelDirtyFlags::DirtyRange)
-    {
-        auto DirtyCount = (GLsizeiptr)(Level->DirtyRange.Y - Level->DirtyRange.X) + 1;
-        auto FirstTile = Level->GetTile(Level->DirtyRange.X);
-        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SShaderMapData, Tiles) + (Level->DirtyRange.X * sizeof(STile)), DirtyCount * (GLsizeiptr)sizeof(STile), FirstTile);
-
-        Level->DirtyFlags &= ~ELevelDirtyFlags::DirtyRange;
-
-        Log::Draw<ELogLevel::Debug>("%s(): DirtyRange: %d to %d", __func__, Level->DirtyRange.X, Level->DirtyRange.Y);
-    }
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     SEntry2D Entry;
     Entry.Program2DType = EProgram2DType::Map;
@@ -1454,12 +1475,6 @@ void STexture::Cleanup()
     Log::Draw<ELogLevel::Debug>("Deleting STexture", "");
 }
 
-void STexture::BindToTextureUnit(int TextureUnit) const
-{
-    glActiveTexture(GL_TEXTURE0 + TextureUnit);
-    glBindTexture(GL_TEXTURE_2D, ID);
-}
-
 void SAtlas::Init(int InTextureUnitID)
 {
     TextureUnitID = InTextureUnitID;
@@ -1478,7 +1493,8 @@ SSpriteHandle SAtlas::AddSprite(const SAsset& Resource)
 
 void SAtlas::Build()
 {
-    BindToTextureUnit(TextureUnitID);
+    glActiveTexture(GL_TEXTURE0 + TextureUnitID);
+    glBindTexture(GL_TEXTURE_2D, ID);
 
     std::sort(SortingIndices.begin(), SortingIndices.end(), [&](const int& IndexA, const int& IndexB) {
         return Sprites[IndexA].SizePixels.Y > Sprites[IndexB].SizePixels.Y;
@@ -1524,4 +1540,6 @@ void SAtlas::Build()
             MaxHeight = Image.Height;
         }
     }
+
+    glActiveTexture(GL_TEXTURE0);
 }

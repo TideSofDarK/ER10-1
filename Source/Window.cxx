@@ -32,9 +32,11 @@ SWindow::SWindow()
     int DisplayCount{};
     SDL_DisplayID* Displays = SDL_GetDisplays(&DisplayCount);
     SVec2Int Resolution = CalculateOptimalWindowedResolution(Displays[0]);
+    Width = Resolution.X;
+    Height = Resolution.Y;
 
     Window = SDL_CreateWindow(GAME_NAME,
-        Resolution.X, Resolution.Y,
+        Width, Height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -54,8 +56,6 @@ SWindow::SWindow()
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
         exit(1);
     }
-
-    OnWindowResized();
 }
 
 SWindow::~SWindow()
@@ -63,20 +63,6 @@ SWindow::~SWindow()
     SDL_GL_DeleteContext(Context);
     SDL_DestroyWindow(Window);
     SDL_Quit();
-}
-
-void SWindow::OnWindowResized()
-{
-    SDL_GetWindowSize(Window, &Width, &Height);
-    BlitWidth = Width;
-    BlitHeight = static_cast<int>(static_cast<float>(BlitWidth) / SCREEN_ASPECT);
-    if (Height < BlitHeight)
-    {
-        BlitHeight = Height;
-        BlitWidth = static_cast<int>(static_cast<float>(BlitHeight) * SCREEN_ASPECT);
-    }
-    BlitX = std::max((Width - BlitWidth) / 2, 0);
-    BlitY = std::max((Height - BlitHeight) / 2, 0);
 }
 
 void SWindow::ToggleBorderlessFullscreen() const
