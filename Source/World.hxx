@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include "AssetTools.hxx"
 #include "CommonTypes.hxx"
 #include "Tilemap.hxx"
 #include "Math.hxx"
@@ -11,7 +12,7 @@ struct SWorldLevelInfo
 {
     SVec3 Color{};
     SVec3Int Position{};
-    SAsset* Asset;
+    SAsset* Asset{};
 };
 
 struct SWorldLevel : STilemap
