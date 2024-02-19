@@ -162,6 +162,7 @@ SGame::SGame()
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.LevelEditor.Level = *World.GetLevel();
+    DevTools.WorldEditor.World = World;
 #endif
 
     SpriteDemoState = 5;

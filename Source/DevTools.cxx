@@ -25,7 +25,7 @@
 
 namespace Asset::Common
 {
-    EXTERN_ASSET(IBMPlexSansTTF)
+    EXTERN_ASSET(MartianMono)
 }
 
 void SEditorFramebuffer::Init(int InWidth, int InHeight, SVec4 InClearColor)
@@ -364,7 +364,72 @@ void SWorldEditor::EditorTools()
     // }
     // ImGui::PopID();
 
-    // ShowWorld(Game);
+    static int SelectedIndex = 0;
+    // ImGui::BeginGroup();
+    ImGui::BeginChild("WorldEditorTools", ImVec2(ImGui::GetFontSize() * 14.0f, 0.0f)); // Leave room for 1 line below us
+    // ImGui::Text("MyObject: %d", selected);
+    // ImGui::Separator();
+    if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None))
+    {
+        if (ImGui::BeginTabItem("Layers"))
+        {
+            ImGui::BeginChild("LayersList", ImVec2(0, 0), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX);
+            const ImVec2 EntrySize{ 0, ImGui::GetFontSize() * 4.0f };
+            for (int Index = 0; Index < (int)World.Levels.size(); Index++)
+            {
+                auto& WorldLevel = World.Levels[Index];
+                const bool bSelected = Index == SelectedIndex;
+                auto CursorPos = ImGui::GetCursorPos();
+
+                char Label[128];
+                sprintf(Label, "##LayerEntry%d", Index);
+
+                const ImU32 Color = ImGui::GetColorU32(bSelected ? ImGuiCol_HeaderActive
+                                                                 : ImGuiCol_Header);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, Color);
+                ImGui::BeginChild(Label, EntrySize, ImGuiChildFlags_Border | ImGuiChildFlags_FrameStyle);
+                ImGui::ColorEdit4("##LayerColor", &WorldLevel.Color.X, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoInputs);
+                ImGui::SameLine();
+                ImGui::Text("#%d", Index);
+                // ImGui::Text(WorldLevel.);
+                if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0))
+                {
+                    SelectedIndex = Index;
+                }
+                ImGui::EndChild();
+                ImGui::PopStyleColor();
+                // if (ImGui::Selectable(Label, selected == i))
+                // {
+                //     selected = i;
+                // }
+                // ImGui::SetItemAllowOverlap();
+                // ImGui::SetCursorPos(CursorPos);
+                // if (ImGui::Button("do thing", ImVec2(70, 30)))
+                // {
+                //     ImGui::OpenPopup("Setup?");
+                //     // selected = n;
+                //     printf("SETUP CLICKED %d\n", 1);
+                // }
+            }
+            ImGui::EndChild();
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Properties"))
+        {
+            ImGui::Text("ID: 0123456789");
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+    ImGui::EndChild();
+    // if (ImGui::Button("Revert"))
+    // {
+    // }
+    // ImGui::SameLine();
+    // if (ImGui::Button("Save"))
+    // {
+    // }
+    // ImGui::EndGroup();
 }
 
 void SWorldEditor::RenderLayers(SGame& Game)
@@ -1032,7 +1097,7 @@ void SDevTools::Init(SGame* InGame)
     /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
     ImFontConfig FontConfig;
     FontConfig.FontDataOwnedByAtlas = false;
-    io.Fonts->AddFontFromMemoryTTF(Asset::Common::IBMPlexSansTTF.VoidPtr(), (int)Asset::Common::IBMPlexSansTTF.Length, std::floor(22.0f * WindowScale), &FontConfig);
+    io.Fonts->AddFontFromMemoryTTF(Asset::Common::MartianMono.VoidPtr(), (int)Asset::Common::MartianMono.Length, std::floor(16.0f * WindowScale), &FontConfig);
 }
 
 void SDevTools::Cleanup()

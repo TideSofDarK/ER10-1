@@ -72,7 +72,7 @@ namespace Asset::Common
     DEFINE_ASSET(NoisePNG, "Texture/Noise.png")
     DEFINE_ASSET(QuadOBJ, "Mesh/Quad.obj")
     DEFINE_ASSET(PillarOBJ, "Mesh/Pillar.obj")
-    DEFINE_ASSET(IBMPlexSansTTF, "Font/IBMPlexSans.ttf")
+    DEFINE_ASSET(MartianMono, "Font/MartianMono.ttf")
     DEFINE_ASSET(DoorCreekWAV, "Sound/DoorCreek.wav")
     DEFINE_ASSET(Tile_01WAV, "Sound/Step/Tile_01.wav")
     DEFINE_ASSET(TestMusicWAV, "Music/TestMusic.wav")

@@ -7,6 +7,13 @@
 
 inline constexpr int WorldMaxLevels = 8;
 
+struct SWorldLevelInfo
+{
+    SVec3 Color{};
+    SVec3Int Position{};
+    SAsset* Asset;
+};
+
 struct SWorldLevel : STilemap
 {
     SVec3 Color{};
