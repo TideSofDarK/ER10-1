@@ -4,8 +4,6 @@
 
 void EquinoxReach()
 {
-    Platform::Init();
-
     auto Game = Memory::MakeShared<SGame>();
     Game->Run();
 }

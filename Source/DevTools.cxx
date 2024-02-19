@@ -1,7 +1,5 @@
 #include "DevTools.hxx"
 
-#include <cstdint>
-#include <algorithm>
 #include <fstream>
 #include <glad/gl.h>
 #include <imgui/imgui.h>
@@ -21,15 +19,6 @@
 #include "Math.hxx"
 #include "Memory.hxx"
 #include "SDL_video.h"
-
-#define BG_COLOR (ImGui::GetColorU32(IM_COL32(0, 130 / 10, 216 / 10, 255)))
-#define GRID_LINE_COLOR (ImGui::GetColorU32(IM_COL32(215, 215, 215, 255)))
-#define WALL_COLOR (ImGui::GetColorU32(IM_COL32(198, 205, 250, 255)))
-#define WALL_JOINT_COLOR (ImGui::GetColorU32(IM_COL32(65, 205, 25, 255)))
-#define FLOOR_COLOR (ImGui::GetColorU32(IM_COL32(5, 105, 205, 255)))
-#define SELECTION_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 98, 255)))
-#define SELECTION_MODIFY_COLOR (ImGui::GetColorU32(IM_COL32(255, 105, 200, 255)))
-#define BLOCK_SELECTION_COLOR (ImGui::GetColorU32(IM_COL32(215, 205, 35, 255)))
 
 #define PARTY_SLOT_COLOR (ImGui::GetColorU32(IM_COL32(100, 75, 230, 200)))
 #define HPBAR_COLOR (ImGui::GetColorU32(IM_COL32(255, 19, 25, 255)))
@@ -1031,13 +1020,13 @@ void SDevTools::Init(SGame* InGame)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     ImGui::StyleColorsDark();
-    ImGui_ImplSDL3_InitForOpenGL(Game->Window.Window, Game->Window.Context);
-    ImGui_ImplOpenGL3_Init(GLSLVersion.c_str());
+    ImGui_ImplSDL3_InitForOpenGL(Game->Platform.Window, Game->Platform.Context);
+    ImGui_ImplOpenGL3_Init(Constants::GLSLVersion);
 
     LevelEditor.Init(InGame);
     WorldEditor.Init(InGame);
 
-    float WindowScale = SDL_GetWindowDisplayScale(Game->Window.Window);
+    float WindowScale = SDL_GetWindowDisplayScale(Game->Platform.Window);
     ImGui::GetStyle().ScaleAllSizes(WindowScale);
 
     /* Don't transfer asset ownership to ImGui, it will crash otherwise! */
@@ -1105,6 +1094,7 @@ void SDevTools::Update()
 
     if (bReturnedToGame)
     {
+        /* @TODO: Revert cursor changes? */
         Game->Renderer.ProgramMap.SetEditorData(SVec2(), SVec4(), false, false, false);
         Game->Renderer.UploadMapData(Game->World.GetLevel(), Game->Blob.UnreliableCoordsAndDirection());
     }
@@ -1131,7 +1121,7 @@ void SDevTools::ShowDebugTools() const
     {
         if (ImGui::TreeNode("System Info"))
         {
-            ImGui::Text("Frames Per Second: %.f", 1000.0f / Game->Window.DeltaTime / 1000.0f);
+            ImGui::Text("Frames Per Second: %.f", 1000.0f / Game->Platform.DeltaTime / 1000.0f);
             ImGui::Text("Number Of Blocks: %zu", Memory::NumberOfBlocks());
             ImGui::Text("Display Scale: %d", Game->Renderer.MainFramebuffer.Scale);
             ImGui::TreePop();
@@ -1191,7 +1181,7 @@ void SDevTools::ShowDebugTools() const
         ImGui::SetNextItemOpen(true, ImGuiCond_Once);
         if (ImGui::TreeNode("Adjustments"))
         {
-            ImGui::SliderFloat("##TimeScale", &Game->Window.TimeScale, 0.0f, 4.0f, "Time Scale: %.2f");
+            ImGui::SliderFloat("##TimeScale", &Game->Platform.TimeScale, 0.0f, 4.0f, "Time Scale: %.2f");
             ImGui::SliderFloat("##MasterVolume", &Game->Audio.Volume, 0.0f, 1.0f, "Master Volume: %.2f");
             ImGui::SliderFloat("##InputBufferTime", &Game->Blob.InputBufferTime, 0.0f, 1.0f, "Input Buffer Time: %.3f");
             ImGui::TreePop();

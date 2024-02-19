@@ -15,9 +15,9 @@ namespace Asset::Common
     EXTERN_ASSET(TestMusicWAV)
 }
 
-void SDLCALL CAudio::Callback(void* Userdata, struct SDL_AudioStream* Stream, int AdditionalAmount, [[maybe_unused]] int TotalAmount)
+void SDLCALL SAudio::Callback(void* Userdata, struct SDL_AudioStream* Stream, int AdditionalAmount, [[maybe_unused]] int TotalAmount)
 {
-    auto Audio = static_cast<CAudio*>(Userdata);
+    auto Audio = static_cast<SAudio*>(Userdata);
     if (AdditionalAmount > 0)
     {
         auto* Data = SDL_stack_alloc(uint8_t, AdditionalAmount);
@@ -49,14 +49,14 @@ void SSoundClip::Free() const
     SDL_free(Ptr);
 }
 
-void CAudio::Clear() const
+void SAudio::Clear() const
 {
     SDL_ClearAudioStream(Stream);
 }
 
-CAudio::CAudio()
-    : AudioSpec({ SDL_AUDIO_S16, 2, 44100 })
+void SAudio::Init()
 {
+    AudioSpec = { SDL_AUDIO_S16, 2, 44100 };
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
@@ -86,7 +86,7 @@ CAudio::CAudio()
     Queue[1].Current = 0;
 }
 
-CAudio::~CAudio()
+void SAudio::Cleanup()
 {
     TestSoundClip.Free();
     TestMusic.Free();
@@ -94,7 +94,7 @@ CAudio::~CAudio()
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
-void CAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
+void SAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
 {
     auto TestRW = SDL_RWFromConstMem(Asset.VoidPtr(), Asset.Length);
 
@@ -118,12 +118,12 @@ void CAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
     SDL_free(TempPtr);
 }
 
-void CAudio::TestAudio()
+void SAudio::TestAudio()
 {
     Play(TestSoundClip);
 }
 
-void CAudio::Play(const SSoundClip& SoundClip)
+void SAudio::Play(const SSoundClip& SoundClip)
 {
     for (auto& AudioEntry : Queue)
     {

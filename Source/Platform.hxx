@@ -2,13 +2,13 @@
 
 #include "CommonTypes.hxx"
 
-struct SWindow : SWindowData
+struct SPlatform : SPlatformState
 {
     struct SDL_Window* Window{};
     void* Context{};
 
-    SWindow();
-    ~SWindow();
+    void Init();
+    void Cleanup() const;
 
     [[nodiscard]] bool IsAnyFullscreen() const;
 
@@ -20,8 +20,3 @@ struct SWindow : SWindowData
 
     void SetOptimalWindowedResolution() const;
 };
-
-namespace Platform
-{
-    void Init();
-}

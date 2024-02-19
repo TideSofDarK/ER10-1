@@ -65,7 +65,7 @@ macro(add_equinox_reach_target)
             Source/AssetDef.cxx
             Source/Utility.cxx
             Source/Main.cxx
-            Source/Window.cxx
+            Source/Platform.cxx
             Source/Draw.cxx
             Source/Blob.cxx
             Source/AssetTools.cxx
@@ -87,7 +87,6 @@ macro(add_equinox_reach_target)
     target_link_libraries(
             ${TARGET_NAME}
             PRIVATE
-            # SDL3::SDL3
             SDL3::SDL3-static
     )
 

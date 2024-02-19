@@ -1,4 +1,4 @@
-#include "Window.hxx"
+#include "Platform.hxx"
 
 #include <glad/gl.h>
 #include <SDL3/SDL.h>
@@ -7,18 +7,30 @@
 #include "SDL_video.h"
 #include "Constants.hxx"
 
-void SWindow::SwapBuffers() const
+void SPlatform::SwapBuffers() const
 {
     SDL_GL_SwapWindow(Window);
 }
 
-bool SWindow::IsAnyFullscreen() const
+bool SPlatform::IsAnyFullscreen() const
 {
     return (SDL_GetWindowFlags(Window) & SDL_WINDOW_FULLSCREEN) != 0;
 }
 
-SWindow::SWindow()
+void SPlatform::Init()
 {
+    SDL_LogSetAllPriority(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
+    SDL_LogSetOutputFunction([]([[maybe_unused]] void* Userdata, [[maybe_unused]] int Category, [[maybe_unused]] SDL_LogPriority Priority, const char* Message) {
+        Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", Message);
+    },
+        nullptr);
+
+    if (SDL_SetMemoryFunctions(&Memory::Malloc, &Memory::Calloc, &Memory::Realloc, &Memory::Free))
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
+        exit(1);
+    }
+
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
@@ -35,7 +47,7 @@ SWindow::SWindow()
     Width = Resolution.X;
     Height = Resolution.Y;
 
-    Window = SDL_CreateWindow(GAME_NAME,
+    Window = SDL_CreateWindow(Constants::GameName,
         Width, Height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
 
@@ -58,33 +70,33 @@ SWindow::SWindow()
     }
 }
 
-SWindow::~SWindow()
+void SPlatform::Cleanup() const
 {
     SDL_GL_DeleteContext(Context);
     SDL_DestroyWindow(Window);
     SDL_Quit();
 }
 
-void SWindow::ToggleBorderlessFullscreen() const
+void SPlatform::ToggleBorderlessFullscreen() const
 {
     SDL_SetWindowFullscreen(Window, !IsAnyFullscreen());
 }
 
-SVec2Int SWindow::CalculateOptimalWindowedResolution(unsigned DisplayID)
+SVec2Int SPlatform::CalculateOptimalWindowedResolution(unsigned DisplayID)
 {
     SDL_Rect UsableBounds;
 
     SDL_GetDisplayUsableBounds(DisplayID, &UsableBounds);
 
-    int ScaleFactorY = UsableBounds.h / SCREEN_HEIGHT;
-    int ScaleFactorX = UsableBounds.w / SCREEN_WIDTH;
+    int ScaleFactorX = UsableBounds.w / Constants::ReferenceWidth;
+    int ScaleFactorY = UsableBounds.h / Constants::ReferenceHeight;
 
     int ScaleFactor = std::max(1, (std::min(ScaleFactorX, ScaleFactorY)));
 
-    return { SCREEN_WIDTH * ScaleFactor, SCREEN_HEIGHT * ScaleFactor };
+    return { Constants::ReferenceWidth * ScaleFactor, Constants::ReferenceHeight * ScaleFactor };
 }
 
-void SWindow::SetOptimalWindowedResolution() const
+void SPlatform::SetOptimalWindowedResolution() const
 {
     SDL_DisplayID DisplayID = SDL_GetDisplayForWindow(Window);
 
@@ -93,22 +105,4 @@ void SWindow::SetOptimalWindowedResolution() const
     SDL_SetWindowSize(Window, Resolution.X, Resolution.Y);
     SDL_SetWindowPosition(Window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_SetWindowFullscreen(Window, false);
-}
-
-namespace Platform
-{
-    void Init()
-    {
-        SDL_LogSetAllPriority(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
-        SDL_LogSetOutputFunction([]([[maybe_unused]] void* Userdata, [[maybe_unused]] int Category, [[maybe_unused]] SDL_LogPriority Priority, const char* Message) {
-            Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", Message);
-        },
-            nullptr);
-
-        if (SDL_SetMemoryFunctions(&Memory::Malloc, &Memory::Calloc, &Memory::Realloc, &Memory::Free))
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
-            exit(1);
-        }
-    }
 }

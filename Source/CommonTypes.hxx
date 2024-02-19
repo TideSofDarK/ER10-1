@@ -4,14 +4,10 @@
 #include <cstdint>
 #include "Math.hxx"
 
-struct SWindowData
+struct SPlatformState
 {
     int Width{};
     int Height{};
-    // int BlitWidth{};
-    // int BlitHeight{};
-    // int BlitX{};
-    // int BlitY{};
     uint64_t Last{};
     uint64_t Now{};
     float TimeScale = 1.0f;

@@ -514,7 +514,7 @@ struct SRenderer
 
     void SetTime(float Time) const;
 
-    void Flush(const SWindowData& WindowData);
+    void Flush(const SPlatformState& WindowData);
 
 #pragma region Queue_2D_API
 

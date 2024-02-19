@@ -51,23 +51,26 @@ namespace Asset::Map
 }
 
 static const SRectInt MapRectMin{
-    SCREEN_WIDTH - 128,
+    Constants::ReferenceWidth - 128,
     10,
     MAP_TILE_SIZE_PIXELS * 7 + MAP_TILE_EDGE_SIZE_PIXELS,
     MAP_TILE_SIZE_PIXELS * 5 + MAP_TILE_EDGE_SIZE_PIXELS
 };
-static const SRectInt MapRectMax{ SCENE_OFFSET, 54, SCENE_WIDTH, SCENE_HEIGHT };
+static const SRectInt MapRectMax{ 0, 0, Constants::SceneSize.X, Constants::SceneSize.Y };
 
-static const SRectInt WorldRect{ SCREEN_WIDTH - 128, MapRectMin.Min.Y + 150, 100, 120 };
+static const SRectInt WorldRect{ Constants::ReferenceWidth - 128, MapRectMin.Min.Y + 150, 100, 120 };
 
 SGame::SGame()
     : MapRect(MapRectMin)
 {
+    Platform.Init();
+    Audio.Init();
+
 #ifdef EQUINOX_REACH_DEVELOPMENT
     DevTools.Init(this);
 #endif
 
-    Renderer.Init(Window.Width, Window.Height);
+    Renderer.Init(Platform.Width, Platform.Height);
 
     auto& CommonAtlas = Renderer.Atlases[ATLAS_COMMON];
     NoiseSprite = CommonAtlas.AddSprite(
@@ -201,13 +204,13 @@ EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t* KeyboardSt
 
 void SGame::Run()
 {
-    Window.Now = SDL_GetTicks();
-    while (!Window.bQuit)
+    Platform.Now = SDL_GetTicks();
+    while (!Platform.bQuit)
     {
-        Window.Last = Window.Now;
-        Window.Now = SDL_GetTicks();
-        Window.DeltaTime = (float)(Window.Now - Window.Last) / 1000.0f * Window.TimeScale;
-        Window.Seconds += Window.DeltaTime;
+        Platform.Last = Platform.Now;
+        Platform.Now = SDL_GetTicks();
+        Platform.DeltaTime = (float)(Platform.Now - Platform.Last) / 1000.0f * Platform.TimeScale;
+        Platform.Seconds += Platform.DeltaTime;
 
         SDL_Event Event;
         while (SDL_PollEvent(&Event))
@@ -218,11 +221,11 @@ void SGame::Run()
             switch (Event.type)
             {
                 case SDL_EVENT_WINDOW_RESIZED:
-                    SDL_GetWindowSize(Window.Window, &Window.Width, &Window.Height);
-                    Renderer.MainFramebuffer.Resize(Window.Width, Window.Height);
+                    SDL_GetWindowSize(Platform.Window, &Platform.Width, &Platform.Height);
+                    Renderer.MainFramebuffer.Resize(Platform.Width, Platform.Height);
                     break;
                 case SDL_EVENT_QUIT:
-                    Window.bQuit = true;
+                    Platform.bQuit = true;
                     break;
                 default:
                     break;
@@ -236,15 +239,15 @@ void SGame::Run()
 #endif
         // if (InputState.Cancel == EKeyState::Pressed)
         // {
-        //     Window.bQuit = true;
+        //     Platform.bQuit = true;
         // }
 
         if (InputState.Keys.ToggleFullscreen == EKeyState::Pressed)
         {
-            Window.ToggleBorderlessFullscreen();
+            Platform.ToggleBorderlessFullscreen();
         }
 
-        Renderer.SetTime(Window.Seconds);
+        Renderer.SetTime(Platform.Seconds);
 
         if (IsGameRunning())
         {
@@ -278,10 +281,10 @@ void SGame::Run()
             Renderer.UploadProjectionAndViewFromCamera(Camera);
             // Renderer.Draw3D({ -7.0f, 0.0f, -4.0f }, &Floor);
 
-            World.Update(Window.DeltaTime);
+            World.Update(Platform.DeltaTime);
             Renderer.Draw3DLevel(World.GetLevel(), Blob.Coords, Blob.Direction);
 
-            MapRectTimeline.Advance(Window.DeltaTime);
+            MapRectTimeline.Advance(Platform.DeltaTime);
             auto MapRectFrom = SRect(bMapMaximized ? MapRectMin : MapRectMax);
             auto MapRectTo = SRect(bMapMaximized ? MapRectMax : MapRectMin);
             MapRect = Math::Mix(MapRectFrom, MapRectTo, MapRectTimeline.Value);
@@ -296,7 +299,7 @@ void SGame::Run()
             {
                 case 0:
                     Renderer.Draw2DEx({ 220, 80.0f, 0.0f }, AngelSprite, UBER2D_MODE_DISINTEGRATE_PLASMA,
-                        { Window.Seconds / 2.0f, 0.9f, 0.2f, 0.1f },
+                        { Platform.Seconds / 2.0f, 0.9f, 0.2f, 0.1f },
                         NoiseSprite.Sprite->UVRect);
                     break;
                 case 1:
@@ -309,7 +312,7 @@ void SGame::Run()
                     Renderer.Draw2DGlow({ 220, 80.0f, 0.0f }, AngelSprite, { 1.0f, 1.0f, 1.0f }, 2.0f);
                     break;
                 case 4:
-                    Renderer.Draw2DDisintegrate({ 220, 80.0f, 0.0f }, AngelSprite, NoiseSprite, Window.Seconds / 4.0f);
+                    Renderer.Draw2DDisintegrate({ 220, 80.0f, 0.0f }, AngelSprite, NoiseSprite, Platform.Seconds / 4.0f);
                     break;
                 default:
                     break;
@@ -318,14 +321,14 @@ void SGame::Run()
             // Renderer.DrawHUD({32.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BORDER_DASHED);
             // Renderer.DrawHUD({128.0f, 250.0f, 0.0f}, {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4}, HUD_MODE_BUTTON);
 
-            Renderer.Flush(Window);
+            Renderer.Flush(Platform);
         }
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
         DevTools.Draw();
 #endif
 
-        Window.SwapBuffers();
+        Platform.SwapBuffers();
     }
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
@@ -335,6 +338,8 @@ void SGame::Run()
     /* @TODO: Fix this. */
     DoorCreek.Free();
     Tileset.Cleanup();
+    Audio.Cleanup();
+    Platform.Cleanup();
 }
 
 void SGame::UpdateInputState()
@@ -359,7 +364,7 @@ void SGame::UpdateInputState()
 
 void SGame::HandleBlobMovement()
 {
-    Blob.Update(Window.DeltaTime);
+    Blob.Update(Platform.DeltaTime);
 
     const auto bBlobWasIdle = !Blob.IsMoving();
     if (Blob.MoveSeq.IsFinished())

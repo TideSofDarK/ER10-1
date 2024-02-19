@@ -85,13 +85,13 @@ unsigned int SProgram::CreateVertexShader(const char* Data, int Length)
 {
     unsigned VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char const* Blocks[4] = {
-        &GLSLVersion[0],
+        &Constants::GLSLVersion[0],
         &SharedConstants[0],
         Asset::Shader::SharedGLSL.SignedCharPtr(),
         Data
     };
     int const Lengths[4] = {
-        (int)GLSLVersion.length(),
+        (int)strlen(Constants::GLSLVersion),
         (int)SharedConstants.length(),
         (int)Asset::Shader::SharedGLSL.Length,
         Length
@@ -106,13 +106,13 @@ unsigned int SProgram::CreateFragmentShader(const char* Data, int Length)
 {
     unsigned FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     char const* Blocks[4] = {
-        &GLSLVersion[0],
+        &Constants::GLSLVersion[0],
         &SharedConstants[0],
         Asset::Shader::SharedGLSL.SignedCharPtr(),
         Data
     };
     int const Lengths[4] = {
-        (int)GLSLVersion.length(),
+        (int)strlen(Constants::GLSLVersion),
         (int)SharedConstants.length(),
         (int)Asset::Shader::SharedGLSL.Length,
         Length
@@ -594,14 +594,14 @@ void SMainFramebuffer::Cleanup()
 
 void SMainFramebuffer::CalculateSize(int InWindowWidth, int InWindowHeight)
 {
-    int NewWidth = SCREEN_WIDTH;
-    int NewHeight = SCREEN_HEIGHT;
+    int NewWidth = Constants::ReferenceWidth;
+    int NewHeight = Constants::ReferenceHeight;
 
-    const int MaxAvailableScale = std::min(InWindowWidth / SCREEN_WIDTH, InWindowHeight / SCREEN_HEIGHT);
+    const int MaxAvailableScale = std::min(InWindowWidth / Constants::ReferenceWidth, InWindowHeight / Constants::ReferenceHeight);
     if (MaxAvailableScale >= 1)
     {
-        NewWidth += (InWindowWidth - MaxAvailableScale * SCREEN_WIDTH) / MaxAvailableScale;
-        NewHeight += (InWindowHeight - MaxAvailableScale * SCREEN_HEIGHT) / MaxAvailableScale;
+        NewWidth += (InWindowWidth - MaxAvailableScale * Constants::ReferenceWidth) / MaxAvailableScale;
+        NewHeight += (InWindowHeight - MaxAvailableScale * Constants::ReferenceHeight) / MaxAvailableScale;
 
         NewWidth++;
         NewHeight++;
@@ -823,7 +823,7 @@ void SRenderer::SetTime(float Time) const
     GlobalsUniformBlock.SetFloat(offsetof(SShaderGlobals, Time), Time);
 }
 
-void SRenderer::Flush(const SWindowData& WindowData)
+void SRenderer::Flush(const SPlatformState& WindowData)
 {
     GlobalsUniformBlock.SetVector2(offsetof(SShaderGlobals, ScreenSize), { (float)MainFramebuffer.Width, (float)MainFramebuffer.Height });
 
@@ -835,7 +835,9 @@ void SRenderer::Flush(const SWindowData& WindowData)
     /* Draw 3D */
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glViewport(SCENE_OFFSET, SCENE_OFFSET, SCENE_WIDTH, SCENE_HEIGHT);
+
+    SVec2Int SceneOffset = (SVec2Int(MainFramebuffer.Width, MainFramebuffer.Height) - Constants::SceneSize) / 2;
+    glViewport(SceneOffset.X, SceneOffset.Y, Constants::SceneSize.X, Constants::SceneSize.Y);
 
     ProgramUber3D.Use();
 

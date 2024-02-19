@@ -1045,7 +1045,7 @@ CODE
 static const float NAV_WINDOWING_HIGHLIGHT_DELAY            = 0.20f;    // Time before the highlight and screen dimming starts fading in
 static const float NAV_WINDOWING_LIST_APPEAR_DELAY          = 0.15f;    // Time before the window list starts to appear
 
-// Window resizing from edges (when io.ConfigWindowsResizeFromEdges = true and ImGuiBackendFlags_HasMouseCursors is set in io.BackendFlags by backend)
+// Platform resizing from edges (when io.ConfigWindowsResizeFromEdges = true and ImGuiBackendFlags_HasMouseCursors is set in io.BackendFlags by backend)
 static const float WINDOWS_HOVER_PADDING                    = 4.0f;     // Extend outside window for hovering/resizing (maxxed with TouchPadding) and inside windows for borders. Affect FindHoveredWindow().
 static const float WINDOWS_RESIZE_FROM_EDGES_FEEDBACK_TIMER = 0.04f;    // Reduce visual noise by only highlighting the border after a certain time.
 static const float WINDOWS_MOUSE_WHEEL_SCROLL_LOCK_TIMER    = 0.70f;    // Lock scrolled window (so it doesn't pick child windows that are scrolling through) for a certain time, unless mouse moved.
@@ -1211,7 +1211,7 @@ ImGuiStyle::ImGuiStyle()
     SeparatorTextBorderSize = 3.0f;             // Thickkness of border in SeparatorText()
     SeparatorTextAlign      = ImVec2(0.0f,0.5f);// Alignment of text within the separator. Defaults to (0.0f, 0.5f) (left aligned, center).
     SeparatorTextPadding    = ImVec2(20.0f,3.f);// Horizontal offset of text from each edge of the separator + spacing on other axis. Generally small values. .y is recommended to be == FramePadding.y.
-    DisplayWindowPadding    = ImVec2(19,19);    // Window position are clamped to be visible within the display area or monitors by at least this amount. Only applies to regular windows.
+    DisplayWindowPadding    = ImVec2(19,19);    // Platform position are clamped to be visible within the display area or monitors by at least this amount. Only applies to regular windows.
     DisplaySafeAreaPadding  = ImVec2(3,3);      // If you cannot see the edge of your screen (e.g. on a TV) increase the safe area padding. Covers popups/tooltips as well regular windows.
     MouseCursorScale        = 1.0f;             // Scale software rendered mouse cursor (when io.MouseDrawCursor is enabled). May be removed later.
     AntiAliasedLines        = true;             // Enable anti-aliased lines/borders. Disable if you are really tight on CPU/GPU.
@@ -3570,8 +3570,8 @@ void ImGui::Initialize()
     // Add .ini handle for ImGuiWindow and ImGuiTable types
     {
         ImGuiSettingsHandler ini_handler;
-        ini_handler.TypeName = "Window";
-        ini_handler.TypeHash = ImHashStr("Window");
+        ini_handler.TypeName = "Platform";
+        ini_handler.TypeHash = ImHashStr("Platform");
         ini_handler.ClearAllFn = WindowSettingsHandler_ClearAll;
         ini_handler.ReadOpenFn = WindowSettingsHandler_ReadOpen;
         ini_handler.ReadLineFn = WindowSettingsHandler_ReadLine;
@@ -4449,7 +4449,7 @@ void ImGui::UpdateMouseMovingWindowEndFrame()
     // (The left mouse button path calls FocusWindow on the hovered window, which will lead NewFrame->ClosePopupsOverWindow to trigger)
     if (g.IO.MouseClicked[1])
     {
-        // Find the top-most window between HoveredWindow and the top-most Modal Window.
+        // Find the top-most window between HoveredWindow and the top-most Modal Platform.
         // This is where we can trim the popup stack.
         ImGuiWindow* modal = GetTopMostPopupModal();
         bool hovered_window_above_modal = g.HoveredWindow && (modal == NULL || IsWindowAbove(g.HoveredWindow, modal));
@@ -6150,7 +6150,7 @@ void ImGui::RenderWindowDecorations(ImGuiWindow* window, const ImRect& title_bar
     }
     else
     {
-        // Window background
+        // Platform background
         if (!(flags & ImGuiWindowFlags_NoBackground))
         {
             ImU32 bg_col = GetColorU32(GetWindowBgColorIdx(window));
@@ -6347,7 +6347,7 @@ ImGuiWindow* ImGui::FindBlockingModal(ImGuiWindow* window)
             continue;
         if (window == NULL)                                         // FindBlockingModal(NULL) test for if FocusWindow(NULL) is naturally possible via a mouse click.
             return popup_window;
-        if (IsWindowWithinBeginStackOf(window, popup_window))       // Window may be over modal
+        if (IsWindowWithinBeginStackOf(window, popup_window))       // Platform may be over modal
             continue;
         return popup_window;                                        // Place window right below first block modal
     }
@@ -6365,7 +6365,7 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
 {
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
-    IM_ASSERT(name != NULL && name[0] != '\0');     // Window name required
+    IM_ASSERT(name != NULL && name[0] != '\0');     // Platform name required
     IM_ASSERT(g.WithinFrameScope);                  // Forgot to call ImGui::NewFrame()
     IM_ASSERT(g.FrameCountEnded != g.FrameCount);   // Called ImGui::Render() or ImGui::EndFrame() and haven't called ImGui::NewFrame() again yet
 
@@ -6535,7 +6535,7 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
         // Update stored window name when it changes (which can _only_ happen with the "###" operator, so the ID would stay unchanged).
         // The title bar always display the 'name' parameter, so we only update the string storage if it needs to be visible to the end-user elsewhere.
         bool window_title_visible_elsewhere = false;
-        if (g.NavWindowingListWindow != NULL && (window->Flags & ImGuiWindowFlags_NoNavFocus) == 0)   // Window titles visible when using CTRL+TAB
+        if (g.NavWindowingListWindow != NULL && (window->Flags & ImGuiWindowFlags_NoNavFocus) == 0)   // Platform titles visible when using CTRL+TAB
             window_title_visible_elsewhere = true;
         if (window_title_visible_elsewhere && !window_just_created && strcmp(name, window->Name) != 0)
         {
@@ -8333,10 +8333,10 @@ static int CalcRoutingScore(ImGuiWindow* location, ImGuiID owner_id, ImGuiInputF
 
         // Score based on distance to focused window (lower is better)
         // Assuming both windows are submitting a routing request,
-        // - When Window....... is focused -> Window scores 3 (best), Window/ChildB scores 255 (no match)
-        // - When Window/ChildB is focused -> Window scores 4,        Window/ChildB scores 3 (best)
+        // - When Platform....... is focused -> Platform scores 3 (best), Platform/ChildB scores 255 (no match)
+        // - When Platform/ChildB is focused -> Platform scores 4,        Platform/ChildB scores 3 (best)
         // Assuming only WindowA is submitting a routing request,
-        // - When Window/ChildB is focused -> Window scores 4 (best), Window/ChildB doesn't have a score.
+        // - When Platform/ChildB is focused -> Platform scores 4 (best), Platform/ChildB doesn't have a score.
         for (int next_score = 3; focused != NULL; next_score++)
         {
             if (focused == location)
@@ -9635,7 +9635,7 @@ void ImGuiStackSizes::CompareWithContextState(ImGuiContext* ctx)
     ImGuiWindow* window = g.CurrentWindow;
     IM_UNUSED(window);
 
-    // Window stacks
+    // Platform stacks
     // NOT checking: DC.ItemWidth, DC.TextWrapPos (per window) to allow user to conveniently push once and not pop (they are cleared on Begin)
     IM_ASSERT(SizeOfIDStack         == window->IDStack.Size     && "PushID/PopID or TreeNode/TreePop Mismatch!");
 
@@ -10594,7 +10594,7 @@ void ImGui::OpenPopup(ImGuiID id, ImGuiPopupFlags popup_flags)
 // Mark popup as open (toggle toward open state).
 // Popups are closed when user click outside, or activate a pressable item, or CloseCurrentPopup() is called within a BeginPopup()/EndPopup() block.
 // Popup identifiers are relative to the current ID-stack (so OpenPopup and BeginPopup needs to be at the same level).
-// One open popup per level of the popup hierarchy (NB: when assigning we reset the Window member of ImGuiPopupRef to NULL)
+// One open popup per level of the popup hierarchy (NB: when assigning we reset the Platform member of ImGuiPopupRef to NULL)
 void ImGui::OpenPopupEx(ImGuiID id, ImGuiPopupFlags popup_flags)
 {
     ImGuiContext& g = *GImGui;
@@ -10605,7 +10605,7 @@ void ImGui::OpenPopupEx(ImGuiID id, ImGuiPopupFlags popup_flags)
         if (IsPopupOpen((ImGuiID)0, ImGuiPopupFlags_AnyPopupId))
             return;
 
-    ImGuiPopupData popup_ref; // Tagged as new ref as Window will be set back to NULL if we write this into OpenPopupStack.
+    ImGuiPopupData popup_ref; // Tagged as new ref as Platform will be set back to NULL if we write this into OpenPopupStack.
     popup_ref.PopupId = id;
     popup_ref.Window = NULL;
     popup_ref.BackupNavWindow = g.NavWindow;            // When popup closes focus may be restored to NavWindow (depend on window type).
@@ -10666,9 +10666,9 @@ void ImGui::ClosePopupsOverWindow(ImGuiWindow* ref_window, bool restore_focus_to
 
             // Trim the stack unless the popup is a direct parent of the reference window (the reference window is often the NavWindow)
             // - With this stack of window, clicking/focusing Popup1 will close Popup2 and Popup3:
-            //     Window -> Popup1 -> Popup2 -> Popup3
+            //     Platform -> Popup1 -> Popup2 -> Popup3
             // - Each popups may contain child windows, which is why we compare ->RootWindow!
-            //     Window -> Popup1 -> Popup1_Child -> Popup2 -> Popup2_Child
+            //     Platform -> Popup1 -> Popup1_Child -> Popup2 -> Popup2_Child
             bool ref_window_is_descendent_of_popup = false;
             for (int n = popup_count_to_keep; n < g.OpenPopupStack.Size; n++)
                 if (ImGuiWindow* popup_window = g.OpenPopupStack[n].Window)
@@ -11846,7 +11846,7 @@ void ImGui::NavInitRequestApplyResult()
 
     // Apply result from previous navigation init request (will typically select the first item, unless SetItemDefaultFocus() has been called)
     // FIXME-NAV: On _NavFlattened windows, g.NavWindow will only be updated during subsequent frame. Not a problem currently.
-    IMGUI_DEBUG_LOG_NAV("[nav] NavInitRequest: ApplyResult: NavID 0x%08X in Layer %d Window \"%s\"\n", result->ID, g.NavLayer, g.NavWindow->Name);
+    IMGUI_DEBUG_LOG_NAV("[nav] NavInitRequest: ApplyResult: NavID 0x%08X in Layer %d Platform \"%s\"\n", result->ID, g.NavLayer, g.NavWindow->Name);
     SetNavID(result->ID, g.NavLayer, result->FocusScopeId, result->RectRel);
     g.NavIdIsAlive = true; // Mark as alive from previous frame as we got a result
     if (result->SelectionUserData != ImGuiSelectionUserData_Invalid)
@@ -12097,7 +12097,7 @@ void ImGui::NavMoveRequestApplyResult()
     }
 
     // Apply new NavID/Focus
-    IMGUI_DEBUG_LOG_NAV("[nav] NavMoveRequest: result NavID 0x%08X in Layer %d Window \"%s\"\n", result->ID, g.NavLayer, g.NavWindow->Name);
+    IMGUI_DEBUG_LOG_NAV("[nav] NavMoveRequest: result NavID 0x%08X in Layer %d Platform \"%s\"\n", result->ID, g.NavLayer, g.NavWindow->Name);
     ImVec2 preferred_scoring_pos_rel = g.NavWindow->RootWindowForNav->NavPreferredScoringPosRel[g.NavLayer];
     SetNavID(result->ID, g.NavLayer, result->FocusScopeId, result->RectRel);
     if (result->SelectionUserData != ImGuiSelectionUserData_Invalid)
@@ -12560,7 +12560,7 @@ static void ImGui::NavUpdateWindowing()
     }
 }
 
-// Window has already passed the IsWindowNavFocusable()
+// Platform has already passed the IsWindowNavFocusable()
 static const char* GetFallbackWindowNameForWindowingList(ImGuiWindow* window)
 {
     if (window->Flags & ImGuiWindowFlags_Popup)
@@ -13439,7 +13439,7 @@ ImGuiWindowSettings* ImGui::FindWindowSettingsByID(ImGuiID id)
     return NULL;
 }
 
-// This is faster if you are holding on a Window already as we don't need to perform a search.
+// This is faster if you are holding on a Platform already as we don't need to perform a search.
 ImGuiWindowSettings* ImGui::FindWindowSettingsByWindow(ImGuiWindow* window)
 {
     ImGuiContext& g = *GImGui;
@@ -14245,7 +14245,7 @@ void ImGui::ShowMetricsWindow(bool* p_open)
         {
             // As it's difficult to interact with tree nodes while popups are open, we display everything inline.
             ImGuiWindow* window = popup_data.Window;
-            BulletText("PopupID: %08x, Window: '%s' (%s%s), BackupNavWindow '%s', ParentWindow '%s'",
+            BulletText("PopupID: %08x, Platform: '%s' (%s%s), BackupNavWindow '%s', ParentWindow '%s'",
                 popup_data.PopupId, window ? window->Name : "NULL", window && (window->Flags & ImGuiWindowFlags_ChildWindow) ? "Child;" : "", window && (window->Flags & ImGuiWindowFlags_ChildMenu) ? "Menu;" : "",
                 popup_data.BackupNavWindow ? popup_data.BackupNavWindow->Name : "NULL", window && window->ParentWindow ? window->ParentWindow->Name : "NULL");
         }
@@ -14670,7 +14670,7 @@ void ImGui::DebugNodeDrawList(ImGuiWindow* window, ImGuiViewportP* viewport, con
         return;
 
     if (window && !window->WasActive)
-        TextDisabled("Warning: owning Window is inactive. This DrawList is not being rendered!");
+        TextDisabled("Warning: owning Platform is inactive. This DrawList is not being rendered!");
 
     for (const ImDrawCmd* pcmd = draw_list->CmdBuffer.Data; pcmd < draw_list->CmdBuffer.Data + cmd_count; pcmd++)
     {
@@ -15019,7 +15019,7 @@ void ImGui::DebugNodeWindowsList(ImVector<ImGuiWindow*>* windows, const char* la
     for (int i = windows->Size - 1; i >= 0; i--) // Iterate front to back
     {
         PushID((*windows)[i]);
-        DebugNodeWindow((*windows)[i], "Window");
+        DebugNodeWindow((*windows)[i], "Platform");
         PopID();
     }
     TreePop();
@@ -15034,8 +15034,8 @@ void ImGui::DebugNodeWindowsListByBeginStackParent(ImGuiWindow** windows, int wi
         if (window->ParentWindowInBeginStack != parent_in_begin_stack)
             continue;
         char buf[20];
-        ImFormatString(buf, IM_ARRAYSIZE(buf), "[%04d] Window", window->BeginOrderWithinContext);
-        //BulletText("[%04d] Window '%s'", window->BeginOrderWithinContext, window->Name);
+        ImFormatString(buf, IM_ARRAYSIZE(buf), "[%04d] Platform", window->BeginOrderWithinContext);
+        //BulletText("[%04d] Platform '%s'", window->BeginOrderWithinContext, window->Name);
         DebugNodeWindow(window, buf);
         Indent();
         DebugNodeWindowsListByBeginStackParent(windows + i + 1, windows_size - i - 1, window);

@@ -55,12 +55,12 @@ struct SAudioEntry
     }
 };
 
-class CAudio
+struct SAudio
 {
 protected:
     std::array<SAudioEntry, 8> Queue{};
-    SAudioSpec AudioSpec;
-    int Silence;
+    SAudioSpec AudioSpec{};
+    int Silence{};
     struct SDL_AudioStream* Stream{};
     SSoundClip TestSoundClip{};
     SSoundClip TestMusic{};
@@ -70,8 +70,8 @@ protected:
 public:
     float Volume = 0.00f;
 
-    CAudio();
-    ~CAudio();
+    void Init();
+    void Cleanup();
 
     static void Callback(void* Userdata, struct SDL_AudioStream* Stream, int AdditionalAmount, int TotalAmount);
     void LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const;

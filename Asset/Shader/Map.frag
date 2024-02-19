@@ -285,7 +285,6 @@ void main()
     }
     else
     {
-        texCoord += floor(u_common.cursor.xy);
         texCoord = floor(texCoord);
 
         tileSize = MAP_TILE_SIZE_PIXELS;
@@ -301,6 +300,7 @@ void main()
             centerOffset -= halfSizeFloored;
             centerOffset += fullMapSize * 0.5f;
             centerOffset -= (tileSize + tileEdgeSize) * 0.5f;
+            centerOffset += floor(u_common.cursor.xy);
         }
         else
         {
