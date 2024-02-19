@@ -55,12 +55,12 @@
 #endif
 
 #ifdef EQUINOX_REACH_DEVELOPMENT
-    #define DEFINE_ASSET(NAME, PATH)                  \
+    #define DEFINE_ASSET(NAME, PATH)                \
         INCBIN(NAME, EQUINOX_REACH_ASSET_PATH PATH) \
         EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length, PATH);
 #else
-    #define DEFINE_ASSET(NAME, PATH)                  \
-        INCBIN(NAME, EQUINOX_REACH_ASSET_PATH PATH ) \
+    #define DEFINE_ASSET(NAME, PATH)                \
+        INCBIN(NAME, EQUINOX_REACH_ASSET_PATH PATH) \
         EXTERN_OR_INLINE const SAsset NAME(&(incbin_##NAME##_start[0]), incbin_##NAME##_length);
 #endif
 

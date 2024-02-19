@@ -137,7 +137,7 @@ private:
 
 protected:
     virtual void InitUniforms();
-    virtual void InitUniformBlocks(){};
+    virtual void InitUniformBlocks() {};
     virtual void CleanupUniformBlocks() const {};
 
 public:
@@ -251,7 +251,7 @@ struct SMainFramebuffer
 {
     int Width{};
     int Height{};
-    int Scale{1};
+    int Scale{ 1 };
     unsigned FBO{};
     unsigned ColorID{};
     unsigned DepthID{};

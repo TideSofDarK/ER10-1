@@ -18,7 +18,7 @@ void SWorld::Init()
     auto LoadLevel = [&](const SAsset& Asset, size_t Index) {
         Serialization::MemoryStream LevelStream(Asset.SignedCharPtr(), Asset.Length);
         Levels[Index].Deserialize(LevelStream);
-        Levels[Index].Color = {Utility::GetRandomFloat(), Utility::GetRandomFloat(), Utility::GetRandomFloat()};
+        Levels[Index].Color = { Utility::GetRandomFloat(), Utility::GetRandomFloat(), Utility::GetRandomFloat() };
     };
 
     LoadLevel(Asset::Map::Floor0, 0);

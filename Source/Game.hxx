@@ -39,7 +39,7 @@ public:
     SBattle Battle;
     STileset Tileset;
 
-    STimeline MapRectTimeline{3.0f};
+    STimeline MapRectTimeline{ 3.0f };
     SRect MapRect;
     bool bMapMaximized{};
 

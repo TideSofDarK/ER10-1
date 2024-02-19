@@ -166,4 +166,3 @@ struct STilemap
 
     void Deserialize(std::istream& Stream);
 };
-

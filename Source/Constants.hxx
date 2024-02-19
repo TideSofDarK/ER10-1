@@ -10,5 +10,5 @@ namespace Constants
     inline constexpr int ReferenceWidth = 480;
     inline constexpr int ReferenceHeight = 270;
 
-    inline constexpr SVec2Int SceneSize{288, 120};
+    inline constexpr SVec2Int SceneSize{ 288, 120 };
 }
