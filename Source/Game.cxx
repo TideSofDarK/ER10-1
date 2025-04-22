@@ -175,7 +175,7 @@ SGame::SGame()
     Audio.LoadSoundClip(Asset::Common::DoorCreekWAV, DoorCreek);
 }
 
-EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const uint8_t* KeyboardState, const uint8_t Scancode)
+EKeyState SGame::UpdateKeyState(EKeyState OldKeyState, const bool* KeyboardState, const uint8_t Scancode)
 {
     bool bCurrentlyPressed = KeyboardState[Scancode] == 1;
     bool bWasPressed = OldKeyState == EKeyState::Held || OldKeyState == EKeyState::Pressed;
@@ -346,7 +346,7 @@ void SGame::Run()
 void SGame::UpdateInputState()
 {
     OldInputState = InputState;
-    const Uint8* KeyboardState = SDL_GetKeyboardState(nullptr);
+    const bool* KeyboardState = SDL_GetKeyboardState(nullptr);
     InputState.Keys.Up = UpdateKeyState(OldInputState.Keys.Up, KeyboardState, SDL_SCANCODE_W);
     InputState.Keys.Right = UpdateKeyState(OldInputState.Keys.Right, KeyboardState, SDL_SCANCODE_D);
     InputState.Keys.Down = UpdateKeyState(OldInputState.Keys.Down, KeyboardState, SDL_SCANCODE_S);

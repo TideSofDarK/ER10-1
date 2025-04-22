@@ -2,10 +2,11 @@
 
 #include <array>
 #include "AssetTools.hxx"
+#include "SDL3/SDL_audio.h"
 
 struct SAudioSpec
 {
-    uint16_t Format;
+    SDL_AudioFormat Format;
     int Channels;
     int Freq;
 };
@@ -68,7 +69,7 @@ protected:
     void Clear() const;
 
 public:
-    float Volume = 0.00f;
+    float Volume = 0.30f;
 
     void Init();
     void Cleanup();

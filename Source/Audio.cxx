@@ -1,6 +1,6 @@
 #include "Audio.hxx"
 
-#include <SDL3/SDL_rwops.h>
+#include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
@@ -34,7 +34,8 @@ void SDLCALL SAudio::Callback(void* Userdata, struct SDL_AudioStream* Stream, in
                     int Current = AudioEntry.Current;
                     int Mixed{};
                     Remaining = AudioEntry.Advance(ToMix, &Mixed);
-                    SDL_MixAudioFormat(Data, AudioEntry.SoundClip->Ptr + Current, SDL_AUDIO_S16, Mixed, SDL_MIX_MAXVOLUME * Audio->Volume);
+                    // SDL_MixAudioFormat(Data, AudioEntry.SoundClip->Ptr + Current, SDL_AUDIO_S16, Mixed, SDL_MIX_MAXVOLUME * Audio->Volume);
+                    SDL_MixAudio(Data, AudioEntry.SoundClip->Ptr + Current, SDL_AUDIO_S16, Mixed, Audio->Volume);
                     MixedTotal += Mixed;
                 }
             }
@@ -57,7 +58,7 @@ void SAudio::Clear() const
 void SAudio::Init()
 {
     AudioSpec = { SDL_AUDIO_S16, 2, 44100 };
-    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != true)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
         exit(1);
@@ -68,13 +69,12 @@ void SAudio::Init()
     DestSpec.format = AudioSpec.Format;
     DestSpec.channels = AudioSpec.Channels;
 
-    Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &DestSpec, &Callback, this);
+    Stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &DestSpec, &Callback, this);
     Silence = SDL_GetSilenceValueForFormat(DestSpec.format);
 
     SDL_AudioDeviceID DeviceID = SDL_GetAudioStreamDevice(Stream);
-    char* DeviceName = SDL_GetAudioDeviceName(DeviceID);
+    const char* DeviceName = SDL_GetAudioDeviceName(DeviceID);
     SDL_Log("Opened an AudioStream at %s\n", DeviceName);
-    SDL_free(DeviceName);
 
     SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(Stream));
 
@@ -96,12 +96,12 @@ void SAudio::Cleanup()
 
 void SAudio::LoadSoundClip(const SAsset& Asset, SSoundClip& SoundClip) const
 {
-    auto TestRW = SDL_RWFromConstMem(Asset.VoidPtr(), Asset.Length);
+    auto TestRW = SDL_IOFromConstMem(Asset.VoidPtr(), Asset.Length);
 
     SDL_AudioSpec TempSpec;
     uint32_t TempLength{};
     uint8_t* TempPtr{};
-    SDL_LoadWAV_RW(TestRW, 1, &TempSpec, &TempPtr, &TempLength);
+    SDL_LoadWAV_IO(TestRW, 1, &TempSpec, &TempPtr, &TempLength);
 
     SDL_AudioSpec DestSpec;
     DestSpec.freq = AudioSpec.Freq;

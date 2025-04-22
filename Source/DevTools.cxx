@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <glad/gl.h>
+#include <SDL3/SDL.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui_stdlib.h>
@@ -18,7 +19,6 @@
 #include "Log.hxx"
 #include "Math.hxx"
 #include "Memory.hxx"
-#include "SDL_video.h"
 
 #define PARTY_SLOT_COLOR (ImGui::GetColorU32(IM_COL32(100, 75, 230, 200)))
 #define HPBAR_COLOR (ImGui::GetColorU32(IM_COL32(255, 19, 25, 255)))
@@ -122,7 +122,8 @@ static void GenericEditorWindow(
             Editor->EditorUpdate();
 
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2());
-            ImGui::ImageButton(reinterpret_cast<void*>(Framebuffer->ColorID), ImVec2((float)ScaledSize.X * CanvasScale, (float)ScaledSize.Y * CanvasScale),
+            ImTextureID TexID = Framebuffer->ColorID;
+            ImGui::ImageButton("Tex", TexID, ImVec2((float)ScaledSize.X * CanvasScale, (float)ScaledSize.Y * CanvasScale),
                 ImVec2(0.0f, (float)ScaledSize.Y / (float)Framebuffer->Height), ImVec2((float)ScaledSize.X / (float)Framebuffer->Width, 0.0f));
             ImGui::PopStyleVar();
 
@@ -509,28 +510,28 @@ void SLevelEditor::EditorUpdate()
 
     if (ImGui::IsWindowFocused())
     {
-        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
         {
             LevelEditorMode = ELevelEditorMode::Normal;
         }
         else if (LevelEditorMode == ELevelEditorMode::Normal || LevelEditorMode == ELevelEditorMode::Block)
         {
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
+            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
             {
                 SelectedTileCoords.Y = std::max(0, SelectedTileCoords.Y - 1);
                 bEditorStateChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
+            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
             {
                 SelectedTileCoords.X = std::max(0, SelectedTileCoords.X - 1);
                 bEditorStateChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
+            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
             {
                 SelectedTileCoords.Y = std::min(Level.Height - 1, SelectedTileCoords.Y + 1);
                 bEditorStateChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
+            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
             {
                 SelectedTileCoords.X = std::min(Level.Width - 1, SelectedTileCoords.X + 1);
                 bEditorStateChanged = true;
@@ -538,21 +539,21 @@ void SLevelEditor::EditorUpdate()
         }
         if (LevelEditorMode == ELevelEditorMode::Block)
         {
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
+            if (ImGui::IsKeyPressed(ImGuiKey_Space))
             {
                 Level.EditBlock(SRectInt::FromTwo(SelectedTileCoords, BlockModeTileCoords), TILE_FLOOR_BIT);
                 LevelEditorMode = ELevelEditorMode::Normal;
                 bEditorStateChanged = true;
                 bLevelChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
+            if (ImGui::IsKeyPressed(ImGuiKey_C))
             {
                 Level.EditBlock(SRectInt::FromTwo(SelectedTileCoords, BlockModeTileCoords), 0);
                 LevelEditorMode = ELevelEditorMode::Normal;
                 bEditorStateChanged = true;
                 bLevelChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
+            if (ImGui::IsKeyPressed(ImGuiKey_H))
             {
                 Level.EditBlock(SRectInt::FromTwo(SelectedTileCoords, BlockModeTileCoords), TILE_HOLE_BIT);
                 LevelEditorMode = ELevelEditorMode::Normal;
@@ -562,34 +563,34 @@ void SLevelEditor::EditorUpdate()
         }
         else if (LevelEditorMode == ELevelEditorMode::Normal)
         {
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Space)))
+            if (ImGui::IsKeyPressed(ImGuiKey_Space))
             {
                 Level.Edit(SelectedTileCoords, TILE_FLOOR_BIT);
                 bLevelChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)))
+            if (ImGui::IsKeyPressed(ImGuiKey_C))
             {
                 Level.Edit(SelectedTileCoords, 0);
                 bLevelChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_H)))
+            if (ImGui::IsKeyPressed(ImGuiKey_H))
             {
                 Level.Edit(SelectedTileCoords, TILE_HOLE_BIT);
                 bLevelChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D)))
+            if (ImGui::IsKeyPressed(ImGuiKey_D))
             {
                 LevelEditorMode = ELevelEditorMode::ToggleEdge;
                 ToggleEdgeType = TILE_EDGE_DOOR_BIT;
                 bEditorStateChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)))
+            if (ImGui::IsKeyPressed(ImGuiKey_W))
             {
                 LevelEditorMode = ELevelEditorMode::ToggleEdge;
                 ToggleEdgeType = TILE_EDGE_WALL_BIT;
                 bEditorStateChanged = true;
             }
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_V)))
+            if (ImGui::IsKeyPressed(ImGuiKey_V))
             {
                 LevelEditorMode = ELevelEditorMode::Block;
                 BlockModeTileCoords = SelectedTileCoords;
@@ -604,26 +605,26 @@ void SLevelEditor::EditorUpdate()
                 bEditorStateChanged = true;
                 bLevelChanged = true;
             };
-            if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
+            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
             {
                 ToggleEdge(SDirection::North());
             }
-            else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
+            else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
             {
                 ToggleEdge(SDirection::West());
             }
-            else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
+            else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
             {
                 ToggleEdge(SDirection::South());
             }
-            else if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
+            else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
             {
                 ToggleEdge(SDirection::East());
             }
         }
     }
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Home)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Keypad7)) || bResetView)
+    if (ImGui::IsKeyPressed(ImGuiKey_Home) || ImGui::IsKeyPressed(ImGuiKey_Keypad7) || bResetView)
     {
         Scale = std::min(WindowSize.x / (float)OriginalMapSize.X, WindowSize.y / (float)OriginalMapSize.Y);
         Scale = std::max(1.0f, (std::floor(Scale) - 1.0f));
@@ -1118,7 +1119,7 @@ void SDevTools::Update()
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F4)))
+    if (ImGui::IsKeyPressed(ImGuiKey_F4))
     {
         // Game.Renderer.ProgramHUD.Reload();
         Game->Renderer.ProgramMap.Reload();
@@ -1130,12 +1131,12 @@ void SDevTools::Update()
     bool bReturnedToGame{};
     EDevToolsMode OldMode = Mode;
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F8)))
+    if (ImGui::IsKeyPressed(ImGuiKey_F8))
     {
         Mode = Mode == EDevToolsMode::WorldEditor ? EDevToolsMode::Game : EDevToolsMode::WorldEditor;
     }
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F9)))
+    if (ImGui::IsKeyPressed(ImGuiKey_F9))
     {
         Mode = Mode == EDevToolsMode::LevelEditor ? EDevToolsMode::Game : EDevToolsMode::LevelEditor;
     }

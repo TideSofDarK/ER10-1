@@ -17,7 +17,7 @@
 struct SGame
 {
 private:
-    static EKeyState UpdateKeyState(EKeyState OldKeyState, const uint8_t* KeyboardState, uint8_t Scancode);
+    static EKeyState UpdateKeyState(EKeyState OldKeyState, const bool* KeyboardState, uint8_t Scancode);
 
     int SpriteDemoState;
 

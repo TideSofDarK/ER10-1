@@ -2,9 +2,9 @@
 
 #include <glad/gl.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
 #include "Log.hxx"
 #include "Memory.hxx"
-#include "SDL_video.h"
 #include "Constants.hxx"
 
 void SPlatform::SwapBuffers() const
@@ -19,19 +19,19 @@ bool SPlatform::IsAnyFullscreen() const
 
 void SPlatform::Init()
 {
-    SDL_LogSetAllPriority(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
-    SDL_LogSetOutputFunction([]([[maybe_unused]] void* Userdata, [[maybe_unused]] int Category, [[maybe_unused]] SDL_LogPriority Priority, const char* Message) {
+    SDL_SetLogPriorities(SDL_LogPriority::SDL_LOG_PRIORITY_INFO);
+    SDL_SetLogOutputFunction([]([[maybe_unused]] void* Userdata, [[maybe_unused]] int Category, [[maybe_unused]] SDL_LogPriority Priority, const char* Message) {
         Log::LogInternal<ELogLevel::Critical>("SDL3", "%s", Message);
     },
         nullptr);
 
-    if (SDL_SetMemoryFunctions(&Memory::Malloc, &Memory::Calloc, &Memory::Realloc, &Memory::Free))
+    if (SDL_SetMemoryFunctions(&Memory::Malloc, &Memory::Calloc, &Memory::Realloc, &Memory::Free) != true)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
         exit(1);
     }
 
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) != true)
     {
         SDL_LogError(SDL_LOG_CATEGORY_CUSTOM, "Error %s", SDL_GetError());
         exit(1);
@@ -72,7 +72,7 @@ void SPlatform::Init()
 
 void SPlatform::Cleanup() const
 {
-    SDL_GL_DeleteContext(Context);
+    SDL_GL_DestroyContext((SDL_GLContext)Context);
     SDL_DestroyWindow(Window);
     SDL_Quit();
 }
